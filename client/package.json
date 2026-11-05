@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Client baseline tests initialized (Component tests begin in Issue #2/3)\" && exit 0",
+    "test": "node --test tests/layout.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

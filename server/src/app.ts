@@ -22,6 +22,17 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// Unmatched route 404 handler
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: 'The requested API route was not found'
+    }
+  });
+});
+
 // Centralized error handling middleware
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || 500;

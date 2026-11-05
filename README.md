@@ -21,7 +21,7 @@ All formal software engineering specifications required for CPE 334 Deliverable 
 - [**Feature Catalog**](./docs/features.md): Baseline features F-01 through F-14 mapped across 3 sprints.
 - [**Requirements Traceability Matrix**](./docs/traceability.md): 100% bidirectional traceability mapping requirements to 17 automated test IDs.
 - [**System-Level Design Specification (SDS)**](./docs/system-sds.md): Decoupled architecture, ERD, database constraints, pessimistic room-locking concurrency strategy, and API conventions.
-- [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap and Sprint 1 feasibility justification.
+- [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap, video milestones, and Sprint 1 feasibility justification.
 - [**Sprint 1 Engineering Contracts**](./docs/sprints/sprint-1/contracts.md): API specifications, Acceptance Criteria (`AC-01`–`AC-06`), and Software Test Specifications (`TEST-01`–`TEST-06`).
 - [**Team & Agent Working Rules**](./AGENTS.md): Hardware memory guards (M1 8GB RAM), Git protocols, TDD rules, and UI layout conventions.
 - [**AI Assistance Log**](./docs/ai-use.md): Continuous prompt and decision governance log.
@@ -33,57 +33,68 @@ All formal software engineering specifications required for CPE 334 Deliverable 
 - **Frontend:** React (Vite) + TypeScript + Tailwind CSS + Lucide Icons (<100MB RAM)
 - **Backend:** Node.js + Express.js (TypeScript) + RESTful JSON API (<80MB RAM)
 - **Persistence:** PostgreSQL via Prisma ORM (Composite Unique Constraints & Pessimistic Row Locking)
-- **Testing:** Supertest + Jest (Serial in-band execution `--runInBand` with single worker)
+- **Testing:** Supertest + Jest (Server API) & Node Native Test Runner (Client smoke test) with `--runInBand`
 
 ---
 
 ## 🚀 Reproducible Setup & Fresh Clone Guide
 
-Follow these verified steps to clone, configure, and execute the application locally:
+Follow these verified steps to clone, configure, migrate, and execute the application locally from scratch:
 
 ### 1. Prerequisites
 - **Node.js:** v20.x or later (`node -v`)
 - **npm:** v10.x or later (`npm -v`)
-- **PostgreSQL:** Running locally on port `5432` (`brew services start postgresql@14` or native service)
+- **PostgreSQL:** Running locally on port `5432`
 
-### 2. Clone & Install Dependencies
+### 2. Clone Repository & Install Dependencies
 ```bash
 git clone https://github.com/Phenwatsa/singslot-karaoke.git
 cd singslot-karaoke
 
-# Install dependencies across all workspaces
+# Install dependencies across all npm workspaces (client & server)
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 3. Database Initialization
+Ensure PostgreSQL is active, then create the application database:
 ```bash
-cp server/.env.example server/.env
-# Edit server/.env if your PostgreSQL username/password differs from default
+# macOS (Homebrew PostgreSQL)
+createdb singslot_dev
+
+# Alternatively, using psql:
+# psql -U postgres -c "CREATE DATABASE singslot_dev;"
 ```
 
-### 4. Database Migration & Idempotent Seeding
+### 4. Configure Environment Variables
 ```bash
-# Run committed migrations on clean database
+cp server/.env.example server/.env
+# Verify DATABASE_URL in server/.env matches your PostgreSQL username and password
+```
+
+### 5. Run Database Migrations & Idempotent Seed
+```bash
+# Execute committed initial migration from clean database
 npm run prisma:migrate
 
-# Populate 3 demo users and 9 rooms
+# Idempotently seed 3 demo accounts and 9 karaoke rooms
 npm run prisma:seed
 ```
 
-### 5. Running the Application
+### 6. Running the Application
 ```bash
-# Terminal 1: Run Backend API Server (port 5001)
+# Terminal 1: Run Express Backend API (http://localhost:5001)
 npm run dev:server
 
-# Terminal 2: Run Frontend Client (port 3000)
+# Terminal 2: Run React Vite Client (http://localhost:3000)
 npm run dev:client
 ```
 
-### 6. Executing Quality Checks & Tests
+### 7. Running Quality Checks & Tests
 ```bash
-# Run TypeScript compilation check across client and server
+# Typecheck across both client and server
 npm run typecheck
 
-# Run test suites serially (M1 8GB RAM safe)
+# Run test suites serially (Single-worker, M1 8GB RAM safe)
 npm test
 ```
+*(Note: Issue #1 runs the server API health/schema baseline tests and client layout smoke tests; interactive feature tests begin in Issue #2 and #3).*

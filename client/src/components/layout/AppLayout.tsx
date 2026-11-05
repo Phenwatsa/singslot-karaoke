@@ -7,6 +7,7 @@ interface AppLayoutProps {
   userRole?: 'CUSTOMER' | 'STAFF' | null;
   userName?: string | null;
   onLogout?: () => void;
+  onNavigate?: (route: 'booking' | 'my-bookings' | 'staff-schedule' | 'login') => void;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -15,6 +16,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   userRole = null,
   userName = null,
   onLogout,
+  onNavigate,
 }) => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 selection:bg-pink-500 selection:text-white">
@@ -46,6 +48,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           {/* Navigation Links */}
           <nav className="flex items-center gap-1 sm:gap-2">
             <button
+              onClick={() => onNavigate?.('booking')}
+              title="Rooms & Slots catalog (Active in Issue #3)"
               className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 activeNav === 'booking'
                   ? 'bg-white/10 text-pink-400'
@@ -58,6 +62,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
             {userRole === 'CUSTOMER' && (
               <button
+                onClick={() => onNavigate?.('my-bookings')}
+                title="Customer booking history (Active in Issue #5)"
                 className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   activeNav === 'my-bookings'
                     ? 'bg-white/10 text-pink-400'
@@ -71,6 +77,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
             {userRole === 'STAFF' && (
               <button
+                onClick={() => onNavigate?.('staff-schedule')}
+                title="Staff master schedule (Active in Issue #6)"
                 className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   activeNav === 'staff-schedule'
                     ? 'bg-white/10 text-pink-400'
@@ -100,7 +108,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 </button>
               </div>
             ) : (
-              <button className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-1.5 text-sm font-semibold text-white shadow-md shadow-pink-500/20 hover:brightness-110 transition-all">
+              <button
+                onClick={() => onNavigate?.('login')}
+                title="User sign in (Active in Issue #2)"
+                className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-1.5 text-sm font-semibold text-white shadow-md shadow-pink-500/20 hover:brightness-110 transition-all"
+              >
                 Sign In
               </button>
             )}

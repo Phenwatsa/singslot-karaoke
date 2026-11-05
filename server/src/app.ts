@@ -1,6 +1,8 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { authRouter } from './routes/auth.routes';
+import { bookingRouter } from './routes/booking.routes';
 
 dotenv.config();
 
@@ -21,6 +23,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
     }
   });
 });
+
+// Domain Routes
+app.use('/api/auth', authRouter);
+app.use('/api/bookings', bookingRouter);
 
 // Unmatched route 404 handler
 app.use((_req: Request, res: Response) => {

@@ -51,16 +51,101 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     const appPath = path.join(clientRoot, 'src', 'App.tsx');
     const content = fs.readFileSync(appPath, 'utf8');
 
-    // Unauthenticated baseline (no hardcoded credentials)
-    assert.match(content, /userRole=\{null\}/, 'App.tsx must default to unauthenticated role');
-    assert.match(content, /userName=\{null\}/, 'App.tsx must default to null user name');
+    // Unauthenticated baseline (defaults to null user without hardcoded session)
+    assert.match(content, /useState<User \| null>\(null\)/, 'App.tsx must default to null user');
+    assert.match(content, /useState<string \| null>\(null\)/, 'App.tsx must default to null token');
+    assert.match(content, /userRole=\{user\?\.role \|\| null\}/, 'App.tsx must bind userRole from reactive state');
+    assert.match(content, /userName=\{user\?\.fullName \|\| null\}/, 'App.tsx must bind userName from reactive state');
 
-    // Navigation and logout handlers wired
+    // Navigation, auth, and logout handlers wired
     assert.match(content, /onNavigate=\{handleNavigate\}/, 'App.tsx must wire handleNavigate');
     assert.match(content, /onLogout=\{handleLogout\}/, 'App.tsx must wire handleLogout');
+    assert.match(content, /LoginModal/, 'App.tsx must include LoginModal component');
+  });
 
-    // Scaffold notice badge
-    assert.match(content, /Issue #1 Baseline Shell \(Unauthenticated\)/, 'App.tsx must clearly state unauthenticated baseline shell');
+  await t.test('LoginModal provides quick-fill demo buttons and authentication contracts', () => {
+    const modalPath = path.join(clientRoot, 'src', 'components', 'auth', 'LoginModal.tsx');
+    assert.strictEqual(fs.existsSync(modalPath), true, 'LoginModal.tsx must exist');
+    const content = fs.readFileSync(modalPath, 'utf8');
+
+    // Quick-fill buttons per Issue #2 Spec
+    assert.match(content, /staff@singslot\.local/, 'LoginModal must provide staff quick-fill');
+    assert.match(content, /customer1@singslot\.local/, 'LoginModal must provide customer quick-fill');
+    assert.match(content, /Pass1234!/, 'LoginModal must fill seeded demo password');
+
+    // API contract endpoint
+    assert.match(content, /\/api\/auth\/login/, 'LoginModal must post to /api/auth/login');
+  });
+
+  await t.test('Client session lifecycle asserts storage cleanup and token validation on logout (AC-01e)', async () => {
+    const appPath = path.join(clientRoot, 'src', 'App.tsx');
+    const content = fs.readFileSync(appPath, 'utf8');
+
+    // Asserts that App.tsx wires centralized session helpers
+    assert.match(content, /clearClientSession\(\)/, 'App.tsx must invoke clearClientSession on logout');
+    assert.match(content, /saveClientSession\(/, 'App.tsx must invoke saveClientSession on login success');
+    assert.match(content, /validateAndRestoreSession\(\)/, 'App.tsx must validate restored session with validateAndRestoreSession');
+
+    // Import session helper functions for true runtime unit execution
+    const sessionModule = await import('../src/utils/session.ts');
+    const { saveClientSession, clearClientSession, getStoredSession, validateAndRestoreSession, STORAGE_KEYS } = sessionModule;
+
+    // Create a concrete mock Storage implementation
+    const store = new Map();
+    const mockStorage = {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, val) => store.set(key, String(val)),
+      removeItem: (key) => store.delete(key),
+      clear: () => store.clear()
+    };
+
+    const mockUser = {
+      id: 'usr-demo-01',
+      email: 'customer1@singslot.local',
+      fullName: 'Alice Customer',
+      role: 'CUSTOMER'
+    };
+
+    // 1. Runtime save verification
+    saveClientSession('valid-jwt-token', mockUser, mockStorage);
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), 'valid-jwt-token');
+    assert.deepStrictEqual(JSON.parse(mockStorage.getItem(STORAGE_KEYS.USER)), mockUser);
+
+    // 2. Runtime getStoredSession verification
+    const stored = getStoredSession(mockStorage);
+    assert.strictEqual(stored.token, 'valid-jwt-token');
+    assert.deepStrictEqual(stored.user, mockUser);
+
+    // 3. Runtime clearClientSession verification (Logout test)
+    clearClientSession(mockStorage);
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), null, 'singslot_token must be cleared from storage');
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.USER), null, 'singslot_user must be cleared from storage');
+    const afterClear = getStoredSession(mockStorage);
+    assert.strictEqual(afterClear.token, null);
+    assert.strictEqual(afterClear.user, null);
+
+    // 4. Runtime validateAndRestoreSession: Purges expired session on HTTP 401
+    saveClientSession('expired-token', mockUser, mockStorage);
+    const mockFetch401 = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({ success: false, error: { code: 'UNAUTHENTICATED' } })
+    });
+    const purged = await validateAndRestoreSession(mockStorage, mockFetch401);
+    assert.strictEqual(purged.token, null, 'Expired token must return null');
+    assert.strictEqual(purged.user, null, 'Expired user must return null');
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), null, 'Expired token must be purged from storage');
+
+    // 5. Runtime validateAndRestoreSession: Restores valid session on HTTP 200
+    saveClientSession('active-token', mockUser, mockStorage);
+    const mockFetch200 = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, user: mockUser })
+    });
+    const restored = await validateAndRestoreSession(mockStorage, mockFetch200);
+    assert.strictEqual(restored.token, 'active-token');
+    assert.deepStrictEqual(restored.user, mockUser);
   });
 
   await t.test('GlassCard and PageHeader conform to design system spec', () => {

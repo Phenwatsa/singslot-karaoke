@@ -16,6 +16,7 @@
 | **4** | **Unified UI Layout Shell:** Establish centralized layout template components preventing fragmented styles. | Antigravity AI / Gemini 3.8 Flash | Built `AppLayout.tsx`, `PageHeader.tsx`, and `GlassCard.tsx` under `client/src/components/layout/` with neon dark-mode theme, unauthenticated default state, and wired navigation callbacks. |
 | **5** | **Automated Baseline Verification:** Create fast, reliable test suite for API health and design system contracts. | Antigravity AI / Gemini 3.8 Flash | Created Express health/404 tests in Jest and a zero-dependency Node-native component smoke test (`layout.test.mjs`), achieving 11/11 passing tests in <1 second. |
 | **6** | **Database Migration & Idempotent Seed:** Ensure clean clone setup from an empty database without password overwrite. | Antigravity AI / Gemini 3.8 Flash | Generated committed migration `20261105000000_init` and idempotent `seed.ts` logic that preserves existing bcrypt hashes across repeated runs. |
+| **7** | **Issue #2 Scope & RBAC Architecture Breakdown:** Deconstruct authentication specifications, JWT claims, bcrypt verification, and automated test suite. | Antigravity AI / Gemini 3.8 Flash | Defined implementation plan for `POST /api/auth/login`, `logout`, `me`, RBAC middlewares (`verifyToken`, `requireRole`), and Supertest suite for `TEST-01` through `TEST-01e`. |
 
 ---
 

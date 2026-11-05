@@ -51,16 +51,30 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     const appPath = path.join(clientRoot, 'src', 'App.tsx');
     const content = fs.readFileSync(appPath, 'utf8');
 
-    // Unauthenticated baseline (no hardcoded credentials)
-    assert.match(content, /userRole=\{null\}/, 'App.tsx must default to unauthenticated role');
-    assert.match(content, /userName=\{null\}/, 'App.tsx must default to null user name');
+    // Unauthenticated baseline (defaults to null user without hardcoded session)
+    assert.match(content, /useState<User \| null>\(null\)/, 'App.tsx must default to null user');
+    assert.match(content, /useState<string \| null>\(null\)/, 'App.tsx must default to null token');
+    assert.match(content, /userRole=\{user\?\.role \|\| null\}/, 'App.tsx must bind userRole from reactive state');
+    assert.match(content, /userName=\{user\?\.fullName \|\| null\}/, 'App.tsx must bind userName from reactive state');
 
-    // Navigation and logout handlers wired
+    // Navigation, auth, and logout handlers wired
     assert.match(content, /onNavigate=\{handleNavigate\}/, 'App.tsx must wire handleNavigate');
     assert.match(content, /onLogout=\{handleLogout\}/, 'App.tsx must wire handleLogout');
+    assert.match(content, /LoginModal/, 'App.tsx must include LoginModal component');
+  });
 
-    // Scaffold notice badge
-    assert.match(content, /Issue #1 Baseline Shell \(Unauthenticated\)/, 'App.tsx must clearly state unauthenticated baseline shell');
+  await t.test('LoginModal provides quick-fill demo buttons and authentication contracts', () => {
+    const modalPath = path.join(clientRoot, 'src', 'components', 'auth', 'LoginModal.tsx');
+    assert.strictEqual(fs.existsSync(modalPath), true, 'LoginModal.tsx must exist');
+    const content = fs.readFileSync(modalPath, 'utf8');
+
+    // Quick-fill buttons per Issue #2 Spec
+    assert.match(content, /staff@singslot\.local/, 'LoginModal must provide staff quick-fill');
+    assert.match(content, /customer1@singslot\.local/, 'LoginModal must provide customer quick-fill');
+    assert.match(content, /Pass1234!/, 'LoginModal must fill seeded demo password');
+
+    // API contract endpoint
+    assert.match(content, /\/api\/auth\/login/, 'LoginModal must post to /api/auth/login');
   });
 
   await t.test('GlassCard and PageHeader conform to design system spec', () => {

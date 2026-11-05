@@ -2,12 +2,26 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { app } from '../src/app';
 import { prisma } from '../src/prisma';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-singslot-jwt-key-2026-cpe334-minimum-32-chars';
+import { getJwtSecret } from '../src/config/jwt';
 
 describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
   afterAll(async () => {
     await prisma.$disconnect();
+  });
+
+  /**
+   * Security & Configuration: Fail-fast verification on missing environment variables.
+   */
+  it('security: getJwtSecret fails fast when JWT_SECRET is unset or empty', () => {
+    const originalSecret = process.env.JWT_SECRET;
+    try {
+      delete process.env.JWT_SECRET;
+      expect(() => getJwtSecret()).toThrow('FATAL: JWT_SECRET environment variable is missing or empty.');
+      process.env.JWT_SECRET = '   ';
+      expect(() => getJwtSecret()).toThrow('FATAL: JWT_SECRET environment variable is missing or empty.');
+    } finally {
+      process.env.JWT_SECRET = originalSecret;
+    }
   });
 
   /**
@@ -30,7 +44,8 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
     expect(res.body.user.fullName).toBe('Cashier Staff');
 
     // Decode and verify JWT payload claims and 8-hour lifetime
-    const decoded = jwt.verify(res.body.token, JWT_SECRET) as any;
+    const secret = getJwtSecret();
+    const decoded = jwt.verify(res.body.token, secret) as any;
     expect(decoded.sub).toBe(res.body.user.id);
     expect(decoded.email).toBe('staff@singslot.local');
     expect(decoded.role).toBe('STAFF');
@@ -67,6 +82,7 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
     expect(res.body.error.code).toBe('INVALID_CREDENTIALS');
   });
 
@@ -89,6 +105,7 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
     expect(res.body.error.code).toBe('UNAUTHENTICATED');
   });
 

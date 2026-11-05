@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-singslot-jwt-key-2026-cpe334-minimum-32-chars';
+import { getJwtSecret, JWT_EXPIRES_IN } from '../config/jwt';
 
 /**
  * POST /api/auth/login
@@ -52,15 +51,16 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       return;
     }
 
-    // Sign JWT with 8-hour expiration per SDS 3.2
+    // Sign JWT using centralized secret and 8-hour expiration
+    const secret = getJwtSecret();
     const token = jwt.sign(
       {
         sub: user.id,
         email: user.email,
         role: user.role
       },
-      JWT_SECRET,
-      { expiresIn: '8h' }
+      secret,
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     // Return token and user identity without passwordHash (NFR-01)

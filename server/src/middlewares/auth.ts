@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
-import { AuthUserPayload } from '../types/express';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-singslot-jwt-key-2026-cpe334-minimum-32-chars';
+import { getJwtSecret } from '../config/jwt';
 
 /**
  * Middleware to verify JWT authentication token from Authorization header.
@@ -26,7 +24,8 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction): vo
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const secret = getJwtSecret();
+    const decoded = jwt.verify(token, secret) as any;
     req.user = {
       id: decoded.sub || decoded.id,
       sub: decoded.sub || decoded.id,

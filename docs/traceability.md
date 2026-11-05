@@ -44,7 +44,7 @@
 
 ## 2. Coverage Analysis
 
-* **Sprint 1 Allocation:** 6 Functional Requirements, 8 Business Rules, and 3 Non-Functional Requirements are 100% covered across 6 defined GitHub Issues and 14 automated tests.
+* **Sprint 1 Allocation:** 6 Functional Requirements, 8 Business Rules, and 3 Non-Functional Requirements are 100% covered across 6 defined GitHub Issues and 17 automated test IDs (`TEST-01`, `01a`–`01e`, `02`, `03`, `04a`–`04f`, `05`, `05b`, `06`).
 * **Sprint 2 Allocation:** 5 Functional Requirements (F-07 through F-10), 2 Business Rules (BR-09, BR-10), and 1 NFR (NFR-04).
 * **Sprint 3 Allocation:** 3 Functional Requirements (F-11 through F-13) and final hardening.
 * **Coverage Gaps:** Zero unmapped requirements.

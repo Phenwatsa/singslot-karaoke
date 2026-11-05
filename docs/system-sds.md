@@ -224,13 +224,15 @@ model RoomBlock {
 }
 ```
 
-### 2.3 Slot Identity & Availability Calculation
+### 2.3 Slot Identity, Invariants & Availability Calculation
 * **Timezone & Granularity:** All booking calculations occur in the establishment's local timezone (`Asia/Bangkok`, ICT, UTC+7).
 * **Slot Mapping (0..13):**
   * Slot 0: 10:00–11:00
   * Slot 1: 11:00–12:00
   * ...
   * Slot 13: 23:00–24:00
+* **Data Invariant:** For all `BookingSlot` records, `BookingSlot.roomId` and `BookingSlot.bookingDate` must strictly equal the parent `Booking.roomId` and `Booking.bookingDate`. The application service layer transactionally validates and enforces this invariant upon record creation.
+* **Cross-Table Conflict Prevention:** `BookingSlot` enforces `@@unique([roomId, bookingDate, slotIndex])` within confirmed bookings, and `RoomBlock` enforces `@@unique([roomId, blockDate, slotIndex])` within maintenance blocks. To prevent cross-table collisions, `BookingService` and `BlockService` verify that no active records exist in the opposing table within an atomic transaction.
 * **Server-Calculated Availability Query:**
   When `GET /api/availability?date=YYYY-MM-DD` is executed, the server:
   1. Queries all active rooms from `Room`.

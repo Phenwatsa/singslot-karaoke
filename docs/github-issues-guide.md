@@ -27,11 +27,11 @@ Required branch: setup/issue-1-baseline-schema
 Assignees: @Phenwatsa & @lephirada (Pair Work)
 
 In-Scope:
-- Monorepo Scaffolding: Configure decoupled client/ (React + Vite + TypeScript + Tailwind CSS) and server/ (Node.js + Express + TypeScript).
-- Memory-Safe Configurations: Configure low-memory scripts in package.json with --runInBand for MacBook M1 8GB RAM safety.
+- Monorepo Scaffolding: Configure decoupled client/ (React + Vite + TypeScript + Tailwind CSS) and server/ (Node.js + Express + TypeScript) with root orchestration.
+- Scripts & Memory Safety: Provide dev, build, typecheck, and test scripts in both client and server; enforce --runInBand single worker constraint for MacBook M1 8GB RAM safety.
 - Unified UI Layout Template: Build centralized layout components (AppLayout.tsx, PageHeader.tsx, GlassCard.tsx) under client/src/components/layout/ to enforce 100% design consistency.
-- Database Schema (PostgreSQL): Configure Prisma schema with models User, Room, Booking, BookingSlot, and RoomBlock. Enforce composite unique constraint @@unique([roomId, bookingDate, slotIndex]) on BookingSlot and RoomBlock, and unique constraint on bookingCode.
-- Reproducible Seed Data: Implement npm run prisma:seed to seed 3 demo accounts (staff@singslot.local, customer1@singslot.local, customer2@singslot.local) with bcrypt hashes, and 9 rooms (S01–S03, M01–M03, L01–L03). Pre-seed room S01 slot 3 on test dates.
+- Database Schema (PostgreSQL): Configure Prisma schema with models User, Room, Booking, BookingSlot, and RoomBlock. Enforce separate composite unique constraints @@unique([roomId, bookingDate, slotIndex]) on BookingSlot and @@unique([roomId, blockDate, slotIndex]) on RoomBlock, plus unique constraint on bookingCode.
+- Reproducible Seed Data: Implement npm run prisma:seed to idempotently seed 3 demo accounts (staff@singslot.local, customer1@singslot.local, customer2@singslot.local) with bcrypt hashes, and 9 rooms (S01–S03, M01–M03, L01–L03). (Test fixtures such as S01 Slot 3 are managed separately by test suites on fixed test dates).
 
 Out-of-Scope & Deferred Dependencies:
 - Authentication API endpoints and login forms (deferred to Issue #2).
@@ -39,13 +39,17 @@ Out-of-Scope & Deferred Dependencies:
 - Docker packaging and GCP deployment (strictly deferred to Lab 5).
 
 Acceptance Criteria:
-- Client (Vite) and Server (Express) start cleanly on local machine with combined memory footprint <200MB.
-- PostgreSQL database migrations execute cleanly via npx prisma migrate dev.
-- npm run prisma:seed successfully populates 3 users and 9 rooms without errors.
-- Shared AppLayout renders navigation header, karaoke gradient background, and footer.
+- [ ] AC-01: Fresh clone can install dependencies cleanly via documented setup command.
+- [ ] AC-02: Client and Server npm scripts (dev, build, typecheck, test) execute with zero TypeScript errors.
+- [ ] AC-03: Prisma Client generates cleanly, and migrations execute successfully on target PostgreSQL database.
+- [ ] AC-04: npm run prisma:seed populates 3 demo users and 9 rooms with correct bcrypt hashes, roles, and capacities.
+- [ ] AC-05: Seed script is idempotent (running seed multiple times produces identical state without duplicate records).
+- [ ] AC-06: Database constraints enforce uniqueness on bookingCode and room/date/slot in BookingSlot and RoomBlock.
+- [ ] AC-07: Shared layout components (AppLayout, PageHeader, GlassCard) render navigation header, gradient theme, and footer.
+- [ ] AC-08: Test suite runs with --runInBand without spawning parallel worker processes.
 
 AI Verification Note:
-- Verify TypeScript compiles with zero errors, Prisma client generates cleanly, and seed script executes idempotently.
+- Verify build and typecheck commands succeed on both client and server, migrations succeed from clean database, and baseline tests pass.
 ```
 
 ---

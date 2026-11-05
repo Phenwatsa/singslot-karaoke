@@ -25,4 +25,4 @@ The SingSlot feature inventory across all three sprints is detailed below:
 | **F-11** | **Customer Self-Registration** | Public registration portal enabling new customers to register accounts with bcrypt password hashing. | FR-12, NFR-01 | F-01 | **Sprint 3** |
 | **F-12** | **Room Management CRUD** | Staff administrative interface to add, modify, or deactivate rooms and configure pricing. | FR-13, BR-08 | F-02, F-06 | **Sprint 3** |
 | **F-13** | **Appointment Summary & Occupancy Reports** | Management analytics visualizing room occupancy rates, revenue metrics, and peak hours. | FR-14, BR-08 | F-06, F-10 | **Sprint 3** |
-| **F-14** | **UAT Defect Fixes, Polish & Final Video** | Theme aesthetic refinement, resolution of defects from Lab 6 UAT, and 10-minute demonstration video. | All FRs | All | **Sprint 3** |
+| **F-14** | **UAT Defect Fixes, Polish & Final Video** | Theme aesthetic refinement, resolution of defects from Lab 6 UAT, and final demonstration video (per course delivery rubric). | All FRs | All | **Sprint 3** |

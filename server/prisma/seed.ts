@@ -6,49 +6,63 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting SingSlot database seeding (Idempotent)...');
 
-  // 1. Password hashing (bcrypt 10 rounds per NFR-01)
-  const defaultPasswordHash = await bcrypt.hash('Pass1234!', 10);
-
-  // 2. Seed Users
-  const users = [
+  // 1. Seed Users (Preserve existing passwordHash if user already exists to ensure true idempotency)
+  const seedUsers = [
     {
       email: 'staff@singslot.local',
       fullName: 'Cashier Staff',
       phone: '0812345678',
       role: Role.STAFF,
-      passwordHash: defaultPasswordHash
+      rawPassword: 'Pass1234!'
     },
     {
       email: 'customer1@singslot.local',
       fullName: 'Alice Customer',
       phone: '0898765432',
       role: Role.CUSTOMER,
-      passwordHash: defaultPasswordHash
+      rawPassword: 'Pass1234!'
     },
     {
       email: 'customer2@singslot.local',
       fullName: 'Bob Customer',
       phone: '0855554444',
       role: Role.CUSTOMER,
-      passwordHash: defaultPasswordHash
+      rawPassword: 'Pass1234!'
     }
   ];
 
-  for (const user of users) {
-    await prisma.user.upsert({
-      where: { email: user.email },
-      update: {
-        fullName: user.fullName,
-        phone: user.phone,
-        role: user.role,
-        passwordHash: user.passwordHash
-      },
-      create: user
+  for (const item of seedUsers) {
+    const existing = await prisma.user.findUnique({
+      where: { email: item.email }
     });
-  }
-  console.log(`✅ Seeded ${users.length} demo users (1 Staff, 2 Customers).`);
 
-  // 3. Seed 9 Rooms
+    if (existing) {
+      // Idempotent: Update profile fields only, preserve existing passwordHash
+      await prisma.user.update({
+        where: { email: item.email },
+        data: {
+          fullName: item.fullName,
+          phone: item.phone,
+          role: item.role
+        }
+      });
+    } else {
+      // New user: hash password once with bcrypt 10 rounds
+      const passwordHash = await bcrypt.hash(item.rawPassword, 10);
+      await prisma.user.create({
+        data: {
+          email: item.email,
+          fullName: item.fullName,
+          phone: item.phone,
+          role: item.role,
+          passwordHash
+        }
+      });
+    }
+  }
+  console.log(`✅ Seeded/Verified ${seedUsers.length} demo users (1 Staff, 2 Customers).`);
+
+  // 2. Seed 9 Rooms
   const rooms = [
     { roomNumber: 'S01', type: RoomType.SMALL, capacity: 4, description: 'Cozy private room for up to 4 guests' },
     { roomNumber: 'S02', type: RoomType.SMALL, capacity: 4, description: 'Cozy private room for up to 4 guests' },
@@ -73,8 +87,8 @@ async function main() {
       create: room
     });
   }
-  console.log(`✅ Seeded ${rooms.length} karaoke rooms (3 Small, 3 Medium, 3 Large).`);
-  console.log('🎉 Seeding completed successfully!');
+  console.log(`✅ Seeded/Verified ${rooms.length} karaoke rooms (3 Small, 3 Medium, 3 Large).`);
+  console.log('🎉 Idempotent seeding completed successfully!');
 }
 
 main()

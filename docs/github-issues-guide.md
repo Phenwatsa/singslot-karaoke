@@ -74,8 +74,8 @@ Out-of-Scope & Deferred Dependencies:
 Acceptance Criteria:
 - AC-01: Valid credentials return HTTP 200 with signed JWT token and user role.
 - AC-01a: Invalid credentials return HTTP 401 INVALID_CREDENTIALS.
-- AC-01b: Protected endpoints reject unauthenticated requests with HTTP 401 UNAUTHENTICATED within <= 50ms.
-- AC-01c: Protected staff endpoints reject Customer tokens with HTTP 403 FORBIDDEN within <= 50ms.
+- AC-01b: Protected endpoints reject unauthenticated requests with HTTP 401 UNAUTHENTICATED.
+- AC-01c: Protected staff endpoints reject Customer tokens with HTTP 403 FORBIDDEN.
 - AC-01e: POST /api/auth/logout returns HTTP 200, and client clears stored token.
 - 100% test pass on TEST-01 through TEST-01e.
 

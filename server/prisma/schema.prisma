@@ -42,14 +42,15 @@ model User {
 }
 
 model Room {
-  id          String      @id @default(uuid())
-  roomNumber  String      @unique
-  type        RoomType
-  capacity    Int
-  description String?
-  isActive    Boolean     @default(true)
-  bookings    Booking[]
-  blocks      RoomBlock[]
+  id           String        @id @default(uuid())
+  roomNumber   String        @unique
+  type         RoomType
+  capacity     Int
+  description  String?
+  isActive     Boolean       @default(true)
+  bookings     Booking[]
+  bookingSlots BookingSlot[]
+  blocks       RoomBlock[]
 
   @@map("rooms")
 }
@@ -88,6 +89,7 @@ model BookingSlot {
   slotIndex   Int      // 0..13
 
   booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Restrict)
 
   // Composite unique constraint: exactly one active booking slot per room-date-slot
   @@unique([roomId, bookingDate, slotIndex])

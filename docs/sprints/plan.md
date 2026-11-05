@@ -68,5 +68,5 @@ flowchart LR
   * **F-11:** Customer Self-Registration (`POST /api/auth/register`).
   * **F-12:** Room Management CRUD (`POST/PATCH/DELETE /api/rooms`).
   * **F-13:** Appointment Summary & Occupancy Reports (Utilization rates and peak hours).
-  * **F-14:** UAT Defect Fixes, UI Polish & Final Demo Video (Aesthetic enhancements, regression safety, video).
+  * **F-14:** UAT Defect Fixes, UI Polish & Final Demo Video (Aesthetic enhancements, regression safety, video demonstration: max 10 minutes per rubric / under 4 minutes per final presentation guidance).
   * **Lab 7 Execution:** Maintenance change impact analysis and regression testing.

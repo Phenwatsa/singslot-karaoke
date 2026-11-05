@@ -35,7 +35,7 @@
 | **BR-09** | Cancellation/rescheduling restricted within 24h window | F-08 | **Sprint 2** | Sprint 2 Backlog | AC-09a / TEST-09a (Planned) | Allocated to Sprint 2 |
 | **BR-10** | Slot maintenance blocks cannot overlap confirmed bookings | F-09 | **Sprint 2** | Sprint 2 Backlog | AC-08b / TEST-08b (Planned) | Allocated to Sprint 2 |
 | **NFR-01** | Password hashed with `bcrypt` (salt rounds $\ge 10$) | F-01 | **Sprint 1** | Issue #2 | AC-01d / TEST-01d | Verified via DB Assertions |
-| **NFR-02** | Unauthenticated/unauthorized access yields HTTP 401/403 $\le 50$ms | F-01, F-05 | **Sprint 1** | Issue #2, #6 | AC-01b, AC-01c / TEST-01b, TEST-01c | Verified via Supertest Suite |
+| **NFR-02** | Unauthenticated/unauthorized access yields HTTP 401/403 | F-01, F-05 | **Sprint 1** | Issue #2, #6 | AC-01b, AC-01c / TEST-01b, TEST-01c | Verified via Supertest Suite |
 | **NFR-03** | Multi-slot bookings execute inside ACID transaction | F-04 | **Sprint 1** | Issue #4 | AC-04f / TEST-04f | Verified via Fault Injection |
 | **NFR-04** | Availability query latency under 200 ms with 50 bookings | F-03 | **Sprint 2** | Sprint 2 Backlog | AC-03b / TEST-03b (Planned) | Allocated to Sprint 2 |
 | **NFR-05** | Reproducible container execution and restart durability | F-14 | **Lab 5** | Lab 5 Backlog | Lab 5 Checkpoint | Allocated to Lab 5 |

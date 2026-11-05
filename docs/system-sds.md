@@ -201,8 +201,9 @@ model BookingSlot {
   slotIndex   Int      // 0..13
 
   booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Restrict)
 
-  // Critical composite unique constraint: exactly one active slot per room-date-slot
+  // Composite unique constraint: exactly one active booking slot per room-date-slot
   @@unique([roomId, bookingDate, slotIndex])
   @@index([bookingDate])
   @@map("booking_slots")
@@ -232,7 +233,11 @@ model RoomBlock {
   * ...
   * Slot 13: 23:00–24:00
 * **Data Invariant:** For all `BookingSlot` records, `BookingSlot.roomId` and `BookingSlot.bookingDate` must strictly equal the parent `Booking.roomId` and `Booking.bookingDate`. The application service layer transactionally validates and enforces this invariant upon record creation.
-* **Cross-Table Conflict Prevention:** `BookingSlot` enforces `@@unique([roomId, bookingDate, slotIndex])` within confirmed bookings, and `RoomBlock` enforces `@@unique([roomId, blockDate, slotIndex])` within maintenance blocks. To prevent cross-table collisions, `BookingService` and `BlockService` verify that no active records exist in the opposing table within an atomic transaction.
+* **Cross-Table Concurrency Protection Strategy:** While separate composite unique constraints enforce uniqueness within `BookingSlot` (`@@unique([roomId, bookingDate, slotIndex])`) and `RoomBlock` (`@@unique([roomId, blockDate, slotIndex])`) independently, cross-table collisions under PostgreSQL's default `READ COMMITTED` isolation level are eliminated using a pessimistic row-level lock on the parent `Room` record:
+  ```sql
+  SELECT * FROM rooms WHERE id = $targetRoomId FOR UPDATE;
+  ```
+  By executing this pessimistic lock within `prisma.$transaction` at the inception of both booking and block operations, any concurrent operations claiming slots for the same room are serialized at the database level. Conflicting claims are guaranteed to observe the committed state of the competing transaction and fail safely with HTTP 409 `SLOT_CONFLICT`.
 * **Server-Calculated Availability Query:**
   When `GET /api/availability?date=YYYY-MM-DD` is executed, the server:
   1. Queries all active rooms from `Room`.
@@ -242,16 +247,9 @@ model RoomBlock {
 * **Cancellation Lifecycle (Sprint 2):**
   When a booking transitions to `CANCELLED`, its associated `BookingSlot` records are deleted within an atomic transaction. The parent `Booking` status remains `CANCELLED` for auditing, and the physical slots are immediately freed.
 
-### 2.4 Pre-Seeded Dataset
-The seed script (`npm run prisma:seed`) idempotently provisions:
-* **Staff User:** `staff@singslot.local` / `Pass1234!` (`role: STAFF`)
-* **Customer 1:** `customer1@singslot.local` / `Pass1234!` (`role: CUSTOMER`)
-* **Customer 2:** `customer2@singslot.local` / `Pass1234!` (`role: CUSTOMER`)
-* **Rooms (9 units):**
-  * Small (Max 4): `S01`, `S02`, `S03`
-  * Medium (Max 8): `M01`, `M02`, `M03`
-  * Large (Max 12): `L01`, `L02`, `L03`
-* **Pre-existing Reservation:** Room `S01` has Slot 3 (13:00–14:00) pre-reserved on test dates to provide a reproducible target for contiguous rejection test `TEST-04b`.
+### 2.4 Seed Dataset vs. Deterministic Test Fixtures
+* **Idempotent Seed Script (`npm run prisma:seed`):** Provisions exclusively the 3 demo user accounts and 9 rooms with bcrypt password hashes. It does **not** insert mock reservations, keeping development and demo environments clean and predictable.
+* **Deterministic Test Fixtures:** Automated test suites requiring pre-occupied slots (such as `TEST-04b` testing contiguous conflict rejection) programmatically create and clean up their own isolated reservations on a designated test date (`2026-11-10`) during test lifecycle hooks (`beforeAll`/`afterAll`), ensuring clean decoupling from production-like demo data.
 
 ---
 

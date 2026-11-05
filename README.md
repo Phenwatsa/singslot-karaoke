@@ -2,7 +2,7 @@
 
 > **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 > **Topic 1:** Appointment and Scheduling System  
-> **Team:** 2 Students (@Phenwatsa & Teammate)  
+> **Team:** 2 Students (@Phenwatsa & @lephirada)  
 > **Status:** Sprint 1 — The Golden Booking Slice (Deliverable 1)  
 
 ---

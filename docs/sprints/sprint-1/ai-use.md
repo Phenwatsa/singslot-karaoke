@@ -18,6 +18,7 @@
 | **6** | **Database Migration & Idempotent Seed:** Ensure clean clone setup from an empty database without password overwrite. | Antigravity AI / Gemini 3.8 Flash | Generated committed migration `20261105000000_init` and idempotent `seed.ts` logic that preserves existing bcrypt hashes across repeated runs. |
 | **7** | **Issue #2 Scope & RBAC Architecture Breakdown:** Deconstruct authentication specifications, JWT claims, bcrypt verification, and automated test suite. | Antigravity AI / Gemini 3.8 Flash | Defined implementation plan for `POST /api/auth/login`, `logout`, `me`, RBAC middlewares (`verifyToken`, `requireRole`), and Supertest suite for `TEST-01` through `TEST-01e`. |
 | **8** | **JWT Secret Hardening & Fail-Fast Refactoring:** Remediate peer review finding on hardcoded fallback secret by centralizing configuration and enforcing fail-fast validation. | Antigravity AI / Gemini 3.8 Flash | Created `server/src/config/jwt.ts` without fallback defaults, enforced runtime fail-fast on boot in `server.ts`, unified token signing and verification, and added automated security tests. |
+| **9** | **Environment Template Sanitization & Key Generation Guidance:** Eliminate exposed example JWT secret from template configuration and document generation procedure. | Antigravity AI / Gemini 3.8 Flash | Cleared `JWT_SECRET` in `server/.env.example` to an empty placeholder with explicit developer comments, and updated `README.md` with instructions to generate random 256-bit keys using `openssl rand -base64 32`. |
 
 ---
 

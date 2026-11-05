@@ -68,7 +68,9 @@ createdb singslot_dev
 ### 4. Configure Environment Variables
 ```bash
 cp server/.env.example server/.env
-# Verify DATABASE_URL in server/.env matches your PostgreSQL username and password
+# 1. Verify DATABASE_URL in server/.env matches your PostgreSQL username and password
+# 2. Configure JWT_SECRET in server/.env with a unique random secret (e.g., generate via `openssl rand -base64 32`).
+#    Note: The server enforces fail-fast validation and will abort startup if JWT_SECRET is missing or blank.
 ```
 
 ### 5. Run Database Migrations & Idempotent Seed

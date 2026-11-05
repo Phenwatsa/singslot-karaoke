@@ -86,27 +86,50 @@ export const App: React.FC = () => {
   }, []);
 
   // Fetch Server-Calculated Availability when selectedDate changes (F-03, AC-03)
+  // Protected with AbortController and isCurrent guard to eliminate stale race conditions
   useEffect(() => {
     if (!selectedDate) return;
+
+    const controller = new AbortController();
+    let isCurrent = true;
 
     const loadAvailability = async () => {
       setIsLoadingAvailability(true);
       try {
-        const res = await fetch(`/api/availability?date=${selectedDate}`);
+        const res = await fetch(`/api/availability?date=${selectedDate}`, {
+          signal: controller.signal
+        });
         if (res.ok) {
           const data: AvailabilityResponse = await res.json();
-          if (data.success && data.rooms) {
+          if (isCurrent && data.success && data.rooms) {
             setAvailability(data.rooms);
           }
+        } else {
+          if (isCurrent) {
+            console.warn(`Availability query failed with HTTP status ${res.status}`);
+          }
         }
-      } catch (err) {
-        console.warn('Failed to fetch availability for date', selectedDate, err);
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          // Normal abort when user changes dates rapidly; ignore stale response
+          return;
+        }
+        if (isCurrent) {
+          console.warn('Failed to fetch availability for date', selectedDate, err);
+        }
       } finally {
-        setIsLoadingAvailability(false);
+        if (isCurrent) {
+          setIsLoadingAvailability(false);
+        }
       }
     };
 
     loadAvailability();
+
+    return () => {
+      isCurrent = false;
+      controller.abort();
+    };
   }, [selectedDate]);
 
   const handleNavigate = (route: NavRoute) => {

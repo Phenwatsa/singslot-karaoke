@@ -26,9 +26,21 @@ export interface RoomAvailability {
   slots: SlotAvailability[];
 }
 
+export interface RoomTierGroup {
+  tier: RoomType;
+  displayName: string;
+  capacity: number;
+  rooms: Room[];
+}
+
 export interface RoomCatalogResponse {
   success: boolean;
   rooms: Room[];
+  tiers?: {
+    SMALL: RoomTierGroup;
+    MEDIUM: RoomTierGroup;
+    LARGE: RoomTierGroup;
+  };
 }
 
 export interface AvailabilityResponse {

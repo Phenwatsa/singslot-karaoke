@@ -4,7 +4,19 @@ import { prisma } from '../src/prisma';
 import { BookingStatus, BookingChannel } from '@prisma/client';
 
 describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => {
-  const TEST_DATE = '2026-11-10';
+  // Dynamically compute a future date string (14 days ahead) in Asia/Bangkok timezone
+  const getFutureBangkokDateString = (daysAhead = 14): string => {
+    const now = new Date();
+    const future = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(future);
+  };
+
+  const TEST_DATE = getFutureBangkokDateString(14);
   const FIXTURE_BOOKING_CODE = 'TEST-FIX-SLOT3';
 
   beforeAll(async () => {
@@ -88,7 +100,7 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
 
     // Verify presence of all 9 seeded room numbers
     const roomNumbers = rooms.map((r: any) => r.roomNumber);
-    expect(roomNumbers).toEqual([
+    expect([...roomNumbers].sort()).toEqual([
       'L01', 'L02', 'L03',
       'M01', 'M02', 'M03',
       'S01', 'S02', 'S03'
@@ -107,6 +119,22 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
 
     expect(largeRooms.length).toBe(3);
     largeRooms.forEach((r: any) => expect(r.capacity).toBe(12));
+
+    // Verify API returns grouped tiers matching In-Scope specification
+    expect(res.body.tiers).toBeDefined();
+    expect(res.body.tiers.SMALL.rooms.length).toBe(3);
+    expect(res.body.tiers.SMALL.capacity).toBe(4);
+    expect(res.body.tiers.MEDIUM.rooms.length).toBe(3);
+    expect(res.body.tiers.MEDIUM.capacity).toBe(8);
+    expect(res.body.tiers.LARGE.rooms.length).toBe(3);
+    expect(res.body.tiers.LARGE.capacity).toBe(12);
+
+    // Verify ordering by tier: S01..S03 (4 pax), M01..M03 (8 pax), L01..L03 (12 pax)
+    expect(rooms.map((r: any) => r.roomNumber)).toEqual([
+      'S01', 'S02', 'S03',
+      'M01', 'M02', 'M03',
+      'L01', 'L02', 'L03'
+    ]);
   });
 
   /**
@@ -126,24 +154,33 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
     expect(s01).toBeDefined();
     expect(s01.slots.length).toBe(14);
 
-    // Slot 3 must be occupied (isAvailable: false)
+    // Slot 3 must be occupied (isAvailable: false, isOccupied: true, isPast: false)
     const slot3 = s01.slots.find((s: any) => s.slotIndex === 3);
     expect(slot3).toBeDefined();
     expect(slot3.timeRange).toBe('13:00 - 14:00');
     expect(slot3.isAvailable).toBe(false);
+    expect(slot3.isOccupied).toBe(true);
+    expect(slot3.isPast).toBe(false);
 
-    // All other 13 slots in S01 must be available (isAvailable: true)
+    // Verify all slots on this future date are not marked as past
+    s01.slots.forEach((s: any) => {
+      expect(s.isPast).toBe(false);
+    });
+
+    // All other 13 slots in S01 must be unoccupied and available
     const otherSlots = s01.slots.filter((s: any) => s.slotIndex !== 3);
     expect(otherSlots.length).toBe(13);
     otherSlots.forEach((s: any) => {
+      expect(s.isOccupied).toBe(false);
       expect(s.isAvailable).toBe(true);
     });
 
-    // Unbooked room (e.g. S02) must have all 14 slots available
+    // Unbooked room (e.g. S02) must have all 14 slots available and not in past
     const s02 = res.body.rooms.find((r: any) => r.roomNumber === 'S02');
     expect(s02).toBeDefined();
     expect(s02.slots.length).toBe(14);
     s02.slots.forEach((s: any) => {
+      expect(s.isPast).toBe(false);
       expect(s.isAvailable).toBe(true);
     });
   });

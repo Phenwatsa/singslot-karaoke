@@ -122,14 +122,14 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             ? 'Closed (Time has elapsed / past)'
                             : isOccupied
                             ? 'Occupied / Booked'
-                            : 'Open (Available for reservation)'
+                            : 'Open (Available • Booking engine activates in Issue #4)'
                         }`}
                         className={`group relative flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all ${
                           isClosed
                             ? 'border-purple-100/80 bg-purple-50/40 text-purple-400/80 cursor-not-allowed'
                             : isOccupied
                             ? 'border-pink-200 bg-pink-50/90 text-pink-700 cursor-not-allowed shadow-sm shadow-pink-100/30'
-                            : 'border-cyan-200/90 bg-cyan-50/80 text-cyan-800 hover:bg-cyan-100 hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-100/50 cursor-pointer shadow-sm'
+                            : 'border-cyan-200/90 bg-cyan-50/80 text-cyan-800 hover:bg-cyan-100/80 hover:border-cyan-300 shadow-xs cursor-default'
                         }`}
                       >
                         {isClosed ? (

@@ -12,6 +12,9 @@ dist/
 build/
 .next/
 out/
+*.tsbuildinfo
+client/vite.config.js
+client/vite.config.d.ts
 
 # Environment Variables & Secrets
 .env

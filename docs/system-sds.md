@@ -1,49 +1,46 @@
 # System-Level Software Design Specification (SDS)
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
-**Document Version:** 1.0.0  
+**Document Version:** 1.2.0 (Rigorous Engineering Baseline)  
 **Date:** November 2026  
 
 ---
 
 ## 1. System Architecture & Tech Stack
 
-SingSlot adopts a **Decoupled Full-Stack Architecture** composed of three distinct logical tiers communicating over a RESTful JSON interface:
+SingSlot implements a **Decoupled Full-Stack Architecture** composed of three distinct logical tiers communicating over a RESTful JSON interface:
 
 ```
 +-----------------------------------------------------------------------+
 |                             Client Layer                              |
 |   React (Vite) + TypeScript + Tailwind CSS + Lucide Icons             |
+|   - Centralized Layout Shell: AppLayout, PageHeader, GlassCard        |
 |   - Customer Portal: Catalog, Availability Grid, Online Booking, My Bookings |
-|   - Staff Cashier Portal: Master Schedule, Walk-in Counter Form       |
+|   - Staff Cashier Portal: Master Schedule Grid                        |
 +----------------------------------+------------------------------------+
                                    | HTTP / HTTPS (RESTful JSON API)
                                    v
 +----------------------------------+------------------------------------+
 |                       API & Application Layer                         |
 |   Node.js + Express.js (TypeScript)                                   |
-|   - Auth & RBAC Middleware (JWT Bearer Token verification)            |
+|   - Auth & RBAC Middleware: verifyToken, requireRole('STAFF')         |
 |   - Domain Services: BookingService, AvailabilityService, RoomService  |
-|   - Conflict Validation & Concurrency Enforcement Engine              |
+|   - Validation & Concurrency Enforcement Engine                       |
 +----------------------------------+------------------------------------+
                                    | Prisma ORM (Type-Safe Data Access)
                                    v
 +----------------------------------+------------------------------------+
 |                            Data Layer                                 |
-|   PostgreSQL Relational Database                                      |
-|   - ACID Transactions for multi-slot allocation                       |
-|   - Composite Unique Index: [roomId, bookingDate, slotIndex]          |
+|   PostgreSQL Relational Database (Primary Authoritative Engine)       |
+|   - ACID Transactions via prisma.$transaction                         |
+|   - Composite Unique Constraints: [roomId, bookingDate, slotIndex]    |
 +-----------------------------------------------------------------------+
 ```
 
 ### 1.1 Stack Selection & Rationale
-* **Frontend:** `React` with `TypeScript` and `Tailwind CSS` facilitates component modularity, rapid construction of reactive time-slot matrices, and expressive gradient styling.
-* **Backend:** `Node.js` with `Express.js` provides a lightweight, non-blocking asynchronous runtime ideal for I/O-bound booking queries, role enforcement, and input sanitization.
-* **Database & ORM:** `PostgreSQL` coupled with `Prisma ORM` guarantees ACID compliance and composite unique index enforcement to eradicate double-booking anomalies at the database level.
-
-### 1.2 Business Rule Enforcement Boundaries
-* **Client-Side Validation (Advisory):** Provides immediate user feedback (e.g., preventing selection $>5$ hours, disabling occupied slot buttons).
-* **Server-Side Validation (Authoritative):** All business rules (continuous availability, capacity checks, past-time boundaries, and authentication) are independently validated on the server. Conflicting requests are terminated before persisting state.
+* **Primary Database:** **PostgreSQL** is established as the sole primary database engine to support ACID transaction isolation levels, row-level locking, and direct compatibility with Lab 5 Docker/GCP deployment.
+* **Backend:** `Node.js + Express.js` provides lightweight, asynchronous request routing, strict validation pipelines, and authoritative business rule enforcement.
+* **Frontend:** `React (Vite) + Tailwind CSS` delivers instant startup times and minimal memory footprint (<100MB) suited for MacBook M1 8GB RAM, while supporting modular layout components.
 
 ---
 
@@ -55,8 +52,8 @@ SingSlot adopts a **Decoupled Full-Stack Architecture** composed of three distin
 erDiagram
     USER ||--o{ BOOKING : places
     ROOM ||--o{ BOOKING : reserved_for
-    ROOM ||--o{ ROOM_SLOT : has_availability
-    BOOKING ||--|{ BOOKING_SLOT : contains
+    ROOM ||--o{ ROOM_BLOCK : blocks
+    BOOKING ||--|{ BOOKING_SLOT : allocates
 
     USER {
         string id PK
@@ -79,11 +76,11 @@ erDiagram
 
     BOOKING {
         string id PK
-        string bookingCode UK "e.g., BK-20261108-001"
+        string bookingCode UK "e.g., BK-20261110-001"
         string userId FK
         string roomId FK
-        date bookingDate
-        int startSlot "1..14 (10:00=1)"
+        string bookingDate "YYYY-MM-DD (Asia/Bangkok)"
+        int startSlot "0..13 (0=10:00)"
         int durationHours "1..5"
         int partySize
         string channel "ONLINE | WALK_IN"
@@ -98,88 +95,217 @@ erDiagram
         string id PK
         string bookingId FK
         string roomId FK
-        date bookingDate
-        int slotIndex "1..14"
+        string bookingDate "YYYY-MM-DD"
+        int slotIndex "0..13"
+    }
+
+    ROOM_BLOCK {
+        string id PK
+        string roomId FK
+        string blockDate "YYYY-MM-DD"
+        int slotIndex "0..13"
+        string reason
+        datetime createdAt
     }
 ```
 
-### 2.2 Critical Data Constraints & Concurrency Safeguards
-* **Composite Unique Constraint:** To guarantee zero overlapping bookings under concurrent load, the `BOOKING_SLOT` entity enforces:
-  ```prisma
-  @@unique([roomId, bookingDate, slotIndex])
-  ```
-  Any competing transaction attempting to insert a duplicate room-date-slot tuple is immediately rejected by PostgreSQL with a unique constraint violation error (P2002), mapped by Express to HTTP 409 Conflict.
-* **Transactional Multi-Slot Allocation:** Booking requests covering multiple hours are wrapped in `prisma.$transaction`. Either all requested slots are allocated or the entire operation rolls back.
+### 2.2 Complete Prisma Schema Definition
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-### 2.3 Reproducible Seed Data
-The database seed script (`npm run prisma:seed`) populates:
-* **Staff Account:** `staff@singslot.local` / `Pass1234!` (`role: "STAFF"`)
-* **Customer Accounts:**
-  * `alice@singslot.local` / `Pass1234!` (`role: "CUSTOMER"`)
-  * `bob@singslot.local` / `Pass1234!` (`role: "CUSTOMER"`)
-* **Room Fleet (9 units):**
-  * Small: `S01`, `S02`, `S03` (Capacity: 4)
-  * Medium: `M01`, `M02`, `M03` (Capacity: 8)
-  * Large: `L01`, `L02`, `L03` (Capacity: 12)
-* **Pre-existing Reservation:** Room `S01` has Slot 4 (13:00–14:00) pre-reserved on test dates to verify the contiguous slot rejection rule (`TEST-04b`).
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CUSTOMER
+  STAFF
+}
+
+enum RoomType {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum BookingChannel {
+  ONLINE
+  WALK_IN
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         Role      @default(CUSTOMER)
+  createdAt    DateTime  @default(now())
+  bookings     Booking[]
+
+  @@map("users")
+}
+
+model Room {
+  id          String        @id @default(uuid())
+  roomNumber  String        @unique
+  type        RoomType
+  capacity    Int
+  description String?
+  isActive    Boolean       @default(true)
+  bookings    Booking[]
+  blocks      RoomBlock[]
+
+  @@map("rooms")
+}
+
+model Booking {
+  id            String         @id @default(uuid())
+  bookingCode   String         @unique
+  userId        String
+  roomId        String
+  bookingDate   String         // Format: YYYY-MM-DD (Asia/Bangkok)
+  startSlot     Int            // 0..13
+  durationHours Int            // 1..5
+  partySize     Int
+  channel       BookingChannel @default(ONLINE)
+  customerName  String
+  customerPhone String?
+  status        BookingStatus  @default(CONFIRMED)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  slots         BookingSlot[]
+
+  @@index([bookingDate])
+  @@index([userId])
+  @@index([roomId])
+  @@map("bookings")
+}
+
+model BookingSlot {
+  id          String   @id @default(uuid())
+  bookingId   String
+  roomId      String
+  bookingDate String   // Format: YYYY-MM-DD
+  slotIndex   Int      // 0..13
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  // Composite unique constraint: exactly one active booking slot per room-date-slot
+  @@unique([roomId, bookingDate, slotIndex])
+  @@index([bookingDate])
+  @@map("booking_slots")
+}
+
+model RoomBlock {
+  id        String   @id @default(uuid())
+  roomId    String
+  blockDate String   // Format: YYYY-MM-DD
+  slotIndex Int      // 0..13
+  reason    String?
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, blockDate, slotIndex])
+  @@index([blockDate])
+  @@map("room_blocks")
+}
+```
+
+### 2.3 Slot Identity, Invariants & Availability Calculation
+* **Timezone & Granularity:** All booking calculations occur in the establishment's local timezone (`Asia/Bangkok`, ICT, UTC+7).
+* **Slot Mapping (0..13):**
+  * Slot 0: 10:00–11:00
+  * Slot 1: 11:00–12:00
+  * ...
+  * Slot 13: 23:00–24:00
+* **Data Invariant:** For all `BookingSlot` records, `BookingSlot.roomId` and `BookingSlot.bookingDate` must strictly equal the parent `Booking.roomId` and `Booking.bookingDate`. The application service layer transactionally validates and enforces this invariant upon record creation.
+* **Cross-Table Concurrency Protection Strategy:** While separate composite unique constraints enforce uniqueness within `BookingSlot` (`@@unique([roomId, bookingDate, slotIndex])`) and `RoomBlock` (`@@unique([roomId, blockDate, slotIndex])`) independently, cross-table collisions under PostgreSQL's default `READ COMMITTED` isolation level are eliminated using a pessimistic row-level lock on the parent `Room` record:
+  ```sql
+  SELECT * FROM rooms WHERE id = $targetRoomId FOR UPDATE;
+  ```
+  By executing this pessimistic lock within `prisma.$transaction` at the inception of both booking and block operations, any concurrent operations claiming slots for the same room are serialized at the database level. Conflicting claims are guaranteed to observe the committed state of the competing transaction and fail safely with HTTP 409 `SLOT_CONFLICT`.
+* **Server-Calculated Availability Query:**
+  When `GET /api/availability?date=YYYY-MM-DD` is executed, the server:
+  1. Queries all active rooms from `Room`.
+  2. Queries all `BookingSlot` records for the date where the parent `Booking.status == 'CONFIRMED'`.
+  3. Queries all `RoomBlock` records for the date.
+  4. Maps each room to 14 slots, setting `isAvailable: false` if a matching slot index exists in active `BookingSlot` or `RoomBlock`, otherwise `true`.
+* **Cancellation Lifecycle (Sprint 2):**
+  When a booking transitions to `CANCELLED`, its associated `BookingSlot` records are deleted within an atomic transaction. The parent `Booking` status remains `CANCELLED` for auditing, and the physical slots are immediately freed.
+
+### 2.4 Seed Dataset vs. Deterministic Test Fixtures
+* **Idempotent Seed Script (`npm run prisma:seed`):** Provisions exclusively the 3 demo user accounts and 9 rooms with bcrypt password hashes. It does **not** insert mock reservations, keeping development and demo environments clean and predictable.
+* **Deterministic Test Fixtures:** Automated test suites requiring pre-occupied slots (such as `TEST-04b` testing contiguous conflict rejection) programmatically create and clean up their own isolated reservations on a designated test date (`2026-11-10`) during test lifecycle hooks (`beforeAll`/`afterAll`), ensuring clean decoupling from production-like demo data.
 
 ---
 
-## 3. UI, API & Access Conventions
+## 3. UI, API & Security Conventions
 
 ### 3.1 Role & Permission Matrix
 
-| Operation / Endpoint | Anonymous | Customer | Staff | Record-Level Ownership Rule |
-|---|:---:|:---:|:---:|---|
-| `POST /api/auth/login` | Allowed | Allowed | Allowed | Public authentication |
-| `POST /api/auth/register` | Allowed | - | - | Public customer onboarding |
-| `GET /api/auth/me` | Blocked | Allowed | Allowed | Self profile inspection |
-| `GET /api/rooms` | Allowed | Allowed | Allowed | Public catalog query |
-| `GET /api/availability` | Allowed | Allowed | Allowed | Public schedule inspection |
-| `POST /api/bookings/online` | Blocked | Allowed | Blocked | Customer submits online reservation (`userId == token.sub`) |
-| `POST /api/bookings/walk-in` | Blocked | Blocked | Allowed | Staff creates on-premise walk-in entry |
-| `GET /api/bookings/my` | Blocked | Allowed | Blocked | Customer accesses strictly their own reservations |
-| `GET /api/bookings/master` | Blocked | Blocked | Allowed | Staff inspects all bookings across all rooms |
-| `PATCH /api/bookings/:id/cancel` | Blocked | Allowed | Allowed | Customers may cancel only their own bookings; Staff may cancel any *(Sprint 2)* |
+| Endpoint | Method | Anonymous | Customer | Staff | Ownership / Access Guard Rule |
+|---|:---:|:---:|:---:|:---:|---|
+| `/api/auth/login` | POST | Allowed | Allowed | Allowed | Public authentication endpoint |
+| `/api/auth/logout` | POST | Blocked | Allowed | Allowed | Discards token on client; server returns 200 |
+| `/api/auth/me` | GET | Blocked | Allowed | Allowed | Returns authenticated caller's identity |
+| `/api/rooms` | GET | Allowed | Allowed | Allowed | Public room fleet query |
+| `/api/availability` | GET | Allowed | Allowed | Allowed | Public server-calculated availability |
+| `/api/bookings/online` | POST | Blocked | Allowed | Blocked | Customer submits online reservation (`userId == req.user.id`) |
+| `/api/bookings/my` | GET | Blocked | Allowed | Blocked | Returns strictly reservations where `userId == req.user.id` |
+| `/api/bookings/:id` | GET | Blocked | Allowed | Allowed | **Ownership Check:** Returns 200 if `booking.userId == req.user.id` OR `req.user.role == 'STAFF'`; otherwise returns HTTP 403 Forbidden |
+| `/api/bookings/master` | GET | Blocked | Blocked | Allowed | Staff inspects all bookings across all rooms |
 
-### 3.2 Token Lifecycle & Authentication Mechanics
-1. **Password Hashing:** Stored credentials are salted and hashed using `bcryptjs` with 10 rounds.
-2. **Token Issuance:** Upon successful authentication, the server emits a signed JWT containing payload: `{ sub: userId, role: "CUSTOMER" | "STAFF", email: string }`.
-3. **Token Transmission & Expiry:** Clients submit tokens via the standard `Authorization: Bearer <token>` header. Tokens expire after 8 hours.
-4. **Session Termination (Logout):** Client purges the stored token from storage; subsequent requests fail authorization checks.
+### 3.2 Authentication & Session Lifecycle
+1. **Password Verification:** Passwords are verified against `passwordHash` using `bcrypt.compare`.
+2. **Token Issuance:** Upon authentication, the server signs a JWT containing payload: `{ sub: user.id, email: user.email, role: user.role }` with an 8-hour lifetime (`expiresIn: '8h'`).
+3. **Session Transport:** Client transmits tokens via HTTP header: `Authorization: Bearer <token>`.
+4. **Logout Semantics:** `POST /api/auth/logout` requires a valid token and responds with `{ "success": true, "message": "Logged out successfully" }`. The client clears the token from browser storage. *(Documented limitation: In Sprint 1, stateless JWT tokens expire after 8 hours; server-side token revocation tables are scheduled for Sprint 3)*.
 
-### 3.3 API Conventions & Error Formats
-* **Standard Success Format (HTTP 200 / 201):**
-  ```json
-  {
-    "success": true,
-    "data": { ... }
+### 3.3 Standard API Error Responses
+All endpoints return consistent JSON error envelopes:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SLOT_CONFLICT",
+    "message": "One or more requested slots are already occupied."
   }
-  ```
-* **Standard Error Format (HTTP 400 / 401 / 403 / 409):**
-  ```json
-  {
-    "success": false,
-    "error": {
-      "code": "SLOT_CONFLICT",
-      "message": "One or more selected slots are already booked."
-    }
-  }
-  ```
+}
+```
+
+* **Standard Error Codes:**
+  * `400 Bad Request`: `INVALID_INPUT`, `CANNOT_BOOK_PAST_SLOT`, `EXCEEDS_CAPACITY`, `INVALID_DURATION`
+  * `401 Unauthorized`: `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`
+  * `403 Forbidden`: `FORBIDDEN`
+  * `404 Not Found`: `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`
+  * `409 Conflict`: `SLOT_CONFLICT`, `CONCURRENT_LOCK_FAILED`
 
 ---
 
 ## 4. Configuration & Deployment Design
 
 ### 4.1 Environment Configuration
-Configuration is externalized through environment variables (committed as `.env.example`, with actual `.env` git-ignored):
-* `PORT`: Server listening port (default: `5001`).
-* `DATABASE_URL`: PostgreSQL connection string.
-* `JWT_SECRET`: Cryptographic signing key for token verification.
-* `NODE_ENV`: Runtime mode (`development`, `test`, `production`).
+Externalized in `.env` (git-ignored, `.env.example` committed):
+* `PORT`: Server port (default: `5001`).
+* `DATABASE_URL`: `postgresql://postgres:postgres@localhost:5432/singslot_dev`
+* `JWT_SECRET`: 256-bit cryptographic signing secret.
+* `NODE_ENV`: `development` | `test` | `production`
 
-### 4.2 Docker Containerization & Cloud Deployment Plan (Lab 5 Alignment)
-* The architecture separates frontend and backend containers:
-  * **Backend Container:** Multi-stage Node.js container with Prisma engine dependencies.
-  * **Frontend Container:** Static build served via an Nginx alpine container.
-* **Persistent Storage:** Cloud SQL or a detached persistent database volume ensures data survives application restarts or redeployments.
+### 4.2 Docker Packaging Plan (Lab 5 Alignment)
+* Standalone backend container with PostgreSQL connection string injection.
+* React client containerized and served via Nginx.
+* Fully prepared for GCP Cloud Run and Cloud SQL deployment in Lab 5.

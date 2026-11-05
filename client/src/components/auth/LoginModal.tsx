@@ -75,7 +75,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-md">
-        <GlassCard className="relative border-slate-200 bg-white/95 shadow-2xl">
+        <GlassCard className="relative border-pink-200/90 bg-white/95 shadow-2xl shadow-purple-200/50">
           {/* Close button */}
           <button
             onClick={onClose}

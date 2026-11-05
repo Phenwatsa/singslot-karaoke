@@ -8,9 +8,13 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
   const FIXTURE_BOOKING_CODE = 'TEST-FIX-SLOT3';
 
   beforeAll(async () => {
-    // 1. Ensure test fixture cleanup before running tests
+    // 1. Ensure test fixture cleanup before running tests (scoped specifically to fixture bookingCode)
     await prisma.bookingSlot.deleteMany({
-      where: { bookingDate: TEST_DATE }
+      where: {
+        booking: {
+          bookingCode: FIXTURE_BOOKING_CODE
+        }
+      }
     });
     await prisma.booking.deleteMany({
       where: { bookingCode: FIXTURE_BOOKING_CODE }
@@ -55,9 +59,13 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
   });
 
   afterAll(async () => {
-    // Clean up test fixtures to preserve clean state
+    // Clean up test fixtures to preserve clean state (scoped specifically to fixture bookingCode)
     await prisma.bookingSlot.deleteMany({
-      where: { bookingDate: TEST_DATE }
+      where: {
+        booking: {
+          bookingCode: FIXTURE_BOOKING_CODE
+        }
+      }
     });
     await prisma.booking.deleteMany({
       where: { bookingCode: FIXTURE_BOOKING_CODE }

@@ -10,10 +10,11 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', 
   return (
     <div
       onClick={onClick}
-      className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/85 p-6 backdrop-blur-xl shadow-lg shadow-slate-200/50 transition-all duration-200 hover:shadow-xl hover:border-pink-300/60 ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-pink-100/80 bg-white/90 p-6 backdrop-blur-xl shadow-sm shadow-purple-100/30 transition-all duration-200 hover:shadow-md hover:shadow-pink-100/40 hover:border-pink-200 ${className}`}
     >
-      {/* Subtle top glow highlight */}
-      <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-pink-400/10 blur-2xl" />
+      {/* Soft gentle iridescent corner glow highlights */}
+      <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-pink-200/10 blur-2xl" />
+      <div className="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-sky-100/10 blur-2xl" />
       <div className="relative z-10">{children}</div>
     </div>
   );

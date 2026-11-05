@@ -12,6 +12,7 @@ import {
   clearClientSession,
   validateAndRestoreSession
 } from './utils/session';
+import { getBangkokTodayString } from './utils/date';
 import {
   Mic2,
   Calendar,
@@ -24,21 +25,12 @@ import {
 
 type NavRoute = 'booking' | 'my-bookings' | 'staff-schedule' | 'login';
 
-// Default to a deterministic/today date format YYYY-MM-DD
-const getInitialDate = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 export const App: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavRoute>('booking');
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>(getInitialDate());
+  const [selectedDate, setSelectedDate] = useState<string>(getBangkokTodayString());
 
   // Room catalog & availability state
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -194,14 +186,14 @@ export const App: React.FC = () => {
       {/* Interactive Navigation / Feedback Banner */}
       {notice && (
         <div
-          className={`mb-6 flex items-start gap-3 rounded-xl border p-4 shadow-sm ${
+          className={`mb-6 flex items-start gap-3 rounded-2xl border p-4 shadow-sm ${
             notice.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-              : 'border-pink-200 bg-pink-50 text-pink-800'
+              ? 'border-cyan-200 bg-cyan-50/90 text-cyan-900 shadow-cyan-100/40'
+              : 'border-pink-200 bg-pink-50/90 text-pink-900 shadow-pink-100/40'
           }`}
         >
           {notice.type === 'success' ? (
-            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5 text-emerald-600" />
+            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5 text-cyan-600" />
           ) : (
             <Info className="h-5 w-5 shrink-0 mt-0.5 text-pink-600" />
           )}
@@ -218,17 +210,17 @@ export const App: React.FC = () => {
       {/* Active Session Card if Logged In */}
       {user && (
         <div className="mb-8">
-          <GlassCard className="border-pink-200 bg-gradient-to-r from-pink-50/80 via-purple-50/80 to-indigo-50/80 shadow-sm">
+          <GlassCard className="border-pink-200/90 bg-gradient-to-r from-pink-50/90 via-purple-50/80 to-sky-50/80 shadow-md shadow-purple-100/40">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-pink-100 text-pink-600 border border-pink-200">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-purple-100 text-pink-600 border border-pink-200 shadow-sm">
                   <UserIcon className="h-6 w-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-base">{user.fullName}</span>
+                    <span className="font-extrabold text-slate-900 text-base">{user.fullName}</span>
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide ${
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide shadow-sm ${
                         user.role === 'STAFF'
                           ? 'bg-purple-100 text-purple-700 border border-purple-200'
                           : 'bg-pink-100 text-pink-700 border border-pink-200'
@@ -237,13 +229,13 @@ export const App: React.FC = () => {
                       {user.role}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-500">{user.email}</div>
+                  <div className="text-xs text-slate-500 font-medium">{user.email}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 shadow-sm transition-colors"
+                  className="rounded-xl border border-rose-200 bg-white/90 px-3.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 shadow-sm transition-colors"
                 >
                   Terminate Session
                 </button>
@@ -272,41 +264,41 @@ export const App: React.FC = () => {
       {/* Feature Architecture Cards */}
       <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <GlassCard>
-          <div className="flex items-center gap-3 mb-4 text-pink-600">
+          <div className="flex items-center gap-3 mb-4 text-pink-400">
             <Mic2 className="h-6 w-6" />
-            <h3 className="text-lg font-bold text-slate-900">Seeded Fleet (F-02)</h3>
+            <h3 className="text-lg font-bold text-slate-800">Seeded Fleet (F-02)</h3>
           </div>
-          <p className="text-sm text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-500 leading-relaxed font-medium">
             9 private rooms across Small (4 pax), Medium (8 pax), and Large (12 pax) tiers operating 10:00 to 24:00 daily.
           </p>
         </GlassCard>
 
         <GlassCard>
-          <div className="flex items-center gap-3 mb-4 text-purple-600">
+          <div className="flex items-center gap-3 mb-4 text-purple-400">
             <Calendar className="h-6 w-6" />
-            <h3 className="text-lg font-bold text-slate-900">14 Hourly Slots (F-03)</h3>
+            <h3 className="text-lg font-bold text-slate-800">14 Hourly Slots (F-03)</h3>
           </div>
-          <p className="text-sm text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-500 leading-relaxed font-medium">
             Discrete 0-indexed hourly slots (0..13) allowing 1 to 5 contiguous hours with strict zero-overlap locks.
           </p>
         </GlassCard>
 
         <GlassCard>
-          <div className="flex items-center gap-3 mb-4 text-indigo-600">
+          <div className="flex items-center gap-3 mb-4 text-sky-400">
             <ShieldCheck className="h-6 w-6" />
-            <h3 className="text-lg font-bold text-slate-900">Role Isolation (RBAC)</h3>
+            <h3 className="text-lg font-bold text-slate-800">Role Isolation (RBAC)</h3>
           </div>
-          <p className="text-sm text-slate-600 leading-relaxed">
+          <p className="text-sm text-slate-500 leading-relaxed font-medium">
             JWT verification with 8-hour lifetime enforcing CUSTOMER vs. STAFF role boundaries and data privacy.
           </p>
         </GlassCard>
       </div>
 
       <div className="mt-8">
-        <GlassCard className="border-pink-200 bg-pink-50/70 shadow-sm">
+        <GlassCard className="border-pink-100/80 bg-white/80 shadow-xs">
           <div className="flex items-center gap-3">
-            <Sparkles className="h-5 w-5 text-pink-600 animate-pulse" />
-            <span className="text-sm font-medium text-slate-700">
+            <Sparkles className="h-5 w-5 text-pink-400 animate-pulse" />
+            <span className="text-sm font-medium text-slate-600">
               Issue #3 Room Catalog and 14-Slot Availability Matrix active. Ready for online booking engine in Issue #4.
             </span>
           </div>

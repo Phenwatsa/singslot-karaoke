@@ -43,13 +43,13 @@ Acceptance Criteria:
 - [ ] AC-02: Client and Server npm scripts (dev, build, typecheck, test) execute with zero TypeScript errors.
 - [ ] AC-03: Prisma Client generates cleanly, and migrations execute successfully on target PostgreSQL database.
 - [ ] AC-04: npm run prisma:seed populates 3 demo users and 9 rooms with correct bcrypt hashes, roles, and capacities.
-- [ ] AC-05: Seed script is idempotent (running seed multiple times produces identical state without duplicate records).
-- [ ] AC-06: Database constraints enforce uniqueness on bookingCode and room/date/slot in BookingSlot and RoomBlock.
-- [ ] AC-07: Shared layout components (AppLayout, PageHeader, GlassCard) render navigation header, gradient theme, and footer.
+- [ ] AC-05: Seed script is idempotent (running seed multiple times produces identical state without duplicate records or re-hashing passwords; verified via PostgreSQL query evidence).
+- [ ] AC-06: Database constraints enforce uniqueness on bookingCode and room/date/slot in BookingSlot and RoomBlock (statically verified in schema/migration tests; runtime migration verified on PostgreSQL).
+- [ ] AC-07: Shared layout components (AppLayout, PageHeader, GlassCard) conform to design system spec, initialize in unauthenticated shell mode, and expose navigation callback hooks (verified via client structural smoke tests; full interactive DOM render tested in Issue #2/3).
 - [ ] AC-08: Test suite runs with --runInBand without spawning parallel worker processes.
 
 AI Verification Note:
-- Verify build and typecheck commands succeed on both client and server, migrations succeed from clean database, and baseline tests pass.
+- Verify build and typecheck commands succeed on both client and server, migrations succeed from clean database, and baseline tests pass. Attach clean-environment execution logs in PR description.
 ```
 
 ---

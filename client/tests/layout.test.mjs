@@ -8,8 +8,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientRoot = path.resolve(__dirname, '..');
 
-test('Client Layout & UI Component Baseline Verification', async (t) => {
-  await t.test('Layout components exist in client/src/components/layout/', () => {
+test('Client Layout & UI Component Structural Verification (AC-07)', async (t) => {
+  await t.test('Layout template files exist in client/src/components/layout/', () => {
     const layoutDir = path.join(clientRoot, 'src', 'components', 'layout');
     assert.strictEqual(fs.existsSync(layoutDir), true, 'layout directory must exist');
 
@@ -24,7 +24,7 @@ test('Client Layout & UI Component Baseline Verification', async (t) => {
     }
   });
 
-  await t.test('AppLayout provides unified navigation and placeholder contracts', () => {
+  await t.test('AppLayout declares navigation contracts and placeholder hooks', () => {
     const appLayoutPath = path.join(clientRoot, 'src', 'components', 'layout', 'AppLayout.tsx');
     const content = fs.readFileSync(appLayoutPath, 'utf8');
 
@@ -45,6 +45,22 @@ test('Client Layout & UI Component Baseline Verification', async (t) => {
       /onLogout\?:/,
       'AppLayout must support onLogout prop for session management'
     );
+  });
+
+  await t.test('App.tsx initializes in unauthenticated state with wired navigation callbacks', () => {
+    const appPath = path.join(clientRoot, 'src', 'App.tsx');
+    const content = fs.readFileSync(appPath, 'utf8');
+
+    // Unauthenticated baseline (no hardcoded credentials)
+    assert.match(content, /userRole=\{null\}/, 'App.tsx must default to unauthenticated role');
+    assert.match(content, /userName=\{null\}/, 'App.tsx must default to null user name');
+
+    // Navigation and logout handlers wired
+    assert.match(content, /onNavigate=\{handleNavigate\}/, 'App.tsx must wire handleNavigate');
+    assert.match(content, /onLogout=\{handleLogout\}/, 'App.tsx must wire handleLogout');
+
+    // Scaffold notice badge
+    assert.match(content, /Issue #1 Baseline Shell \(Unauthenticated\)/, 'App.tsx must clearly state unauthenticated baseline shell');
   });
 
   await t.test('GlassCard and PageHeader conform to design system spec', () => {

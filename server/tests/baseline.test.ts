@@ -23,7 +23,16 @@ describe('Baseline System Health & API Envelope', () => {
   });
 });
 
-describe('Database Schema & Seed Contract Integrity', () => {
+/**
+ * Database Schema & Migration DDL Contract Integrity (Static Analysis)
+ * 
+ * Verifies that Prisma schema, initial migration DDL, and seed logic statically
+ * enforce core relational constraints and idempotency invariants.
+ * 
+ * Note: Runtime PostgreSQL migration from an empty database and repeated seed idempotency
+ * execution are validated directly against PostgreSQL as documented in AC-03..AC-06 evidence.
+ */
+describe('Database Schema & Migration DDL Contract Integrity (Static Analysis)', () => {
   const schemaPath = path.resolve(__dirname, '../prisma/schema.prisma');
   const seedPath = path.resolve(__dirname, '../prisma/seed.ts');
   const migrationPath = path.resolve(__dirname, '../prisma/migrations/20261105000000_init/migration.sql');

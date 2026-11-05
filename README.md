@@ -33,7 +33,7 @@ All formal software engineering specifications required for CPE 334 Deliverable 
 - **Frontend:** React (Vite) + TypeScript + Tailwind CSS + Lucide Icons (<100MB RAM)
 - **Backend:** Node.js + Express.js (TypeScript) + RESTful JSON API (<80MB RAM)
 - **Persistence:** PostgreSQL via Prisma ORM (Composite Unique Constraints & Pessimistic Row Locking)
-- **Testing:** Supertest + Jest (Server API) & Node Native Test Runner (Client smoke test) with `--runInBand`
+- **Testing:** Supertest + Jest (Server API baseline & static contract checks) & Node Native Test Runner (Client layout structural smoke tests) with `--runInBand`
 
 ---
 
@@ -97,4 +97,4 @@ npm run typecheck
 # Run test suites serially (Single-worker, M1 8GB RAM safe)
 npm test
 ```
-*(Note: Issue #1 runs the server API health/schema baseline tests and client layout smoke tests; interactive feature tests begin in Issue #2 and #3).*
+*(Note: Issue #1 verifies server API health envelopes, schema DDL contracts, and client layout structural smoke tests in an unauthenticated baseline shell. Full database execution evidence is documented in PR #1, and interactive authentication/booking tests begin in Issue #2 and #3).*

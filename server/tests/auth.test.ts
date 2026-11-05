@@ -20,7 +20,11 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
       process.env.JWT_SECRET = '   ';
       expect(() => getJwtSecret()).toThrow('FATAL: JWT_SECRET environment variable is missing or empty.');
     } finally {
-      process.env.JWT_SECRET = originalSecret;
+      if (originalSecret === undefined) {
+        delete process.env.JWT_SECRET;
+      } else {
+        process.env.JWT_SECRET = originalSecret;
+      }
     }
   });
 

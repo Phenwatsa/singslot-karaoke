@@ -5,6 +5,11 @@ import { GlassCard } from './components/layout/GlassCard';
 import { LoginModal } from './components/auth/LoginModal';
 import { User } from './types/auth';
 import {
+  saveClientSession,
+  clearClientSession,
+  validateAndRestoreSession
+} from './utils/session';
+import {
   Mic2,
   Calendar,
   ShieldCheck,
@@ -26,18 +31,24 @@ export const App: React.FC = () => {
     message: string;
   } | null>(null);
 
-  // Load saved session from localStorage on initial render
+  // Load saved session from localStorage and validate active token with /api/auth/me
   useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem('singslot_token');
-      const savedUser = localStorage.getItem('singslot_user');
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+    const restoreSession = async () => {
+      try {
+        const { token: validatedToken, user: validatedUser } = await validateAndRestoreSession();
+        if (validatedToken && validatedUser) {
+          setToken(validatedToken);
+          setUser(validatedUser);
+        } else {
+          setToken(null);
+          setUser(null);
+        }
+      } catch (err) {
+        console.warn('Failed to restore or validate session from localStorage', err);
       }
-    } catch (err) {
-      console.warn('Failed to restore session from localStorage', err);
-    }
+    };
+
+    restoreSession();
   }, []);
 
   const handleNavigate = (route: NavRoute) => {
@@ -72,8 +83,7 @@ export const App: React.FC = () => {
   const handleLoginSuccess = (authenticatedUser: User, receivedToken: string) => {
     setUser(authenticatedUser);
     setToken(receivedToken);
-    localStorage.setItem('singslot_token', receivedToken);
-    localStorage.setItem('singslot_user', JSON.stringify(authenticatedUser));
+    saveClientSession(receivedToken, authenticatedUser);
     setNotice({
       type: 'success',
       message: `Signed in successfully as ${authenticatedUser.fullName} (${authenticatedUser.role})!`
@@ -94,8 +104,7 @@ export const App: React.FC = () => {
       }
     }
 
-    localStorage.removeItem('singslot_token');
-    localStorage.removeItem('singslot_user');
+    clearClientSession();
     setUser(null);
     setToken(null);
     setActiveNav('booking');

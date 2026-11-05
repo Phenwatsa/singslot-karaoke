@@ -37,22 +37,25 @@ describe('Database Schema & Migration DDL Contract Integrity (Static Analysis)',
   const seedPath = path.resolve(__dirname, '../prisma/seed.ts');
   const migrationPath = path.resolve(__dirname, '../prisma/migrations/20261105000000_init/migration.sql');
 
-  it('schema.prisma declares composite unique constraints for slot isolation', () => {
+  it('schema.prisma declares composite unique constraints for slot isolation and unique bookingCode', () => {
     expect(fs.existsSync(schemaPath)).toBe(true);
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
-    // Slot collision prevention unique index
+    // BookingCode uniqueness constraint (AC-06)
+    expect(schema).toMatch(/bookingCode\s+String\s+@unique/);
+    // Slot collision prevention unique index (AC-06)
     expect(schema).toMatch(/@@unique\(\[roomId,\s*bookingDate,\s*slotIndex\]\)/);
-    // RoomBlock collision prevention unique index
+    // RoomBlock collision prevention unique index (AC-06)
     expect(schema).toMatch(/@@unique\(\[roomId,\s*blockDate,\s*slotIndex\]\)/);
     // Explicit relation from BookingSlot to Room
     expect(schema).toMatch(/room\s+Room\s+@relation/);
   });
 
-  it('migration.sql contains PostgreSQL DDL for composite constraints', () => {
+  it('migration.sql contains PostgreSQL DDL for composite constraints and unique bookingCode', () => {
     expect(fs.existsSync(migrationPath)).toBe(true);
     const ddl = fs.readFileSync(migrationPath, 'utf8');
 
+    expect(ddl).toMatch(/CREATE UNIQUE INDEX "bookings_bookingCode_key"/);
     expect(ddl).toMatch(/CREATE UNIQUE INDEX "booking_slots_roomId_bookingDate_slotIndex_key"/);
     expect(ddl).toMatch(/CREATE UNIQUE INDEX "room_blocks_roomId_blockDate_slotIndex_key"/);
     expect(ddl).toMatch(/CREATE TABLE "users"/);

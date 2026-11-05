@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/layout.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/layout.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -18,7 +18,7 @@
 | **AC-05** | Seed idempotency & hash preservation | `server/prisma/seed.ts` | 2 consecutive seed runs; hash unchanged | **PASS** |
 | **AC-06** | Unique constraints enforcement | `server/prisma/schema.prisma`, `migration.sql` | `server/tests/baseline.test.ts` static assertions | **PASS** |
 | **AC-07** | Shared layout shell in unauthenticated state | `client/src/App.tsx`, `client/src/components/layout/` | `client/tests/layout.test.mjs` structural smoke test | **PASS** |
-| **AC-08** | Serial execution (M1 8GB RAM safe) | Root scripts & Jest configuration | Single-worker `--runInBand` test run (<1.5s total) | **PASS** |
+| **AC-08** | Serial execution (M1 8GB RAM safe) | Root scripts, Jest `--runInBand` & Node `--test-concurrency=1` | Single-worker serial execution (<1.5s total) | **PASS** |
 
 ---
 
@@ -120,7 +120,7 @@ Time:        0.948 s
 > npm --prefix client test
 
 > singslot-client@1.0.0 test
-> node --test tests/layout.test.mjs
+> node --test --test-concurrency=1 tests/layout.test.mjs
 
 ▶ Client Layout & UI Component Structural Verification (AC-07)
   ✔ Layout template files exist in client/src/components/layout/ (0.5ms)
@@ -210,15 +210,15 @@ $ npm run prisma:seed
 🎉 Idempotent seeding completed successfully!
 ```
 
-### Step 6.2: Database Query Output after Run 1
+### Step 6.2: Database Query Output after Run 1 (Full Hash & Checksum)
 ```sql
-psql -d singslot_dev -c "SELECT email, role, \"fullName\", substring(\"passwordHash\", 1, 25) AS hash_prefix FROM users ORDER BY email;"
+psql -d singslot_dev -c "SELECT email, role, \"passwordHash\", md5(\"passwordHash\") AS hash_md5 FROM users ORDER BY email;"
 
-          email           |   role   |    fullName    |        hash_prefix        
---------------------------+----------+----------------+---------------------------
- customer1@singslot.local | CUSTOMER | Alice Customer | $2a$10$pvTMdZ3CJ/pWf/wXen
- customer2@singslot.local | CUSTOMER | Bob Customer   | $2a$10$cyD/6GfAFNRitmTEVl
- staff@singslot.local     | STAFF    | Cashier Staff  | $2a$10$f.qPra.ZKtbHi3kObI
+          email           |   role   |                         passwordHash                         |             hash_md5             
+--------------------------+----------+--------------------------------------------------------------+----------------------------------
+ customer1@singslot.local | CUSTOMER | $2a$10$pvTMdZ3CJ/pWf/wXenVoy.UCg33NMLQCJCsmYIKVzr172n7dn3b7i | b1f25fec10ff7b7f20b7ac3fe630628a
+ customer2@singslot.local | CUSTOMER | $2a$10$cyD/6GfAFNRitmTEVlQThOvAcBo.cb0Wr7w5/ov0Ax17O8QEmQQjm | 5383de889f81f5bb42fd97eb4fc4af63
+ staff@singslot.local     | STAFF    | $2a$10$f.qPra.ZKtbHi3kObIjGqOHf7cRmVCQIjHyYb8s6zh7eXJTj7X75a | 3150cc9ba69507e3e93c1a0220849b5c
 (3 rows)
 
 psql -d singslot_dev -c "SELECT count(*) FROM rooms;"
@@ -234,19 +234,36 @@ $ npm run prisma:seed
 🎉 Idempotent seeding completed successfully!
 ```
 
-### Step 6.4: Database Query Output after Run 2 (Before vs After Comparison)
+### Step 6.4: Database Query Output after Run 2 (Full Hash & Checksum Comparison)
 ```sql
-psql -d singslot_dev -c "SELECT email, role, \"fullName\", substring(\"passwordHash\", 1, 25) AS hash_prefix FROM users ORDER BY email;"
+psql -d singslot_dev -c "SELECT email, role, \"passwordHash\", md5(\"passwordHash\") AS hash_md5 FROM users ORDER BY email;"
 
-          email           |   role   |    fullName    |        hash_prefix        
---------------------------+----------+----------------+---------------------------
- customer1@singslot.local | CUSTOMER | Alice Customer | $2a$10$pvTMdZ3CJ/pWf/wXen
- customer2@singslot.local | CUSTOMER | Bob Customer   | $2a$10$cyD/6GfAFNRitmTEVl
- staff@singslot.local     | STAFF    | Cashier Staff  | $2a$10$f.qPra.ZKtbHi3kObI
+          email           |   role   |                         passwordHash                         |             hash_md5             
+--------------------------+----------+--------------------------------------------------------------+----------------------------------
+ customer1@singslot.local | CUSTOMER | $2a$10$pvTMdZ3CJ/pWf/wXenVoy.UCg33NMLQCJCsmYIKVzr172n7dn3b7i | b1f25fec10ff7b7f20b7ac3fe630628a
+ customer2@singslot.local | CUSTOMER | $2a$10$cyD/6GfAFNRitmTEVlQThOvAcBo.cb0Wr7w5/ov0Ax17O8QEmQQjm | 5383de889f81f5bb42fd97eb4fc4af63
+ staff@singslot.local     | STAFF    | $2a$10$f.qPra.ZKtbHi3kObIjGqOHf7cRmVCQIjHyYb8s6zh7eXJTj7X75a | 3150cc9ba69507e3e93c1a0220849b5c
 (3 rows)
 
 psql -d singslot_dev -c "SELECT count(*) FROM rooms;"
  count: 9
 ```
 
-**Conclusion:** Zero duplicate records created; exactly 3 users and 9 rooms preserved; password hash prefixes remain 100% identical.
+**Conclusion:** Zero duplicate records created; exactly 3 users and 9 rooms preserved; full 60-character bcrypt password hashes and MD5 checksums remain 100% identical.
+
+---
+
+## 7. Security Vulnerability Audit & Disclosure (`npm audit`)
+
+As part of the Sprint 1 clean checkout verification (`npm ci`), an automated security audit was executed:
+
+```bash
+$ npm audit
+9 vulnerabilities (7 low, 1 moderate, 1 high)
+```
+
+### Triage & Risk Assessment
+- **High Severity (`deepmerge` prototype pollution GHSA-gcqx-w48m-w2h4):** Transitive dependency imported exclusively via `jest` ➔ `jest-cli` ➔ `jest-config` ➔ `deepmerge` in devDependencies. Used strictly for merging local Jest test configuration objects.
+- **Moderate Severity (`esbuild` dev server request reflection GHSA-67mh-4wv8-2f99):** Transitive dependency of Vite dev server tooling (`vite` ➔ `esbuild`).
+- **Production Impact:** **Zero runtime vulnerability.** None of these packages are bundled or included in production client or server builds (`dist/`).
+- **Remediation Plan:** Running `npm audit fix --force` would introduce breaking downgrades to `jest@25` and `vite@8`. These transitive dev tool advisories are documented as non-blocking technical debt and will be tracked for clean non-breaking dependency resolution in Sprint 2.

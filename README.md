@@ -24,7 +24,7 @@ All formal software engineering specifications required for CPE 334 Deliverable 
 - [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap, video milestones, and Sprint 1 feasibility justification.
 - [**Sprint 1 Engineering Contracts**](./docs/sprints/sprint-1/contracts.md): API specifications, Acceptance Criteria (`AC-01`–`AC-06`), and Software Test Specifications (`TEST-01`–`TEST-06`).
 - [**Team & Agent Working Rules**](./AGENTS.md): Hardware memory guards (M1 8GB RAM), Git protocols, TDD rules, and UI layout conventions.
-- [**AI Assistance Log**](./docs/ai-use.md): Continuous prompt and decision governance log.
+- [**Sprint 1 AI Usage Log & Reflection**](./docs/sprints/sprint-1/ai-use.md): Representative prompt disclosure (Gemini 3.8 Flash) and engineering reflection.
 
 ---
 

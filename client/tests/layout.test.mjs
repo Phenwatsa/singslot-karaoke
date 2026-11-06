@@ -190,6 +190,7 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.match(dateContent, /Asia\/Bangkok/, 'Date utility must use Asia/Bangkok timezone');
     assert.match(dateContent, /getBangkokTodayString/, 'Must export getBangkokTodayString');
     assert.match(dateContent, /isPastBangkokDate/, 'Must export isPastBangkokDate');
+    assert.match(dateContent, /isPastBangkokSlot/, 'Must export isPastBangkokSlot');
   });
 
   await t.test('GlassCard and PageHeader conform to design system spec', () => {

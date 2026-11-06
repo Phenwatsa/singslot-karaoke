@@ -22,3 +22,22 @@ export const isPastBangkokDate = (dateString: string): boolean => {
   const todayInBangkok = getBangkokTodayString();
   return dateString < todayInBangkok;
 };
+
+/**
+ * Checks whether a specific slot on a given date has already started or elapsed in Asia/Bangkok (UTC+7).
+ * Per BR-04: currentServerTime >= slotStartTime
+ */
+export const isPastBangkokSlot = (
+  dateString: string,
+  slotIndex: number,
+  referenceDate: Date = new Date()
+): boolean => {
+  if (isPastBangkokDate(dateString)) return true;
+  const todayInBangkok = getBangkokTodayString();
+  if (dateString > todayInBangkok) return false;
+
+  const slotHour = 10 + slotIndex;
+  const slotIso = `${dateString}T${String(slotHour).padStart(2, '0')}:00:00+07:00`;
+  const slotStartTime = new Date(slotIso).getTime();
+  return referenceDate.getTime() >= slotStartTime;
+};

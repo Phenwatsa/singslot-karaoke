@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../layout/GlassCard';
 import { Room } from '../../types/room';
 import { User } from '../../types/auth';
-import { isPastBangkokDate } from '../../utils/date';
+import { isPastBangkokDate, isPastBangkokSlot } from '../../utils/date';
 import {
   X,
   Calendar,
@@ -95,6 +95,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const endHour = startHour + durationHours;
   const timeRangePreview = `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`;
   const isPastDate = isPastBangkokDate(bookingDate);
+  const isSelectedSlotPast = isPastBangkokSlot(bookingDate, startSlot);
   const exceedsOperatingHours = startSlot + durationHours - 1 > 13;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,6 +109,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
     if (isPastDate) {
       setError('Cannot book reservations for past calendar dates (BR-04).');
+      return;
+    }
+
+    if (isSelectedSlotPast) {
+      setError('Selected start slot has already elapsed today in Asia/Bangkok time (BR-04). Please choose an upcoming open slot.');
       return;
     }
 
@@ -323,11 +329,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     onChange={(e) => setStartSlot(Number(e.target.value))}
                     className="w-full rounded-xl border border-pink-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-purple-400 shadow-xs cursor-pointer"
                   >
-                    {Array.from({ length: 14 }).map((_, idx) => (
-                      <option key={idx} value={idx}>
-                        Slot #{idx} ({10 + idx}:00 - {11 + idx}:00)
-                      </option>
-                    ))}
+                    {Array.from({ length: 14 }).map((_, idx) => {
+                      const isSlotPast = isPastBangkokSlot(bookingDate, idx);
+                      return (
+                        <option key={idx} value={idx} disabled={isSlotPast}>
+                          Slot #{idx} ({10 + idx}:00 - {11 + idx}:00) {isSlotPast ? '(Elapsed)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -390,9 +399,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isLoading || !token || exceedsOperatingHours || isPastDate}
+                  disabled={isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast}
                   className={`w-full rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all cursor-pointer ${
-                    isLoading || !token || exceedsOperatingHours || isPastDate
+                    isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast
                       ? 'bg-slate-300 shadow-none cursor-not-allowed'
                       : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-pink-200'
                   }`}
@@ -405,6 +414,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     ? 'Exceeds Operating Hours'
                     : isPastDate
                     ? 'Cannot Book Past Date'
+                    : isSelectedSlotPast
+                    ? 'Selected Slot Already Elapsed'
                     : `Confirm Reservation (${timeRangePreview})`}
                 </button>
               </div>

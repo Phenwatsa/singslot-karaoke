@@ -258,6 +258,57 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
   });
 
   /**
+   * BR-02 RoomBlock Conflict Verification:
+   * Direct verification that a slot with an active RoomBlock cannot be booked,
+   * returning HTTP 409 SLOT_CONFLICT with zero side-effects in the database.
+   */
+  it('BR-02: booking request overlapping an active RoomBlock is rejected with HTTP 409 SLOT_CONFLICT', async () => {
+    const BLOCK_DATE = getFutureBangkokDateString(22);
+    const blockedSlotIndex = 4;
+
+    // 1. Create a deterministic RoomBlock on BLOCK_DATE for room S01
+    const testBlock = await prisma.roomBlock.create({
+      data: {
+        roomId: roomS01.id,
+        blockDate: BLOCK_DATE,
+        slotIndex: blockedSlotIndex,
+        reason: 'Maintenance block for test'
+      }
+    });
+
+    try {
+      // 2. Customer attempts to book Slot 3 with duration 2 (covering Slot 3 and blocked Slot 4)
+      const res = await request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: BLOCK_DATE,
+          startSlot: 3,
+          durationHours: 2,
+          partySize: 2
+        });
+
+      expect(res.status).toBe(409);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.code).toBe('SLOT_CONFLICT');
+      expect(res.body.error.message).toContain('already occupied');
+
+      // 3. Confirm zero bookings were created on BLOCK_DATE
+      const bookingsOnBlockDate = await prisma.booking.count({
+        where: { roomId: roomS01.id, bookingDate: BLOCK_DATE }
+      });
+      expect(bookingsOnBlockDate).toBe(0);
+    } finally {
+      // Clean up the created test block
+      await prisma.roomBlock.delete({
+        where: { id: testBlock.id }
+      });
+    }
+  });
+
+  /**
    * TEST-04c (AC-04c, BR-04):
    * Past date/slot reservation request is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT.
    */

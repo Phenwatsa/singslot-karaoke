@@ -29,21 +29,6 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
   const createdBookingIds: string[] = [];
 
   beforeAll(async () => {
-    // 0. Pre-clean stale test records from any previous aborted test runs
-    // Strictly scoped to test-specific booking codes ('TEST-05-') across room S01 and test dates
-    await prisma.bookingSlot.deleteMany({
-      where: {
-        booking: {
-          bookingCode: { startsWith: 'TEST-05-' }
-        }
-      }
-    });
-    await prisma.booking.deleteMany({
-      where: {
-        bookingCode: { startsWith: 'TEST-05-' }
-      }
-    });
-
     // 1. Authenticate customer1 and customer2
     const [c1Login, c2Login] = await Promise.all([
       request(app)
@@ -73,7 +58,27 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     roomS01 = s01;
     roomM01 = m01;
 
-    // 3. Create deterministic test fixture: S01 Slot 3 occupied on TEST_DATE (BR-01 / TEST-04b)
+    // 3. Pre-clean strictly scoped to this test suite's deterministic fixture
+    await prisma.bookingSlot.deleteMany({
+      where: {
+        roomId: roomS01.id,
+        bookingDate: TEST_DATE,
+        booking: {
+          bookingCode: FIXTURE_SLOT3_CODE,
+          userId: customer1Id
+        }
+      }
+    });
+    await prisma.booking.deleteMany({
+      where: {
+        bookingCode: FIXTURE_SLOT3_CODE,
+        roomId: roomS01.id,
+        bookingDate: TEST_DATE,
+        userId: customer1Id
+      }
+    });
+
+    // 4. Create deterministic test fixture: S01 Slot 3 occupied on TEST_DATE (BR-01 / TEST-04b)
     const slot3Booking = await prisma.booking.create({
       data: {
         bookingCode: FIXTURE_SLOT3_CODE,
@@ -194,6 +199,10 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
         })
     ]);
 
+    // Collect ID of any created booking BEFORE status assertions to ensure cleanup even on test failure
+    if (res1.body?.booking?.id) createdBookingIds.push(res1.body.booking.id);
+    if (res2.body?.booking?.id) createdBookingIds.push(res2.body.booking.id);
+
     // Check status codes: exactly one 201 and exactly one 409
     const statuses = [res1.status, res2.status].sort();
     expect(statuses).toEqual([201, 409]);
@@ -206,7 +215,6 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     expect(winningRes.body.success).toBe(true);
     expect(winningRes.body.booking).toBeDefined();
     expect(winningRes.body.booking.status).toBe('CONFIRMED');
-    createdBookingIds.push(winningRes.body.booking.id);
 
     expect(losingRes.body.success).toBe(false);
     expect(losingRes.body.error.code).toBe('SLOT_CONFLICT');

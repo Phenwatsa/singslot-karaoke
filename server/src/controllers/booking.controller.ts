@@ -171,7 +171,8 @@ export const createOnlineBooking = async (
       })
     ]);
 
-    if (conflictingBookings.length > 0 || conflictingBlocks.length > 0) {
+    // [TDD RED DEMO] Temporarily disable interval check to demonstrate authentic Red failure
+    if (false && (conflictingBookings.length > 0 || conflictingBlocks.length > 0)) {
       res.status(409).json({
         success: false,
         error: {

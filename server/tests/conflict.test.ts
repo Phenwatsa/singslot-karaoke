@@ -73,31 +73,6 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     roomS01 = s01;
     roomM01 = m01;
 
-    // Clean any stale concurrency test bookings strictly for test users, test room M01, and test slot window
-    await prisma.bookingSlot.deleteMany({
-      where: {
-        roomId: roomM01.id,
-        bookingDate: CONCURRENCY_DATE,
-        slotIndex: { in: [6, 7] },
-        booking: {
-          roomId: roomM01.id,
-          bookingDate: CONCURRENCY_DATE,
-          userId: { in: [customer1Id, customer2Id] },
-          channel: 'ONLINE'
-        }
-      }
-    });
-    await prisma.booking.deleteMany({
-      where: {
-        roomId: roomM01.id,
-        bookingDate: CONCURRENCY_DATE,
-        userId: { in: [customer1Id, customer2Id] },
-        startSlot: 6,
-        durationHours: 2,
-        channel: 'ONLINE'
-      }
-    });
-
     // 3. Create deterministic test fixture: S01 Slot 3 occupied on TEST_DATE (BR-01 / TEST-04b)
     const slot3Booking = await prisma.booking.create({
       data: {

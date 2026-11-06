@@ -18,11 +18,12 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
 
   const TEST_DATE = getFutureBangkokDateString(30);
   const CONCURRENCY_DATE = getFutureBangkokDateString(35);
-  const FIXTURE_SLOT3_CODE = 'TEST-05-FIX-SLOT3';
+  const FIXTURE_SLOT3_CODE = `TEST-05-FIX-SLOT3-${Date.now()}`;
 
   let customer1Token: string;
   let customer2Token: string;
   let customer1Id: string;
+  let customer2Id: string;
   let roomS01: { id: string; roomNumber: string; capacity: number };
   let roomM01: { id: string; roomNumber: string; capacity: number };
   const createdBookingIds: string[] = [];
@@ -43,6 +44,7 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     customer1Token = c1Login.body.token;
     customer2Token = c2Login.body.token;
     customer1Id = c1Login.body.user.id;
+    customer2Id = c2Login.body.user.id;
 
     // 2. Fetch seeded rooms S01 and M01
     const [s01, m01] = await Promise.all([
@@ -113,7 +115,7 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     });
 
     // Request 3 hours starting at Slot 2 (12:00 - 15:00, slots 2, 3, 4)
-    // Slot 3 is pre-seeded/occupied by fixture -> must reject
+    // Slot 3 is occupied by test fixture created in beforeAll -> must reject
     const res = await request(app)
       .post('/api/bookings/online')
       .set('Authorization', `Bearer ${customer2Token}`)
@@ -184,6 +186,7 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     // Identify the winning response and track its ID for cleanup
     const winningRes = res1.status === 201 ? res1 : res2;
     const losingRes = res1.status === 409 ? res1 : res2;
+    const expectedWinningUserId = res1.status === 201 ? customer1Id : customer2Id;
 
     expect(winningRes.body.success).toBe(true);
     expect(winningRes.body.booking).toBeDefined();
@@ -193,20 +196,22 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     expect(losingRes.body.success).toBe(false);
     expect(losingRes.body.error.code).toBe('SLOT_CONFLICT');
 
-    // Database verification: Exactly one booking created in PostgreSQL
+    // Database verification: Exactly one booking created in PostgreSQL and belongs to winning customer
     const confirmedBookings = await prisma.booking.findMany({
       where: { roomId: roomM01.id, bookingDate: CONCURRENCY_DATE }
     });
     expect(confirmedBookings).toHaveLength(1);
     expect(confirmedBookings[0].id).toBe(winningRes.body.booking.id);
+    expect(confirmedBookings[0].userId).toBe(expectedWinningUserId);
 
-    // Database verification: Exactly 2 slots (6, 7) persisted, no duplicate slots
+    // Database verification: Exactly 2 slots (6, 7) persisted, no duplicate slots, and both reference winning booking
     const persistedSlots = await prisma.bookingSlot.findMany({
       where: { roomId: roomM01.id, bookingDate: CONCURRENCY_DATE }
     });
     expect(persistedSlots).toHaveLength(2);
     const persistedIndices = persistedSlots.map((s) => s.slotIndex).sort((a, b) => a - b);
     expect(persistedIndices).toEqual([6, 7]);
+    expect(persistedSlots.every((s) => s.bookingId === winningRes.body.booking.id)).toBe(true);
   });
 });
 

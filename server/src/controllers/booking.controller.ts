@@ -246,15 +246,24 @@ export const createOnlineBooking = async (
       });
     } catch (txError: any) {
       // Catch concurrent collision via PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex])
+      // Strictly verify that the collision target is the slot composite constraint and not an unrelated unique field (e.g. bookingCode)
       if (txError.code === 'P2002') {
-        res.status(409).json({
-          success: false,
-          error: {
-            code: 'SLOT_CONFLICT',
-            message: 'One or more requested slots were just reserved by another booking.'
-          }
-        });
-        return;
+        const target = txError.meta?.target;
+        const isSlotConstraint =
+          (Array.isArray(target) && target.includes('slotIndex')) ||
+          (typeof target === 'string' &&
+            (target.includes('slotIndex') || target.includes('booking_slots') || target.includes('roomId_bookingDate_slotIndex')));
+
+        if (isSlotConstraint) {
+          res.status(409).json({
+            success: false,
+            error: {
+              code: 'SLOT_CONFLICT',
+              message: 'One or more requested slots were just reserved by another booking.'
+            }
+          });
+          return;
+        }
       }
       throw txError;
     }

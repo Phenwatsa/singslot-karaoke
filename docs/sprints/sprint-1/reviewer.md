@@ -174,3 +174,16 @@
   > _All 54 tests (43 server + 11 client) pass cleanly in ~2.3s with `--runInBand`, and typecheck and build pass with 0 errors. PR #10 is ready for merge into `sprint-1-staging`."_
 
 - **Outcome:** PR #10 approved for integration into `sprint-1-staging`.
+
+---
+
+### 📌 PR #11: `feat(booking): verify conflict prevention, TDD contiguous rule, and concurrency protection [Issue #5]`
+
+- **PR Link:** Pending PR creation
+- **Author:** @lephirada
+- **Reviewer:** @Phenwatsa
+- **Source Branch:** `feat/issue-5-conflict-prevention`
+- **Target Branch:** `sprint-1-staging`
+- **Verdict:** **Pending Review**
+
+#### 🔍 Review Discussion

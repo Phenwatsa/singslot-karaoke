@@ -147,6 +147,7 @@ export const createOnlineBooking = async (
     }
 
     // 7. Contiguous Vacancy Validation (BR-01, BR-02)
+    // Validate that every requested slot in the contiguous interval [startSlot .. startSlot + duration - 1] is vacant
     const requestedSlots = Array.from(
       { length: durationHours },
       (_, i) => startSlot + i
@@ -244,22 +245,17 @@ export const createOnlineBooking = async (
         }
       });
     } catch (txError: any) {
-      // Prisma P2002: Unique constraint violation (e.g. concurrent slot collision)
-      if (
-        txError instanceof Prisma.PrismaClientKnownRequestError &&
-        txError.code === 'P2002'
-      ) {
+      // Catch concurrent collision via PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex])
+      if (txError.code === 'P2002') {
         res.status(409).json({
           success: false,
           error: {
             code: 'SLOT_CONFLICT',
-            message: 'One or more requested slots are already occupied.'
+            message: 'One or more requested slots were just reserved by another booking.'
           }
         });
         return;
       }
-
-      // Re-throw or pass to error handler
       throw txError;
     }
   } catch (error) {

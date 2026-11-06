@@ -192,6 +192,72 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
   });
 
   /**
+   * TEST-04a (Code Uniqueness Verification per AC-04a):
+   * Asserts that every confirmed booking receives a strictly unique bookingCode.
+   */
+  it('TEST-04a (Uniqueness): generates unique bookingCode across multiple reservations (AC-04a)', async () => {
+    const dbBookings = await prisma.booking.findMany({
+      where: { id: { in: createdBookingIds } },
+      select: { bookingCode: true }
+    });
+
+    const codes = dbBookings.map((b) => b.bookingCode);
+    expect(codes.length).toBeGreaterThanOrEqual(3);
+    const uniqueCodes = new Set(codes);
+    expect(uniqueCodes.size).toBe(codes.length);
+
+    // Each code must adhere strictly to BK-YYYYMMDD-XXXX format
+    for (const code of codes) {
+      expect(code).toMatch(/^BK-\d{8}-[A-Z0-9]{4}$/);
+    }
+  });
+
+  /**
+   * BR-01 Contiguous Vacancy Validation:
+   * Direct verification for a partially occupied contiguous booking interval.
+   * If any slot in [startSlot, startSlot + duration - 1] is occupied, request must be rejected with HTTP 409 SLOT_CONFLICT
+   * with zero new database records created.
+   */
+  it('BR-01: booking request across a partially occupied contiguous interval is rejected with HTTP 409 SLOT_CONFLICT', async () => {
+    // Note: Slots 1, 2, 3 are already occupied from the previous test on TEST_DATE.
+    // Attempting to book Slot 0 (10:00) with duration 3 (slots 0, 1, 2) intersects occupied slots 1 and 2.
+    const initialBookingCount = await prisma.booking.count({
+      where: { roomId: roomS01.id, bookingDate: TEST_DATE }
+    });
+    const initialSlotCount = await prisma.bookingSlot.count({
+      where: { roomId: roomS01.id, bookingDate: TEST_DATE }
+    });
+
+    const res = await request(app)
+      .post('/api/bookings/online')
+      .set('Authorization', `Bearer ${customerToken}`)
+      .send({
+        roomId: roomS01.id,
+        bookingDate: TEST_DATE,
+        startSlot: 0, // 10:00 - 13:00 (slots 0, 1, 2)
+        durationHours: 3,
+        partySize: 2
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe('SLOT_CONFLICT');
+    expect(res.body.error.message).toContain('already occupied');
+
+    // Assert zero side-effects in PostgreSQL database
+    const finalBookingCount = await prisma.booking.count({
+      where: { roomId: roomS01.id, bookingDate: TEST_DATE }
+    });
+    const finalSlotCount = await prisma.bookingSlot.count({
+      where: { roomId: roomS01.id, bookingDate: TEST_DATE }
+    });
+
+    expect(finalBookingCount).toBe(initialBookingCount);
+    expect(finalSlotCount).toBe(initialSlotCount);
+  });
+
+  /**
    * TEST-04c (AC-04c, BR-04):
    * Past date/slot reservation request is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT.
    */

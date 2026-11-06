@@ -83,7 +83,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
   return (
-    <div className="flex min-h-screen flex-col bg-transparent text-slate-800 selection:bg-pink-300 selection:text-purple-900">
+    <div className="flex min-h-screen w-full max-w-full flex-col bg-transparent text-slate-800 selection:bg-pink-300 selection:text-purple-900">
       {/* Background Pastel Galaxy Swirls, Bokeh Orbs & Decorative Stars */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         {/* Lighter, Softer Glowing Pastel Ambient Orbs */}
@@ -136,7 +136,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       </div>
 
       {/* Top Navbar (Fixed firmly at top of viewport so it NEVER drifts or jitters) */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-pink-100/70 bg-white/85 backdrop-blur-md shadow-xs shadow-purple-100/20">
+      <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-pink-100/70 bg-white/85 backdrop-blur-md shadow-xs shadow-purple-100/20">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo & Brand (Clickable to Home / Rooms & Slots) */}
           <div
@@ -166,14 +166,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               <button
                 onClick={() => onNavigate?.('booking')}
                 title="Rooms & Slots catalog"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all ${
                   activeNav === 'booking'
                     ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'
                     : 'text-slate-500 hover:bg-white/50 hover:text-purple-800'
                 }`}
               >
-                <Calendar className="h-4 w-4 text-purple-500" />
-                <span>Rooms & Slots</span>
+                <Calendar className="h-4 w-4 text-purple-500 shrink-0" />
+                <span className="hidden sm:inline">Rooms & Slots</span>
               </button>
             )}
 
@@ -181,14 +181,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               <button
                 onClick={() => onNavigate?.('my-bookings')}
                 title="Customer booking history (Active in Issue #5)"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all ${
                   activeNav === 'my-bookings'
                     ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'
                     : 'text-slate-500 hover:bg-white/50 hover:text-purple-800'
                 }`}
               >
-                <User className="h-4 w-4 text-pink-400" />
-                <span>My Bookings</span>
+                <User className="h-4 w-4 text-pink-400 shrink-0" />
+                <span className="hidden sm:inline">My Bookings</span>
               </button>
             )}
 
@@ -196,14 +196,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               <button
                 onClick={() => onNavigate?.('staff-schedule')}
                 title="Staff master schedule (Active in Issue #6)"
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all ${
                   activeNav === 'staff-schedule'
                     ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'
                     : 'text-slate-500 hover:bg-white/50 hover:text-purple-800'
                 }`}
               >
-                <ShieldCheck className="h-4 w-4 text-sky-500" />
-                <span>Master Schedule</span>
+                <ShieldCheck className="h-4 w-4 text-sky-500 shrink-0" />
+                <span className="hidden sm:inline">Master Schedule</span>
               </button>
             )}
           </nav>

@@ -9,12 +9,13 @@
 html {
   scrollbar-gutter: stable;
   overflow-y: scroll;
-  overscroll-behavior-y: none;
+  background-color: #ffffff;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: #ffffff;
   /* Luminous Soft Pastel Marble: very light, airy, pearlescent base with subtle pastel mist */
   background: linear-gradient(135deg, #ffffff 0%, #fff7fa 25%, #f9faff 50%, #f6fdfc 75%, #ffffff 100%);
   background-attachment: fixed;

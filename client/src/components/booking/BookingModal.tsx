@@ -61,8 +61,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   }, [selectedDate]);
 
   useEffect(() => {
-    if (selectedSlot !== undefined) setStartSlot(selectedSlot);
+    if (selectedSlot !== undefined) {
+      setStartSlot(selectedSlot);
+      // Auto-clamp duration when slot changes so default duration never exceeds 24:00 closing time
+      const maxAllowed = Math.min(5, Math.max(1, 14 - selectedSlot));
+      setDurationHours((prev) => Math.min(prev, maxAllowed));
+    }
   }, [selectedSlot]);
+
+  // Ensure durationHours is automatically clamped when startSlot is modified by user
+  useEffect(() => {
+    const maxAllowed = Math.min(5, Math.max(1, 14 - startSlot));
+    if (durationHours > maxAllowed) {
+      setDurationHours(maxAllowed);
+    }
+  }, [startSlot, durationHours]);
 
   useEffect(() => {
     // Reset transient states on open

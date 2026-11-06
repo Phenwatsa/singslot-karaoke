@@ -1,9 +1,10 @@
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { app } from '../src/app';
 import { prisma } from '../src/prisma';
 
 describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Issue #4)', () => {
-  // Compute dynamic future date string (20 days ahead) in Asia/Bangkok timezone
+  // Compute dynamic future date string in Asia/Bangkok timezone
   const getFutureBangkokDateString = (daysAhead = 20): string => {
     const now = new Date();
     const future = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
@@ -15,25 +16,56 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     }).format(future);
   };
 
+  const getBangkokTodayString = (): string => {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+  };
+
+  const getBangkokCurrentHour = (): number => {
+    const hourStr = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Bangkok',
+      hour: 'numeric',
+      hour12: false
+    }).format(new Date());
+    return parseInt(hourStr, 10);
+  };
+
   const TEST_DATE = getFutureBangkokDateString(20);
   let customerToken: string;
+  let staffToken: string;
   let roomS01: { id: string; roomNumber: string; capacity: number };
-  let createdBookingIds: string[] = [];
+  const createdBookingIds: string[] = [];
 
   beforeAll(async () => {
-    // 1. Authenticate as seeded customer1 to obtain valid Bearer token
-    const loginRes = await request(app)
+    // 1. Authenticate as seeded customer1 to obtain customer Bearer token
+    const customerLoginRes = await request(app)
       .post('/api/auth/login')
       .send({
         email: 'customer1@singslot.local',
         password: 'Pass1234!'
       });
 
-    expect(loginRes.status).toBe(200);
-    expect(loginRes.body.token).toBeDefined();
-    customerToken = loginRes.body.token;
+    expect(customerLoginRes.status).toBe(200);
+    expect(customerLoginRes.body.token).toBeDefined();
+    customerToken = customerLoginRes.body.token;
 
-    // 2. Fetch seeded room S01
+    // 2. Authenticate as seeded staff to obtain staff Bearer token (for RBAC test)
+    const staffLoginRes = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'staff@singslot.local',
+        password: 'Pass1234!'
+      });
+
+    expect(staffLoginRes.status).toBe(200);
+    expect(staffLoginRes.body.token).toBeDefined();
+    staffToken = staffLoginRes.body.token;
+
+    // 3. Fetch seeded room S01
     const s01 = await prisma.room.findUnique({
       where: { roomNumber: 'S01' }
     });
@@ -42,19 +74,12 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     }
     roomS01 = s01;
 
-    // 3. Clean up any existing bookings on TEST_DATE for room S01
-    const existingSlots = await prisma.bookingSlot.findMany({
-      where: { roomId: roomS01.id, bookingDate: TEST_DATE }
-    });
-    const bookingIds = [...new Set(existingSlots.map((s) => s.bookingId))];
-    if (bookingIds.length > 0) {
-      await prisma.bookingSlot.deleteMany({ where: { bookingId: { in: bookingIds } } });
-      await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
-    }
+    // Note: We do NOT delete existing database records indiscriminately in beforeAll().
+    // Tests strictly manage and track their own created fixtures in createdBookingIds.
   });
 
   afterAll(async () => {
-    // Clean up created bookings during tests
+    // Clean up strictly the bookings created by this test suite
     if (createdBookingIds.length > 0) {
       await prisma.bookingSlot.deleteMany({
         where: { bookingId: { in: createdBookingIds } }
@@ -170,7 +195,7 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
    * TEST-04c (AC-04c, BR-04):
    * Past date/slot reservation request is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT.
    */
-  it('TEST-04c: past date booking request is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT (AC-04c)', async () => {
+  it('TEST-04c: past calendar date request is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT (AC-04c)', async () => {
     const PAST_DATE = '2020-01-01';
 
     const res = await request(app)
@@ -189,6 +214,57 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     expect(res.body.error).toBeDefined();
     expect(res.body.error.code).toBe('CANNOT_BOOK_PAST_SLOT');
     expect(res.body.error.message).toMatch(/past/i);
+  });
+
+  /**
+   * TEST-04c (Same-Day Elapsed Slot):
+   * Evaluates Asia/Bangkok time to ensure elapsed slots on today's date are rejected.
+   */
+  it('TEST-04c: elapsed slot on current date in Asia/Bangkok is rejected with HTTP 400 CANNOT_BOOK_PAST_SLOT', async () => {
+    const todayBangkok = getBangkokTodayString();
+    const currentHour = getBangkokCurrentHour();
+
+    if (currentHour >= 10) {
+      // Slot 0 (10:00 - 11:00) has already elapsed if Bangkok current hour >= 10
+      const res = await request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: todayBangkok,
+          startSlot: 0,
+          durationHours: 1,
+          partySize: 2
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('CANNOT_BOOK_PAST_SLOT');
+      expect(res.body.error.message).toMatch(/past/i);
+    } else {
+      // If executed before 10:00 AM Bangkok, yesterday's late slot has definitely elapsed
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(yesterday);
+
+      const res = await request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: yesterdayStr,
+          startSlot: 13,
+          durationHours: 1,
+          partySize: 2
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('CANNOT_BOOK_PAST_SLOT');
+    }
   });
 
   /**
@@ -218,16 +294,11 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
   /**
    * TEST-04f (AC-04f, NFR-03):
    * Multi-slot booking failure leaves zero orphaned Booking or BookingSlot records (Atomic Rollback).
+   * Verified by asserting specific HTTP 500 error response from injected failure and asserting zero orphaned rows.
    */
   it('TEST-04f: multi-slot booking fault-injection rolls back atomically leaving zero orphaned records (AC-04f)', async () => {
     const FAULT_DATE = getFutureBangkokDateString(25);
     const targetSlot = 0;
-
-    // Confirm database is initially clean for target room & date
-    const initialSlots = await prisma.bookingSlot.findMany({
-      where: { roomId: roomS01.id, bookingDate: FAULT_DATE }
-    });
-    expect(initialSlots).toHaveLength(0);
 
     // Execute booking with simulated runtime failure header
     const res = await request(app)
@@ -242,10 +313,14 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
         partySize: 2
       });
 
-    // Request should fail due to injected failure
-    expect(res.status).toBeGreaterThanOrEqual(400);
+    // Explicitly assert that the failure is the simulated runtime failure inside the transaction
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe('INTERNAL_SERVER_ERROR');
+    expect(res.body.error.message).toContain('Simulated transaction failure for TEST-04f');
 
-    // Verify 100% rollback: Zero orphaned Booking and zero orphaned BookingSlot rows
+    // Verify 100% rollback: Zero orphaned Booking and zero orphaned BookingSlot rows exist in database
     const orphanedSlots = await prisma.bookingSlot.findMany({
       where: { roomId: roomS01.id, bookingDate: FAULT_DATE }
     });
@@ -255,6 +330,44 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
       where: { roomId: roomS01.id, bookingDate: FAULT_DATE }
     });
     expect(orphanedBookings).toHaveLength(0);
+  });
+
+  /**
+   * RBAC Authorization Guards (BR-08):
+   */
+  describe('RBAC Authorization Guards (CUSTOMER vs STAFF)', () => {
+    it('rejects staff user from customer online booking endpoint with HTTP 403 FORBIDDEN', async () => {
+      const res = await request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: TEST_DATE,
+          startSlot: 0,
+          durationHours: 1,
+          partySize: 2
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('rejects unauthenticated booking requests with HTTP 401 UNAUTHENTICATED', async () => {
+      const res = await request(app)
+        .post('/api/bookings/online')
+        .send({
+          roomId: roomS01.id,
+          bookingDate: TEST_DATE,
+          startSlot: 0,
+          durationHours: 1,
+          partySize: 2
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
+    });
   });
 
   /**
@@ -344,24 +457,9 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
   });
 
   /**
-   * Authentication & Input Validation:
+   * Input Validation & Error Envelopes:
    */
-  describe('Authentication & Input Validation', () => {
-    it('rejects unauthenticated booking requests with HTTP 401 UNAUTHENTICATED', async () => {
-      const res = await request(app)
-        .post('/api/bookings/online')
-        .send({
-          roomId: roomS01.id,
-          bookingDate: TEST_DATE,
-          startSlot: 0,
-          durationHours: 1,
-          partySize: 2
-        });
-
-      expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHENTICATED');
-    });
-
+  describe('Input Validation & Error Envelopes', () => {
     it('rejects non-existent room with HTTP 404 ROOM_NOT_FOUND', async () => {
       const res = await request(app)
         .post('/api/bookings/online')
@@ -421,4 +519,3 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     });
   });
 });
-

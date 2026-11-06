@@ -8,10 +8,16 @@ export const bookingRouter = Router();
 /**
  * POST /api/bookings/online
  * Customer online booking route.
- * Enforces authentication via verifyToken, validates contiguous slots, duration,
- * capacity, past-slot rules, and executes creation inside an atomic Prisma transaction.
+ * Enforces authentication via verifyToken and restricts access strictly to CUSTOMER role
+ * via requireRole(Role.CUSTOMER). Validates contiguous slots, duration, capacity, past-slot rules,
+ * and executes creation inside an atomic Prisma transaction.
  */
-bookingRouter.post('/online', verifyToken, createOnlineBooking);
+bookingRouter.post(
+  '/online',
+  verifyToken,
+  requireRole(Role.CUSTOMER),
+  createOnlineBooking
+);
 
 /**
  * GET /api/bookings/master

@@ -179,7 +179,7 @@
 
 ### 📌 PR #11: `feat(booking): verify conflict prevention, TDD contiguous rule, and concurrency protection [Issue #5]`
 
-- **PR Link:** Pending PR creation
+- **PR Link:** [https://github.com/Phenwatsa/singslot-karaoke/pull/11](https://github.com/Phenwatsa/singslot-karaoke/pull/11)
 - **Author:** @lephirada
 - **Reviewer:** @Phenwatsa
 - **Source Branch:** `feat/issue-5-conflict-prevention`

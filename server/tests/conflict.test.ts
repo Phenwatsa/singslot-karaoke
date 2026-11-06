@@ -30,12 +30,18 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
 
   beforeAll(async () => {
     // 0. Pre-clean stale test records from any previous aborted test runs
-    const testDates = [TEST_DATE, CONCURRENCY_DATE, getFutureBangkokDateString(40)];
+    // Strictly scoped to test-specific booking codes ('TEST-05-') and test suite room/users to preserve complete data isolation
     await prisma.bookingSlot.deleteMany({
-      where: { bookingDate: { in: testDates } }
+      where: {
+        booking: {
+          bookingCode: { startsWith: 'TEST-05-' }
+        }
+      }
     });
     await prisma.booking.deleteMany({
-      where: { bookingDate: { in: testDates } }
+      where: {
+        bookingCode: { startsWith: 'TEST-05-' }
+      }
     });
 
     // 1. Authenticate customer1 and customer2
@@ -66,6 +72,24 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     }
     roomS01 = s01;
     roomM01 = m01;
+
+    // Clean any stale concurrency test bookings strictly for test users and test room
+    await prisma.bookingSlot.deleteMany({
+      where: {
+        roomId: roomM01.id,
+        bookingDate: CONCURRENCY_DATE,
+        booking: {
+          userId: { in: [customer1Id, customer2Id] }
+        }
+      }
+    });
+    await prisma.booking.deleteMany({
+      where: {
+        roomId: roomM01.id,
+        bookingDate: CONCURRENCY_DATE,
+        userId: { in: [customer1Id, customer2Id] }
+      }
+    });
 
     // 3. Create deterministic test fixture: S01 Slot 3 occupied on TEST_DATE (BR-01 / TEST-04b)
     const slot3Booking = await prisma.booking.create({

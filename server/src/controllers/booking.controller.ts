@@ -250,9 +250,15 @@ export const createOnlineBooking = async (
       if (txError.code === 'P2002') {
         const target = txError.meta?.target;
         const isSlotConstraint =
-          (Array.isArray(target) && target.includes('slotIndex')) ||
+          (Array.isArray(target) &&
+            target.includes('roomId') &&
+            target.includes('bookingDate') &&
+            target.includes('slotIndex')) ||
           (typeof target === 'string' &&
-            (target.includes('slotIndex') || target.includes('booking_slots') || target.includes('roomId_bookingDate_slotIndex')));
+            (target.includes('roomId_bookingDate_slotIndex') ||
+              (target.includes('roomId') &&
+                target.includes('bookingDate') &&
+                target.includes('slotIndex'))));
 
         if (isSlotConstraint) {
           res.status(409).json({

@@ -30,7 +30,7 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
 
   beforeAll(async () => {
     // 0. Pre-clean stale test records from any previous aborted test runs
-    // Strictly scoped to test-specific booking codes ('TEST-05-') and test suite room/users to preserve complete data isolation
+    // Strictly scoped to test-specific booking codes ('TEST-05-') across room S01 and test dates
     await prisma.bookingSlot.deleteMany({
       where: {
         booking: {
@@ -73,13 +73,17 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     roomS01 = s01;
     roomM01 = m01;
 
-    // Clean any stale concurrency test bookings strictly for test users and test room
+    // Clean any stale concurrency test bookings strictly for test users, test room M01, and test slot window
     await prisma.bookingSlot.deleteMany({
       where: {
         roomId: roomM01.id,
         bookingDate: CONCURRENCY_DATE,
+        slotIndex: { in: [6, 7] },
         booking: {
-          userId: { in: [customer1Id, customer2Id] }
+          roomId: roomM01.id,
+          bookingDate: CONCURRENCY_DATE,
+          userId: { in: [customer1Id, customer2Id] },
+          channel: 'ONLINE'
         }
       }
     });
@@ -87,7 +91,10 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
       where: {
         roomId: roomM01.id,
         bookingDate: CONCURRENCY_DATE,
-        userId: { in: [customer1Id, customer2Id] }
+        userId: { in: [customer1Id, customer2Id] },
+        startSlot: 6,
+        durationHours: 2,
+        channel: 'ONLINE'
       }
     });
 
@@ -318,11 +325,18 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     expect(caughtError).not.toBeNull();
     expect(caughtError.code).toBe('P2002');
     const target = caughtError.meta?.target;
-    const isSlotConstraint =
-      (Array.isArray(target) && target.includes('slotIndex')) ||
+    // Composite constraint @@unique([roomId, bookingDate, slotIndex]) validation
+    const isCompositeConstraint =
+      (Array.isArray(target) &&
+        target.includes('roomId') &&
+        target.includes('bookingDate') &&
+        target.includes('slotIndex')) ||
       (typeof target === 'string' &&
-        (target.includes('slotIndex') || target.includes('booking_slots') || target.includes('roomId_bookingDate_slotIndex')));
-    expect(isSlotConstraint).toBe(true);
+        (target.includes('roomId_bookingDate_slotIndex') ||
+          (target.includes('roomId') &&
+            target.includes('bookingDate') &&
+            target.includes('slotIndex'))));
+    expect(isCompositeConstraint).toBe(true);
   });
 });
 

@@ -29,6 +29,15 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
   const createdBookingIds: string[] = [];
 
   beforeAll(async () => {
+    // 0. Pre-clean stale test records from any previous aborted test runs
+    const testDates = [TEST_DATE, CONCURRENCY_DATE, getFutureBangkokDateString(40)];
+    await prisma.bookingSlot.deleteMany({
+      where: { bookingDate: { in: testDates } }
+    });
+    await prisma.booking.deleteMany({
+      where: { bookingDate: { in: testDates } }
+    });
+
     // 1. Authenticate customer1 and customer2
     const [c1Login, c2Login] = await Promise.all([
       request(app)
@@ -212,6 +221,84 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     const persistedIndices = persistedSlots.map((s) => s.slotIndex).sort((a, b) => a - b);
     expect(persistedIndices).toEqual([6, 7]);
     expect(persistedSlots.every((s) => s.bookingId === winningRes.body.booking.id)).toBe(true);
+  });
+
+  /**
+   * Database-Level Composite Constraint Integrity (BR-01, NFR-03, Schema Audit):
+   * Directly proves that PostgreSQL @@unique([roomId, bookingDate, slotIndex]) rejects
+   * duplicate slot insertions at the database engine level with Prisma P2002,
+   * completely independent of application-level interval checks.
+   */
+  it('Database Constraint: PostgreSQL directly rejects duplicate slot insertion with Prisma P2002', async () => {
+    const directTestDate = getFutureBangkokDateString(40);
+    const targetSlotIndex = 8;
+
+    // 1. First booking takes Slot 8
+    const firstBooking = await prisma.booking.create({
+      data: {
+        bookingCode: `TEST-05-DIRECT-1-${Date.now()}`,
+        userId: customer1Id,
+        roomId: roomS01.id,
+        bookingDate: directTestDate,
+        startSlot: targetSlotIndex,
+        durationHours: 1,
+        partySize: 2,
+        channel: 'ONLINE',
+        customerName: 'Customer 1',
+        status: 'CONFIRMED',
+        slots: {
+          create: [
+            {
+              roomId: roomS01.id,
+              bookingDate: directTestDate,
+              slotIndex: targetSlotIndex
+            }
+          ]
+        }
+      }
+    });
+    createdBookingIds.push(firstBooking.id);
+
+    // 2. Second booking attempts to directly insert another BookingSlot for the EXACT SAME roomId, bookingDate, slotIndex
+    const secondBooking = await prisma.booking.create({
+      data: {
+        bookingCode: `TEST-05-DIRECT-2-${Date.now()}`,
+        userId: customer2Id,
+        roomId: roomS01.id,
+        bookingDate: directTestDate,
+        startSlot: targetSlotIndex,
+        durationHours: 1,
+        partySize: 2,
+        channel: 'ONLINE',
+        customerName: 'Customer 2',
+        status: 'CONFIRMED'
+      }
+    });
+    createdBookingIds.push(secondBooking.id);
+
+    // 3. Attempt direct insert of colliding slot -> PostgreSQL engine must reject with P2002
+    let caughtError: any = null;
+    try {
+      await prisma.bookingSlot.create({
+        data: {
+          bookingId: secondBooking.id,
+          roomId: roomS01.id,
+          bookingDate: directTestDate,
+          slotIndex: targetSlotIndex
+        }
+      });
+    } catch (err: any) {
+      caughtError = err;
+    }
+
+    expect(caughtError).not.toBeNull();
+    expect(caughtError.code).toBe('P2002');
+    const target = caughtError.meta?.target;
+    const isSlotConstraint =
+      (Array.isArray(target) && target.includes('slotIndex')) ||
+      (typeof target === 'string' &&
+        (target.includes('slotIndex') || target.includes('booking_slots') || target.includes('roomId_bookingDate_slotIndex')));
+    expect(isSlotConstraint).toBe(true);
   });
 });
 

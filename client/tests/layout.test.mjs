@@ -148,6 +148,32 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.deepStrictEqual(restored.user, mockUser);
   });
 
+  await t.test('RoomCatalog and AvailabilityMatrix conform to Issue #3 contracts (F-02, F-03)', () => {
+    const catalogPath = path.join(clientRoot, 'src', 'components', 'room', 'RoomCatalog.tsx');
+    assert.strictEqual(fs.existsSync(catalogPath), true, 'RoomCatalog.tsx must exist');
+    const catalogContent = fs.readFileSync(catalogPath, 'utf8');
+    assert.match(catalogContent, /Room Fleet Catalog/, 'RoomCatalog must render catalog title');
+    assert.match(catalogContent, /capacity/, 'RoomCatalog must display capacity info');
+
+    const matrixPath = path.join(clientRoot, 'src', 'components', 'room', 'AvailabilityMatrix.tsx');
+    assert.strictEqual(fs.existsSync(matrixPath), true, 'AvailabilityMatrix.tsx must exist');
+    const matrixContent = fs.readFileSync(matrixPath, 'utf8');
+    assert.match(matrixContent, /Availability Matrix/, 'AvailabilityMatrix must render title');
+    assert.match(matrixContent, /Available/, 'AvailabilityMatrix must indicate Available status');
+    assert.match(matrixContent, /Occupied/, 'AvailabilityMatrix must indicate Occupied status');
+    assert.match(matrixContent, /isPastBangkokDate/, 'AvailabilityMatrix must check past dates via Asia/Bangkok utility');
+  });
+
+  await t.test('Date utility formats and evaluates Asia/Bangkok dates consistently', async () => {
+    const dateUtilPath = path.join(clientRoot, 'src', 'utils', 'date.ts');
+    assert.strictEqual(fs.existsSync(dateUtilPath), true, 'client/src/utils/date.ts must exist');
+
+    const dateContent = fs.readFileSync(dateUtilPath, 'utf8');
+    assert.match(dateContent, /Asia\/Bangkok/, 'Date utility must use Asia/Bangkok timezone');
+    assert.match(dateContent, /getBangkokTodayString/, 'Must export getBangkokTodayString');
+    assert.match(dateContent, /isPastBangkokDate/, 'Must export isPastBangkokDate');
+  });
+
   await t.test('GlassCard and PageHeader conform to design system spec', () => {
     const cardPath = path.join(clientRoot, 'src', 'components', 'layout', 'GlassCard.tsx');
     const cardContent = fs.readFileSync(cardPath, 'utf8');

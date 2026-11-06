@@ -225,7 +225,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 text-sm font-bold text-white shadow-md shadow-pink-200 hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer"
+                className="w-full rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 py-3 text-sm font-extrabold text-purple-950 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 border border-pink-200/50 transition-all cursor-pointer"
               >
                 Done & Return to Schedule
               </button>
@@ -400,10 +400,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast}
-                  className={`w-full rounded-xl py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all cursor-pointer ${
+                  className={`w-full rounded-full py-3 text-xs font-extrabold uppercase tracking-wider transition-all border ${
                     isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast
-                      ? 'bg-slate-300 shadow-none cursor-not-allowed'
-                      : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-pink-200'
+                      ? 'bg-slate-200 text-slate-400 border-slate-200 shadow-none cursor-not-allowed'
+                      : 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 border-pink-200/50 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 cursor-pointer'
                   }`}
                 >
                   {isLoading

@@ -1,12 +1,12 @@
 import React from 'react';
 import { GlassCard } from '../layout/GlassCard';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { RoomAvailability } from '../../types/room';
 import { isPastBangkokDate } from '../../utils/date';
 
 interface AvailabilityMatrixProps {
   selectedDate: string;
-  onDateChange: (date: string) => void;
+  onDateChange?: (date: string) => void;
   availability: RoomAvailability[];
   isLoading?: boolean;
   error?: string | null;
@@ -15,7 +15,6 @@ interface AvailabilityMatrixProps {
 
 export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   selectedDate,
-  onDateChange,
   availability,
   isLoading = false,
   error = null,
@@ -54,17 +53,6 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <span className="text-slate-500">Closed (Past)</span>
             </span>
           </div>
-
-          {/* Date Selector */}
-          <div className="flex items-center gap-2 rounded-xl border border-pink-200/80 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-xs hover:border-pink-300 transition-colors">
-            <Calendar className="h-4 w-4 text-purple-500" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            />
-          </div>
         </div>
       </div>
 
@@ -89,7 +77,7 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       )}
 
       {/* Matrix Table */}
-      <GlassCard className="overflow-x-auto p-4">
+      <GlassCard className="p-3 sm:p-5 min-h-[380px] flex flex-col justify-center">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-purple-400 animate-pulse font-medium">
             Calculating room and slot availability for {selectedDate}...
@@ -103,25 +91,24 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             No active rooms found.
           </div>
         ) : (
-          <div className="min-w-[850px]">
+          <div className="w-full overflow-x-auto lg:overflow-x-hidden">
             {/* Slot Header Row */}
-            <div className="grid grid-cols-[70px_repeat(14,minmax(0,1fr))] gap-1.5 pb-3 border-b border-pink-100 text-center text-[11px] font-semibold text-slate-500">
-              <div className="text-left pl-2 font-bold text-slate-700">Room</div>
+            <div className="grid grid-cols-[50px_repeat(14,minmax(0,1fr))] gap-1 sm:gap-1.5 pb-2.5 border-b border-pink-100 text-center text-[11px] font-semibold text-slate-500">
+              <div className="text-left pl-1 font-bold text-slate-700">Room</div>
               {Array.from({ length: 14 }).map((_, idx) => (
-                <div key={idx} className="flex flex-col items-center justify-center">
-                  <span className="text-[10px] text-purple-400 font-mono">#{idx}</span>
-                  <span className="text-[11px] text-slate-700 font-semibold">{10 + idx}:00</span>
+                <div key={idx} className="flex items-center justify-center py-0.5">
+                  <span className="text-[11px] text-slate-700 font-bold">{10 + idx}:00</span>
                 </div>
               ))}
             </div>
 
             {/* Room Rows */}
-            <div className="divide-y divide-pink-50 pt-2">
+            <div className="divide-y divide-pink-50 pt-1.5">
               {availability.map((room) => (
-                <div key={room.id} className="grid grid-cols-[70px_repeat(14,minmax(0,1fr))] gap-1.5 py-2.5 items-center">
+                <div key={room.id} className="grid grid-cols-[50px_repeat(14,minmax(0,1fr))] gap-1 sm:gap-1.5 py-2 items-center">
                   {/* Room Label */}
-                  <div className="flex items-center gap-2 pl-2">
-                    <span className="font-extrabold text-slate-900 text-sm">{room.roomNumber}</span>
+                  <div className="flex items-center gap-1.5 pl-1">
+                    <span className="font-extrabold text-slate-900 text-xs sm:text-sm">{room.roomNumber}</span>
                     <span className="text-[10px] text-pink-400 uppercase tracking-wider font-mono font-bold">
                       {room.type[0]}
                     </span>

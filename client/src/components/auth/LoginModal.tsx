@@ -87,8 +87,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
           {/* Header */}
           <div className="mb-6 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 shadow-md shadow-pink-500/25 mb-3">
-              <Lock className="h-6 w-6 text-white" />
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 shadow-md shadow-purple-200/50 border border-pink-200/60 mb-3">
+              <Lock className="h-6 w-6 text-purple-950" />
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
               Sign In to SingSlot
@@ -101,7 +101,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* Quick-Fill Demo Buttons */}
           <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 shadow-sm">
             <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold uppercase tracking-wider text-purple-700">
-              <Sparkles className="h-3.5 w-3.5 text-pink-600" />
+              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
               <span>Sprint 1 Seeded Demo Accounts</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -173,7 +173,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-pink-500/20 hover:brightness-105 active:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-4 py-2.5 text-sm font-extrabold text-purple-950 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-pink-200/50 cursor-pointer"
             >
               {isLoading ? (
                 <>

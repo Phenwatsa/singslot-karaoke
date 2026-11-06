@@ -1,11 +1,12 @@
-import React from 'react';
-import { Mic2, Calendar, User, ShieldCheck, LogOut, Sparkles } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MicVocal, Calendar, User, ShieldCheck, LogOut, Sparkles, ChevronDown } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
   activeNav?: 'booking' | 'my-bookings' | 'staff-schedule' | 'login';
   userRole?: 'CUSTOMER' | 'STAFF' | null;
   userName?: string | null;
+  userEmail?: string | null;
   onLogout?: () => void;
   onNavigate?: (route: 'booking' | 'my-bookings' | 'staff-schedule' | 'login') => void;
 }
@@ -58,9 +59,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   activeNav = 'booking',
   userRole = null,
   userName = null,
+  userEmail = null,
   onLogout,
   onNavigate,
 }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
   return (
     <div className="flex min-h-screen flex-col bg-transparent text-slate-800 selection:bg-pink-300 selection:text-purple-900">
       {/* Background Pastel Galaxy Swirls, Bokeh Orbs & Decorative Stars */}
@@ -72,7 +93,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <div className="absolute -bottom-20 right-10 h-[380px] w-[380px] rounded-full bg-pink-100/15 blur-3xl" />
 
         {/* Floating Pastel Rounded Stars & Sparkles (Matching user aesthetic reference) */}
-        <div className="absolute left-[8%] top-[12%] animate-bounce" style={{ animationDuration: '6s' }}>
+        <div className="absolute left-[8%] top-[12%]">
           <PuffyStar size={34} fill="#fff1f2" />
         </div>
         <div className="absolute right-[12%] top-[18%]">
@@ -114,13 +135,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         <div className="absolute right-[42%] bottom-[18%] h-1.5 w-1.5 rounded-full bg-teal-100 shadow-[0_0_6px_rgba(94,234,212,0.6)]" />
       </div>
 
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-50 border-b border-pink-100/70 bg-white/70 backdrop-blur-md shadow-xs shadow-purple-100/20">
+      {/* Top Navbar (Fixed firmly at top of viewport so it NEVER drifts or jitters) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-pink-100/70 bg-white/85 backdrop-blur-md shadow-xs shadow-purple-100/20">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
+          {/* Logo & Brand (Clickable to Home / Rooms & Slots) */}
+          <div
+            onClick={() => onNavigate?.('booking')}
+            className="flex items-center gap-3 cursor-pointer select-none transition-transform active:scale-95"
+            title="SingSlot Home"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-pink-300 via-purple-300 to-sky-300 shadow-sm shadow-purple-200/40 border border-white/60">
-              <Mic2 className="h-5 w-5 text-purple-900" />
+              <MicVocal className="h-5 w-5 text-purple-900" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -135,20 +160,22 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links (Visible when authenticated to navigate views) */}
           <nav className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={() => onNavigate?.('booking')}
-              title="Rooms & Slots catalog (Active in Issue #3)"
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all ${
-                activeNav === 'booking'
-                  ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'
-                  : 'text-slate-500 hover:bg-white/50 hover:text-purple-800'
-              }`}
-            >
-              <Calendar className="h-4 w-4 text-purple-500" />
-              <span>Rooms & Slots</span>
-            </button>
+            {userRole && (
+              <button
+                onClick={() => onNavigate?.('booking')}
+                title="Rooms & Slots catalog"
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                  activeNav === 'booking'
+                    ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'
+                    : 'text-slate-500 hover:bg-white/50 hover:text-purple-800'
+                }`}
+              >
+                <Calendar className="h-4 w-4 text-purple-500" />
+                <span>Rooms & Slots</span>
+              </button>
+            )}
 
             {userRole === 'CUSTOMER' && (
               <button
@@ -181,37 +208,97 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             )}
           </nav>
 
-          {/* User Profile / Auth State */}
+          {/* User Profile / Auth State (Nexa-inspired Avatar Pill & Dropdown) */}
           <div className="flex items-center gap-3">
             {userName ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden text-right sm:block">
-                  <div className="text-sm font-semibold text-slate-800">{userName}</div>
-                  <div className="text-xs text-purple-600 font-medium">{userRole}</div>
-                </div>
+              <div className="relative" ref={profileRef}>
                 <button
-                  onClick={onLogout}
-                  title="Logout"
-                  className="rounded-xl border border-pink-200/70 bg-white/80 p-2 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-xs"
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  className="flex items-center gap-2.5 rounded-full border border-pink-100/90 bg-white/85 pl-1.5 pr-3 py-1 shadow-xs hover:bg-white hover:border-pink-200 hover:shadow-sm transition-all focus:outline-none"
+                  aria-label="User profile menu"
+                  aria-expanded={isProfileOpen}
                 >
-                  <LogOut className="h-4 w-4" />
+                  {/* Circular Avatar with Initials */}
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 text-[11px] font-black text-purple-900 border border-white/90 shadow-xs">
+                    {getInitials(userName)}
+                  </div>
+                  {/* Name & Role Text */}
+                  <div className="hidden sm:flex flex-col text-left leading-tight">
+                    <span className="text-xs font-bold text-slate-800 line-clamp-1">{userName}</span>
+                    <span className="text-[10px] font-semibold text-purple-600">
+                      {userRole === 'STAFF' ? 'Staff Manager' : 'Customer'}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+                      isProfileOpen ? 'rotate-180 text-purple-600' : ''
+                    }`}
+                  />
                 </button>
+
+                {/* Floating Profile Dropdown Menu */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-pink-100/90 bg-white/95 p-2 shadow-xl shadow-purple-200/30 backdrop-blur-xl z-50 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-pink-50/70 via-purple-50/50 to-sky-50/60 border border-pink-100/60 mb-1">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-pink-200 via-purple-200 to-sky-200 text-xs font-extrabold text-purple-900 border border-white shadow-xs">
+                        {getInitials(userName)}
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="text-xs font-extrabold text-slate-800 truncate">{userName}</div>
+                        {userEmail && <div className="text-[11px] text-slate-500 truncate">{userEmail}</div>}
+                        <span
+                          className={`inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide ${
+                            userRole === 'STAFF'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                              : 'bg-pink-100 text-pink-700 border border-pink-200'
+                          }`}
+                        >
+                          {userRole}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="my-1 border-t border-slate-100" />
+
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onLogout?.();
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <button
-                onClick={() => onNavigate?.('login')}
-                title="User sign in (Active in Issue #2)"
-                className="rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-5 py-1.5 text-sm font-bold text-purple-900 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 transition-all border border-pink-200/50"
-              >
-                Sign In
-              </button>
+              <div className="flex items-center gap-2.5">
+                {/* Register Button: Pale Milky Yellow to Baby Pink Gradient (exact star match) */}
+                <button
+                  onClick={() => onNavigate?.('login')}
+                  title="Create new account (Registration)"
+                  className="rounded-full bg-gradient-to-r from-[#fef8c6] via-[#fee6e3] to-[#fbcfe8] px-5 py-1.5 text-sm font-extrabold text-purple-900 shadow-sm shadow-pink-100/60 hover:brightness-105 active:scale-95 transition-all border border-[#fbcfe8]/70"
+                >
+                  Register
+                </button>
+                {/* Sign In Button: Pink to Purple to Blue Gradient */}
+                <button
+                  onClick={() => onNavigate?.('login')}
+                  title="User sign in (Active in Issue #2)"
+                  className="rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-5 py-1.5 text-sm font-extrabold text-purple-900 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 transition-all border border-pink-200/50"
+                >
+                  Sign In
+                </button>
+              </div>
             )}
           </div>
         </div>
       </header>
 
       {/* Main Content Viewport */}
-      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-8 sm:px-6 sm:pt-24 sm:pb-8 lg:px-8">
         {children}
       </main>
 

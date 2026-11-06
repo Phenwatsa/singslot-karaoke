@@ -65,8 +65,8 @@ export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = fal
       <div className="flex items-center justify-between border-b border-pink-100/80 pb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-slate-900">Room Fleet Catalog</h3>
-          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-            F-02 Seeded Fleet
+          <span className="rounded-full bg-gradient-to-r from-pink-50 via-purple-50 to-sky-50 px-2.5 py-0.5 text-[10px] font-extrabold text-purple-900 border border-pink-200/70">
+            Private Soundproof Suites
           </span>
         </div>
         <span className="text-xs font-semibold text-slate-500">{rooms.length} Rooms Configured across 3 Tiers</span>
@@ -82,7 +82,7 @@ export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = fal
             {/* Tier Group Section Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="h-2 w-2 rounded-full bg-purple-400" />
+                <span className="h-2 w-2 rounded-full bg-gradient-to-r from-pink-400 to-sky-400" />
                 <h4 className="text-sm font-extrabold text-slate-800 tracking-tight">{tier.title}</h4>
                 <span className="text-xs text-slate-400 font-medium">({tierRooms.length} Rooms)</span>
               </div>
@@ -122,7 +122,7 @@ export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = fal
                     {onBookRoom && (
                       <button
                         onClick={() => onBookRoom(room.id)}
-                        className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer"
+                        className="rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-4 py-1.5 text-xs font-extrabold text-purple-950 shadow-xs shadow-purple-100 hover:brightness-105 active:scale-95 border border-pink-200/50 transition-all cursor-pointer"
                       >
                         Book Room
                       </button>

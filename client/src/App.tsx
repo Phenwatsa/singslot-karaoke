@@ -5,6 +5,7 @@ import { GlassCard } from './components/layout/GlassCard';
 import { LoginModal } from './components/auth/LoginModal';
 import { RoomCatalog } from './components/room/RoomCatalog';
 import { AvailabilityMatrix } from './components/room/AvailabilityMatrix';
+import { BookingModal } from './components/booking/BookingModal';
 import { User } from './types/auth';
 import { Room, RoomAvailability, RoomCatalogResponse, AvailabilityResponse } from './types/room';
 import {
@@ -38,6 +39,12 @@ export const App: React.FC = () => {
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [availabilityRefreshTrigger, setAvailabilityRefreshTrigger] = useState(0);
+
+  // Booking modal state (F-04, Issue #4)
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [bookingRoomId, setBookingRoomId] = useState<string | undefined>(undefined);
+  const [bookingSlot, setBookingSlot] = useState<number>(0);
 
   const [notice, setNotice] = useState<{
     type: 'info' | 'success';
@@ -142,7 +149,7 @@ export const App: React.FC = () => {
       isCurrent = false;
       controller.abort();
     };
-  }, [selectedDate]);
+  }, [selectedDate, availabilityRefreshTrigger]);
 
   const handleNavigate = (route: NavRoute) => {
     setActiveNav(route);
@@ -213,9 +220,9 @@ export const App: React.FC = () => {
       onLogout={handleLogout}
     >
       <PageHeader
-        badge={user ? `Authenticated as ${user.role}` : 'Issue #3 Active: Room Catalog & Availability Grid'}
+        badge={user ? `Authenticated as ${user.role}` : 'Issue #4 Active: Online Booking Engine & Contiguous Validation'}
         title="SingSlot Karaoke System"
-        subtitle="Explore our 9 private karaoke rooms across 3 capacity tiers and check real-time 14-slot availability."
+        subtitle="Explore our 9 private karaoke rooms across 3 capacity tiers, check real-time availability, and reserve 1–5 contiguous hours online."
       />
 
       {/* Interactive Navigation / Feedback Banner */}
@@ -283,17 +290,30 @@ export const App: React.FC = () => {
       {/* Main Booking & Availability View */}
       {activeNav === 'booking' && (
         <div className="space-y-8">
-          {/* 1. Server-Calculated Availability Grid (F-03, AC-03) */}
+          {/* 1. Server-Calculated Availability Grid (F-03, AC-03) with Interactive Booking Trigger */}
           <AvailabilityMatrix
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             availability={availability}
             isLoading={isLoadingAvailability}
             error={availabilityError}
+            onSelectSlot={(roomId, slotIndex) => {
+              setBookingRoomId(roomId);
+              setBookingSlot(slotIndex);
+              setIsBookingOpen(true);
+            }}
           />
 
           {/* 2. Room Fleet Catalog (F-02, AC-02) */}
-          <RoomCatalog rooms={rooms} isLoading={isLoadingRooms} />
+          <RoomCatalog
+            rooms={rooms}
+            isLoading={isLoadingRooms}
+            onBookRoom={(roomId) => {
+              setBookingRoomId(roomId);
+              setBookingSlot(0);
+              setIsBookingOpen(true);
+            }}
+          />
         </div>
       )}
 
@@ -335,7 +355,7 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-pink-400 animate-pulse" />
             <span className="text-sm font-medium text-slate-600">
-              Issue #3 Room Catalog and 14-Slot Availability Matrix active. Ready for online booking engine in Issue #4.
+              Issue #4 Online Booking Engine and Contiguous Validation active. Ready for Issue #5 Conflict Prevention.
             </span>
           </div>
         </GlassCard>
@@ -346,6 +366,26 @@ export const App: React.FC = () => {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Online Booking Modal (F-04, AC-04a) */}
+      <BookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        rooms={rooms}
+        selectedRoomId={bookingRoomId}
+        selectedDate={selectedDate}
+        selectedSlot={bookingSlot}
+        token={token}
+        user={user}
+        onBookingSuccess={(confirmed) => {
+          setNotice({
+            type: 'success',
+            message: `Booking confirmed! Reservation code ${confirmed.bookingCode} for ${confirmed.timeRange} in Room ${confirmed.roomNumber}.`
+          });
+          setAvailabilityRefreshTrigger((prev) => prev + 1);
+        }}
+        onRequestLogin={() => setIsLoginOpen(true)}
       />
     </AppLayout>
   );

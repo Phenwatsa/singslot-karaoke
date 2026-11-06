@@ -149,6 +149,14 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
     expect(Array.isArray(res.body.rooms)).toBe(true);
     expect(res.body.rooms.length).toBe(9);
 
+    // AC-03: Verify that all 9 rooms contain exactly 14 slots with indices 0..13
+    res.body.rooms.forEach((room: any) => {
+      expect(room.slots).toHaveLength(14);
+      expect(room.slots.map((s: any) => s.slotIndex)).toEqual(
+        Array.from({ length: 14 }, (_, index) => index)
+      );
+    });
+
     // Locate room S01 in response
     const s01 = res.body.rooms.find((r: any) => r.roomNumber === 'S01');
     expect(s01).toBeDefined();
@@ -199,6 +207,97 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
       expect(s.isAvailable).toBe(false);
       expect(s.isPast).toBe(true);
     });
+  });
+
+  /**
+   * RoomBlock Occupancy Coverage:
+   * Slot with active RoomBlock must be marked as isOccupied: true and isAvailable: false.
+   */
+  it('room blocks: slot with active RoomBlock is marked as occupied and unavailable', async () => {
+    const BLOCK_DATE = getFutureBangkokDateString(20);
+    const roomS03 = await prisma.room.findUnique({ where: { roomNumber: 'S03' } });
+    expect(roomS03).not.toBeNull();
+
+    const createdBlock = await prisma.roomBlock.create({
+      data: {
+        roomId: roomS03!.id,
+        blockDate: BLOCK_DATE,
+        slotIndex: 5,
+        reason: 'Maintenance and sterilization'
+      }
+    });
+
+    try {
+      const res = await request(app).get(`/api/availability?date=${BLOCK_DATE}`);
+      expect(res.status).toBe(200);
+      const s03 = res.body.rooms.find((r: any) => r.roomNumber === 'S03');
+      expect(s03).toBeDefined();
+
+      const slot5 = s03.slots.find((s: any) => s.slotIndex === 5);
+      expect(slot5).toBeDefined();
+      expect(slot5.isOccupied).toBe(true);
+      expect(slot5.isAvailable).toBe(false);
+    } finally {
+      await prisma.roomBlock.deleteMany({
+        where: { id: createdBlock.id }
+      });
+    }
+  });
+
+  /**
+   * CANCELLED Booking Coverage:
+   * Slot belonging to CANCELLED booking must NOT be treated as occupied.
+   */
+  it('cancelled bookings: slots from CANCELLED bookings are not treated as occupied', async () => {
+    const CANCEL_DATE = getFutureBangkokDateString(21);
+    const roomM02 = await prisma.room.findUnique({ where: { roomNumber: 'M02' } });
+    const customer = await prisma.user.findUnique({ where: { email: 'customer1@singslot.local' } });
+    expect(roomM02).not.toBeNull();
+    expect(customer).not.toBeNull();
+
+    const CANCEL_CODE = 'TEST-CANCEL-SLOT4';
+
+    const cancelledBooking = await prisma.booking.create({
+      data: {
+        bookingCode: CANCEL_CODE,
+        userId: customer!.id,
+        roomId: roomM02!.id,
+        bookingDate: CANCEL_DATE,
+        startSlot: 4,
+        durationHours: 1,
+        partySize: 4,
+        customerName: customer!.fullName,
+        status: BookingStatus.CANCELLED
+      }
+    });
+
+    await prisma.bookingSlot.create({
+      data: {
+        bookingId: cancelledBooking.id,
+        roomId: roomM02!.id,
+        bookingDate: CANCEL_DATE,
+        slotIndex: 4
+      }
+    });
+
+    try {
+      const res = await request(app).get(`/api/availability?date=${CANCEL_DATE}`);
+      expect(res.status).toBe(200);
+      const m02 = res.body.rooms.find((r: any) => r.roomNumber === 'M02');
+      expect(m02).toBeDefined();
+
+      const slot4 = m02.slots.find((s: any) => s.slotIndex === 4);
+      expect(slot4).toBeDefined();
+      expect(slot4.isOccupied).toBe(false);
+      expect(slot4.isAvailable).toBe(true);
+    } finally {
+      await prisma.bookingSlot.deleteMany({
+        where: { booking: { bookingCode: CANCEL_CODE } }
+      });
+      await prisma.booking.deleteMany({
+        where: { bookingCode: CANCEL_CODE }
+      });
+    }
   });
 
   /**

@@ -37,6 +37,7 @@ export const App: React.FC = () => {
   const [availability, setAvailability] = useState<RoomAvailability[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const [notice, setNotice] = useState<{
     type: 'info' | 'success';
@@ -86,9 +87,13 @@ export const App: React.FC = () => {
   }, []);
 
   // Fetch Server-Calculated Availability when selectedDate changes (F-03, AC-03)
-  // Protected with AbortController and isCurrent guard to eliminate stale race conditions
+  // Protected with AbortController, immediate stale data purge, and error state handling
   useEffect(() => {
     if (!selectedDate) return;
+
+    // Immediately clear previous availability and reset errors to prevent stale matrix displays
+    setAvailability([]);
+    setAvailabilityError(null);
 
     const controller = new AbortController();
     let isCurrent = true;
@@ -103,10 +108,12 @@ export const App: React.FC = () => {
           const data: AvailabilityResponse = await res.json();
           if (isCurrent && data.success && data.rooms) {
             setAvailability(data.rooms);
+            setAvailabilityError(null);
           }
         } else {
           if (isCurrent) {
-            console.warn(`Availability query failed with HTTP status ${res.status}`);
+            setAvailability([]);
+            setAvailabilityError(`Failed to load availability for ${selectedDate} (HTTP ${res.status}).`);
           }
         }
       } catch (err: any) {
@@ -115,7 +122,8 @@ export const App: React.FC = () => {
           return;
         }
         if (isCurrent) {
-          console.warn('Failed to fetch availability for date', selectedDate, err);
+          setAvailability([]);
+          setAvailabilityError('Unable to connect to availability service. Please check your connection.');
         }
       } finally {
         if (isCurrent) {
@@ -277,6 +285,7 @@ export const App: React.FC = () => {
             onDateChange={setSelectedDate}
             availability={availability}
             isLoading={isLoadingAvailability}
+            error={availabilityError}
           />
 
           {/* 2. Room Fleet Catalog (F-02, AC-02) */}

@@ -9,13 +9,15 @@ interface AvailabilityMatrixProps {
   onDateChange: (date: string) => void;
   availability: RoomAvailability[];
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   selectedDate,
   onDateChange,
   availability,
-  isLoading = false
+  isLoading = false,
+  error = null
 }) => {
   // Check if selected date is in the past using Asia/Bangkok calendar
   const isPastDate = isPastBangkokDate(selectedDate);
@@ -27,7 +29,7 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-slate-900">14-Slot Availability Matrix</h3>
-            <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-pink-600 border border-pink-200">
+            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
               10:00–24:00
             </span>
           </div>
@@ -35,25 +37,25 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Status Legend (Pastel Cosmic Theme Palette) */}
-          <div className="flex items-center gap-3 text-xs font-medium bg-white/80 backdrop-blur-sm px-3.5 py-1.5 rounded-xl border border-pink-100 shadow-sm shadow-purple-100/30">
+          {/* Status Legend (Aligned with In-Scope Green / Red / Gray in Pastel Palette) */}
+          <div className="flex items-center gap-3.5 text-xs font-medium bg-white/80 backdrop-blur-sm px-3.5 py-1.5 rounded-xl border border-pink-100/80 shadow-xs">
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)] border border-cyan-200" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)] border border-emerald-200" />
               <span className="text-slate-700 font-semibold">Available</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.7)] border border-pink-200" />
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.7)] border border-rose-200" />
               <span className="text-slate-700 font-semibold">Occupied</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-purple-300 shadow-[0_0_6px_rgba(192,132,252,0.6)] border border-purple-200" />
+              <span className="h-2.5 w-2.5 rounded-full bg-slate-300 shadow-[0_0_6px_rgba(148,163,184,0.5)] border border-slate-200" />
               <span className="text-slate-500">Closed (Past)</span>
             </span>
           </div>
 
           {/* Date Selector */}
-          <div className="flex items-center gap-2 rounded-xl border border-pink-200 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-sm hover:border-pink-300 transition-colors">
-            <Calendar className="h-4 w-4 text-pink-500" />
+          <div className="flex items-center gap-2 rounded-xl border border-pink-200/80 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-xs hover:border-pink-300 transition-colors">
+            <Calendar className="h-4 w-4 text-purple-500" />
             <input
               type="date"
               value={selectedDate}
@@ -74,11 +76,25 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </div>
       )}
 
+      {/* Error State Banner */}
+      {error && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800 shadow-sm">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+          <span>
+            <strong>Error Loading Availability:</strong> {error}
+          </span>
+        </div>
+      )}
+
       {/* Matrix Table */}
       <GlassCard className="overflow-x-auto p-4">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-purple-400 animate-pulse font-medium">
             Calculating room and slot availability for {selectedDate}...
+          </div>
+        ) : error ? (
+          <div className="py-12 text-center text-xs text-rose-600 font-medium">
+            {error}
           </div>
         ) : availability.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-400 font-medium">
@@ -126,18 +142,18 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         }`}
                         className={`group relative flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all ${
                           isClosed
-                            ? 'border-purple-100/80 bg-purple-50/40 text-purple-400/80 cursor-not-allowed'
+                            ? 'border-slate-200/80 bg-slate-100/70 text-slate-400 cursor-not-allowed'
                             : isOccupied
-                            ? 'border-pink-200 bg-pink-50/90 text-pink-700 cursor-not-allowed shadow-sm shadow-pink-100/30'
-                            : 'border-cyan-200/90 bg-cyan-50/80 text-cyan-800 hover:bg-cyan-100/80 hover:border-cyan-300 shadow-xs cursor-default'
+                            ? 'border-rose-200 bg-rose-50/90 text-rose-700 cursor-not-allowed shadow-xs'
+                            : 'border-emerald-200/90 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100/80 hover:border-emerald-300 shadow-xs cursor-default'
                         }`}
                       >
                         {isClosed ? (
-                          <span className="text-[10px] text-purple-400/80 font-medium">Closed</span>
+                          <span className="text-[10px] text-slate-400 font-medium">Closed</span>
                         ) : isOccupied ? (
-                          <span className="text-[11px] font-semibold text-pink-700">Busy</span>
+                          <span className="text-[11px] font-semibold text-rose-700">Busy</span>
                         ) : (
-                          <span className="text-[11px] font-bold text-cyan-800">Open</span>
+                          <span className="text-[11px] font-bold text-emerald-800">Open</span>
                         )}
                       </div>
                     );

@@ -6,6 +6,7 @@ import { Room, RoomType } from '../../types/room';
 interface RoomCatalogProps {
   rooms: Room[];
   isLoading?: boolean;
+  onBookRoom?: (roomId: string) => void;
 }
 
 const TIER_CONFIG: Array<{
@@ -38,7 +39,7 @@ const TIER_CONFIG: Array<{
   }
 ];
 
-export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = false }) => {
+export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = false, onBookRoom }) => {
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -113,9 +114,19 @@ export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = fal
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2 border-t border-pink-100/60 pt-3 text-xs text-slate-600 font-medium">
-                    <Users className="h-4 w-4 text-purple-400" />
-                    <span>Max Capacity: <strong className="text-slate-900 font-bold">{room.capacity} Pax</strong></span>
+                  <div className="mt-4 flex items-center justify-between border-t border-pink-100/60 pt-3 text-xs text-slate-600 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-purple-400" />
+                      <span>Max Capacity: <strong className="text-slate-900 font-bold">{room.capacity} Pax</strong></span>
+                    </div>
+                    {onBookRoom && (
+                      <button
+                        onClick={() => onBookRoom(room.id)}
+                        className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer"
+                      >
+                        Book Room
+                      </button>
+                    )}
                   </div>
                 </GlassCard>
               ))}

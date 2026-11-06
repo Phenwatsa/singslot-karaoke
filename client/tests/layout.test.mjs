@@ -164,6 +164,24 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.match(matrixContent, /isPastBangkokDate/, 'AvailabilityMatrix must check past dates via Asia/Bangkok utility');
   });
 
+  await t.test('BookingModal conforms to Issue #4 contracts (F-04, AC-04a)', () => {
+    const modalPath = path.join(clientRoot, 'src', 'components', 'booking', 'BookingModal.tsx');
+    assert.strictEqual(fs.existsSync(modalPath), true, 'BookingModal.tsx must exist');
+    const modalContent = fs.readFileSync(modalPath, 'utf8');
+
+    // API contract and validations
+    assert.match(modalContent, /\/api\/bookings\/online/, 'BookingModal must post to /api/bookings/online');
+    assert.match(modalContent, /durationHours/, 'BookingModal must bind durationHours');
+    assert.match(modalContent, /partySize/, 'BookingModal must bind partySize');
+    assert.match(modalContent, /isPastBangkokDate/, 'BookingModal must validate past dates via Asia/Bangkok utility');
+
+    // App.tsx wiring verification
+    const appPath = path.join(clientRoot, 'src', 'App.tsx');
+    const appContent = fs.readFileSync(appPath, 'utf8');
+    assert.match(appContent, /BookingModal/, 'App.tsx must include BookingModal component');
+    assert.match(appContent, /isBookingOpen/, 'App.tsx must manage isBookingOpen reactive state');
+  });
+
   await t.test('Date utility formats and evaluates Asia/Bangkok dates consistently', async () => {
     const dateUtilPath = path.join(clientRoot, 'src', 'utils', 'date.ts');
     assert.strictEqual(fs.existsSync(dateUtilPath), true, 'client/src/utils/date.ts must exist');

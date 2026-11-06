@@ -1,8 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { Role } from '@prisma/client';
 import { verifyToken, requireRole } from '../middlewares/auth';
+import { createOnlineBooking } from '../controllers/booking.controller';
 
 export const bookingRouter = Router();
+
+/**
+ * POST /api/bookings/online
+ * Customer online booking route.
+ * Enforces authentication via verifyToken, validates contiguous slots, duration,
+ * capacity, past-slot rules, and executes creation inside an atomic Prisma transaction.
+ */
+bookingRouter.post('/online', verifyToken, createOnlineBooking);
 
 /**
  * GET /api/bookings/master

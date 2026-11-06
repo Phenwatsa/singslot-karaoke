@@ -10,6 +10,7 @@ interface AvailabilityMatrixProps {
   availability: RoomAvailability[];
   isLoading?: boolean;
   error?: string | null;
+  onSelectSlot?: (roomId: string, slotIndex: number) => void;
 }
 
 export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
@@ -17,7 +18,8 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   onDateChange,
   availability,
   isLoading = false,
-  error = null
+  error = null,
+  onSelectSlot
 }) => {
   // Check if selected date is in the past using Asia/Bangkok calendar
   const isPastDate = isPastBangkokDate(selectedDate);
@@ -129,23 +131,29 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                   {room.slots.map((slot) => {
                     const isClosed = slot.isPast ?? isPastDate;
                     const isOccupied = slot.isOccupied ?? (!slot.isAvailable && !isClosed);
+                    const isOpen = !isClosed && !isOccupied;
 
                     return (
                       <div
                         key={slot.slotIndex}
+                        onClick={() => {
+                          if (isOpen && onSelectSlot) {
+                            onSelectSlot(room.id, slot.slotIndex);
+                          }
+                        }}
                         title={`${room.roomNumber} • Slot ${slot.slotIndex} (${slot.timeRange}): ${
                           isClosed
                             ? 'Closed (Time has elapsed / past)'
                             : isOccupied
                             ? 'Occupied / Booked'
-                            : 'Open (Available • Booking engine activates in Issue #4)'
+                            : 'Open (Click to book this slot)'
                         }`}
                         className={`group relative flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all ${
                           isClosed
                             ? 'border-slate-200/80 bg-slate-100/70 text-slate-400 cursor-not-allowed'
                             : isOccupied
                             ? 'border-rose-200 bg-rose-50/90 text-rose-700 cursor-not-allowed shadow-xs'
-                            : 'border-emerald-200/90 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100/80 hover:border-emerald-300 shadow-xs cursor-default'
+                            : 'border-emerald-200/90 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100/90 hover:border-emerald-400 shadow-xs cursor-pointer active:scale-95'
                         }`}
                       >
                         {isClosed ? (

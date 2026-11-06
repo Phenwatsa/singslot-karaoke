@@ -138,9 +138,10 @@ describe('Feature F-02 & F-03: Room Catalog & Server Availability Suite', () => 
   });
 
   /**
-   * TEST-03 (AC-03): Server-calculated availability accurately reflects pre-seeded slot 3 occupancy.
+   * TEST-03 (AC-03): Server-calculated availability accurately reflects
+   * a test-created CONFIRMED booking fixture occupying slot 3 in room S01.
    */
-  it('TEST-03: GET /api/availability reflects Slot 3 occupancy for room S01 on target date', async () => {
+  it('TEST-03: GET /api/availability reflects test-created Slot 3 fixture occupancy for room S01 on target date', async () => {
     const res = await request(app).get(`/api/availability?date=${TEST_DATE}`);
 
     expect(res.status).toBe(200);

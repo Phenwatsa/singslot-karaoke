@@ -87,13 +87,17 @@ export const App: React.FC = () => {
   }, []);
 
   // Fetch Server-Calculated Availability when selectedDate changes (F-03, AC-03)
-  // Protected with AbortController, immediate stale data purge, and error state handling
+  // Protected with AbortController, immediate stale data purge, and empty/error state handling
   useEffect(() => {
-    if (!selectedDate) return;
-
     // Immediately clear previous availability and reset errors to prevent stale matrix displays
     setAvailability([]);
     setAvailabilityError(null);
+
+    if (!selectedDate) {
+      setAvailabilityError('Please select a valid date.');
+      setIsLoadingAvailability(false);
+      return;
+    }
 
     const controller = new AbortController();
     let isCurrent = true;

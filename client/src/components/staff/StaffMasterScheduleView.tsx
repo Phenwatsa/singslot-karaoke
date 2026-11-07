@@ -63,6 +63,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
   const [bookings, setBookings] = useState<MasterBooking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Natural trackpad gesture listener for horizontal table swipe
@@ -83,45 +84,62 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
     };
   }, []);
 
-  const fetchMasterSchedule = async () => {
-    if (!token) {
-      setError('Staff authentication required.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!selectedDate) {
-      setError('Please select a valid date.');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/bookings/master?date=${selectedDate}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.bookings)) {
-        setBookings(data.bookings);
-      } else {
-        setError(data.error?.message || 'Failed to fetch master schedule.');
-      }
-    } catch (err) {
-      setError('Network connection error while fetching master schedule.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Fetch schedule with AbortController to eliminate stale-response race conditions
   useEffect(() => {
-    fetchMasterSchedule();
-  }, [token, selectedDate]);
+    let isCurrent = true;
+    const controller = new AbortController();
+
+    const fetchSchedule = async () => {
+      if (!token) {
+        setError('Staff authentication required.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!selectedDate) {
+        setError('Please select a valid date.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`/api/bookings/master?date=${selectedDate}`, {
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (isCurrent) {
+          if (res.ok && data.success && Array.isArray(data.bookings)) {
+            setBookings(data.bookings);
+          } else {
+            setError(data.error?.message || 'Failed to fetch master schedule.');
+          }
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        if (isCurrent) {
+          setError('Network connection error while fetching master schedule.');
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchSchedule();
+
+    return () => {
+      isCurrent = false;
+      controller.abort();
+    };
+  }, [token, selectedDate, refreshTrigger]);
 
   // Pre-index bookings by room and slotIndex for O(1) matrix lookup
   const occupancyMap = useMemo(() => {
@@ -196,7 +214,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
           />
 
           <button
-            onClick={fetchMasterSchedule}
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
             disabled={isLoading}
             className="flex items-center gap-1.5 rounded-full border border-pink-200/80 bg-white/80 px-3.5 py-2 text-xs font-bold text-purple-700 shadow-xs hover:bg-white hover:shadow-sm transition-all focus:outline-none disabled:opacity-50 cursor-pointer"
             title="Refresh schedule"
@@ -235,9 +253,9 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
 
           {/* Schedule Legend */}
           <div className="flex items-center gap-3 text-xs bg-white/80 px-3 py-1.5 rounded-xl border border-pink-100 shadow-2xs">
-            <span className="flex items-center gap-1.5 font-medium text-slate-600">
-              <span className="h-2.5 w-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
-              <span>Available</span>
+            <span className="flex items-center gap-1.5 font-medium text-slate-500">
+              <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 border border-slate-300" />
+              <span>No Confirmed Booking</span>
             </span>
             <span className="flex items-center gap-1.5 font-medium text-purple-900 font-bold">
               <span className="h-2.5 w-2.5 rounded-sm bg-purple-500 border border-purple-600 shadow-xs" />
@@ -261,7 +279,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                 <p className="text-xs mt-1 text-rose-600">{error}</p>
               </div>
               <button
-                onClick={fetchMasterSchedule}
+                onClick={() => setRefreshTrigger((prev) => prev + 1)}
                 className="rounded-lg bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800 hover:bg-rose-200 transition-colors"
               >
                 Retry
@@ -325,10 +343,10 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                                   isFirst && isLast
                                     ? 'rounded-xl'
                                     : isFirst
-                                    ? 'rounded-l-xl rounded-r-none'
+                                    ? 'rounded-l-xl rounded-r-none border-r-0'
                                     : isLast
-                                    ? 'rounded-r-xl rounded-l-none'
-                                    : 'rounded-none'
+                                    ? 'rounded-r-xl rounded-l-none border-l-0'
+                                    : 'rounded-none border-x-0'
                                 } border-purple-300 bg-gradient-to-r from-purple-200/90 via-purple-100/90 to-pink-100/90 text-purple-950 hover:brightness-105 active:scale-95`}
                               >
                                 {isFirst ? (
@@ -342,12 +360,12 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                             );
                           }
 
-                          // Empty / Available Slot
+                          // Empty / No Confirmed Booking Slot
                           return (
                             <div
                               key={slotIdx}
-                              title={`${room.roomNumber} • ${10 + slotIdx}:00 – ${11 + slotIdx}:00: No confirmed booking`}
-                              className="flex h-9 items-center justify-center rounded-xl border border-emerald-100/80 bg-emerald-50/50 text-[11px] text-emerald-600/70"
+                              title={`${room.roomNumber} • ${10 + slotIdx}:00 – ${11 + slotIdx}:00: No confirmed booking recorded`}
+                              className="flex h-9 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/70 text-[11px] text-slate-400"
                             >
                               <span className="text-[10px] font-bold">—</span>
                             </div>

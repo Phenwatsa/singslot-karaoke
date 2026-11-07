@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { GlassCard } from '../layout/GlassCard';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { RoomAvailability } from '../../types/room';
 import { isPastBangkokDate } from '../../utils/date';
 
 interface AvailabilityMatrixProps {
   selectedDate: string;
-  onDateChange: (date: string) => void;
+  onDateChange?: (date: string) => void;
   availability: RoomAvailability[];
   isLoading?: boolean;
   error?: string | null;
@@ -15,7 +15,6 @@ interface AvailabilityMatrixProps {
 
 export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   selectedDate,
-  onDateChange,
   availability,
   isLoading = false,
   error = null,
@@ -23,19 +22,39 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
 }) => {
   // Check if selected date is in the past using Asia/Bangkok calendar
   const isPastDate = isPastBangkokDate(selectedDate);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Enable direct two-finger trackpad horizontal scrolling while preventing window overscroll bounce
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // If user swipes horizontally on trackpad or shift+scroll
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 0) {
+        el.scrollLeft += e.deltaX;
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   return (
     <div className="space-y-4">
       {/* Minimal Header Controls & Date Picker */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900">14-Slot Availability Matrix</h3>
-            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
-              10:00–24:00
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">Live Room Schedule</h3>
+            <span className="rounded-full bg-gradient-to-r from-pink-100 via-purple-100 to-sky-100 px-2.5 py-0.5 text-[10px] font-extrabold text-purple-950 border border-pink-200/60 shadow-2xs">
+              Open 10:00 – 24:00
             </span>
           </div>
-          <p className="text-xs text-slate-500">Real-time slot vacancy calculated by server</p>
+          <p className="text-xs text-slate-500 font-medium">
+            Real-time Availability Matrix • Select any open slot to reserve your suite instantly
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -53,17 +72,6 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <span className="h-2.5 w-2.5 rounded-full bg-slate-300 shadow-[0_0_6px_rgba(148,163,184,0.5)] border border-slate-200" />
               <span className="text-slate-500">Closed (Past)</span>
             </span>
-          </div>
-
-          {/* Date Selector */}
-          <div className="flex items-center gap-2 rounded-xl border border-pink-200/80 bg-white/90 px-3 py-1.5 text-xs text-slate-700 shadow-xs hover:border-pink-300 transition-colors">
-            <Calendar className="h-4 w-4 text-purple-500" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
-            />
           </div>
         </div>
       </div>
@@ -88,8 +96,17 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </div>
       )}
 
+      {/* Mobile Swipe Guidance Banner */}
+      <div className="flex lg:hidden items-center justify-between text-[11px] font-semibold text-slate-500 px-1 bg-white/70 py-1.5 rounded-xl border border-pink-100/70">
+        <span>14 Slots (10:00 – 24:00)</span>
+        <span className="flex items-center gap-1 text-purple-700 font-bold">
+          <span>Swipe to explore hours</span>
+          <span>→</span>
+        </span>
+      </div>
+
       {/* Matrix Table */}
-      <GlassCard className="overflow-x-auto p-4">
+      <GlassCard className="p-3 sm:p-5 min-h-[380px] flex flex-col justify-center">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-purple-400 animate-pulse font-medium">
             Calculating room and slot availability for {selectedDate}...
@@ -103,31 +120,42 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             No active rooms found.
           </div>
         ) : (
-          <div className="min-w-[850px]">
-            {/* Slot Header Row */}
-            <div className="grid grid-cols-[70px_repeat(14,minmax(0,1fr))] gap-1.5 pb-3 border-b border-pink-100 text-center text-[11px] font-semibold text-slate-500">
-              <div className="text-left pl-2 font-bold text-slate-700">Room</div>
-              {Array.from({ length: 14 }).map((_, idx) => (
-                <div key={idx} className="flex flex-col items-center justify-center">
-                  <span className="text-[10px] text-purple-400 font-mono">#{idx}</span>
-                  <span className="text-[11px] text-slate-700 font-semibold">{10 + idx}:00</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Room Rows */}
-            <div className="divide-y divide-pink-50 pt-2">
-              {availability.map((room) => (
-                <div key={room.id} className="grid grid-cols-[70px_repeat(14,minmax(0,1fr))] gap-1.5 py-2.5 items-center">
-                  {/* Room Label */}
-                  <div className="flex items-center gap-2 pl-2">
-                    <span className="font-extrabold text-slate-900 text-sm">{room.roomNumber}</span>
-                    <span className="text-[10px] text-pink-400 uppercase tracking-wider font-mono font-bold">
-                      {room.type[0]}
-                    </span>
+          <div
+            ref={scrollContainerRef}
+            className="w-full overflow-x-auto pb-2 overscroll-x-contain touch-pan-x"
+          >
+            <div className="min-w-[760px] lg:min-w-0">
+              {/* Slot Header Row */}
+              <div className="grid grid-cols-[64px_repeat(14,minmax(50px,1fr))] lg:grid-cols-[55px_repeat(14,minmax(0,1fr))] gap-1 sm:gap-1.5 pb-2.5 border-b border-pink-100 text-center text-[11px] font-semibold text-slate-500">
+                <div className="text-left pl-1 font-bold text-slate-700">Room</div>
+                {Array.from({ length: 14 }).map((_, idx) => (
+                  <div key={idx} className="flex items-center justify-center py-0.5">
+                    <span className="text-[11px] text-slate-700 font-bold">{10 + idx}:00</span>
                   </div>
+                ))}
+              </div>
 
-                  {/* 14 Slots */}
+              {/* Room Rows */}
+              <div className="divide-y divide-pink-50 pt-1.5">
+                {availability.map((room) => (
+                  <div key={room.id} className="grid grid-cols-[64px_repeat(14,minmax(50px,1fr))] lg:grid-cols-[55px_repeat(14,minmax(0,1fr))] gap-1 sm:gap-1.5 py-2 items-center">
+                    {/* Room Label */}
+                    <div className="flex items-center gap-1.5 pl-1">
+                      <span className="font-extrabold text-slate-900 text-xs sm:text-sm">{room.roomNumber}</span>
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-mono font-bold ${
+                          room.type === 'SMALL'
+                            ? 'text-sky-500'
+                            : room.type === 'MEDIUM'
+                            ? 'text-purple-500'
+                            : 'text-amber-600'
+                        }`}
+                      >
+                        {room.type[0]}
+                      </span>
+                    </div>
+
+                    {/* 14 Slots */}
                   {room.slots.map((slot) => {
                     const isClosed = slot.isPast ?? isPastDate;
                     const isOccupied = slot.isOccupied ?? (!slot.isAvailable && !isClosed);
@@ -170,7 +198,8 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
       </GlassCard>
     </div>
   );

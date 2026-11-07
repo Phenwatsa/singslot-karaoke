@@ -24,7 +24,7 @@
 | **#2**  | **Issue #2**  | `feat/issue-2-auth-jwt-roles`         | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
 | **#9**  | **Issue #3**  | `feat/issue-3-room-availability-grid` | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
 | **#10** | **Issue #4**  | `feat/issue-4-booking-engine`         | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
-| **#5**  | **Issue #5**  | `feat/issue-5-conflict-prevention`    | @lephirada | @Phenwatsa |    Planned    |     _Upcoming_     |
+| **#11** | **Issue #5**  | `feat/issue-5-conflict-prevention`    | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
 | **#6**  | **Issue #6**  | `feat/issue-6-booking-views`          | @lephirada | @Phenwatsa |    Planned    |     _Upcoming_     |
 
 ---
@@ -174,3 +174,38 @@
   > _All 54 tests (43 server + 11 client) pass cleanly in ~2.3s with `--runInBand`, and typecheck and build pass with 0 errors. PR #10 is ready for merge into `sprint-1-staging`."_
 
 - **Outcome:** PR #10 approved for integration into `sprint-1-staging`.
+
+---
+
+### 📌 PR #11: `feat(booking): verify conflict prevention, TDD contiguous rule, and concurrency protection [Issue #5]`
+
+- **PR Link:** [https://github.com/Phenwatsa/singslot-karaoke/pull/11](https://github.com/Phenwatsa/singslot-karaoke/pull/11)
+- **Author:** @lephirada
+- **Reviewer:** @Phenwatsa
+- **Source Branch:** `feat/issue-5-conflict-prevention`
+- **Target Branch:** `sprint-1-staging`
+- **Verdict:** **Approved**
+
+#### 🔍 Review Discussion
+
+- **Reviewer (@Phenwatsa):**
+
+  > _"The implementation satisfies the required conflict prevention and concurrency protection criteria._
+  >
+  > _TEST-04b verifies that booking across a pre-seeded occupied slot returns HTTP 409 SLOT_CONFLICT without creating additional bookings or booking slots._
+  > _The Red–Green commits demonstrate the behavior before and after restoring application-level interval validation. The Red-phase failure confirms that disabling this validation causes the request to reach the database-level conflict handler instead._
+  > _TEST-04e uses Promise.all to simulate competing requests and verifies exactly one HTTP 201 response and one HTTP 409 response, along with the persisted booking and slot ownership._
+  > _The PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex]) is present and directly verified through a duplicate insertion test._
+  > _Test cleanup is appropriately scoped to records created by this test suite._
+  > _The attached test evidence reports 57/57 passing tests, with typecheck and production build also reported as successful._
+  >
+  > _No blocking issues were found within the scope of this PR._
+  >
+  > _Recommendation: Approve."_
+  - **Status:** **Approved**
+
+- **Developer Response (@lephirada):**
+
+  > _"Thank you @Phenwatsa for the thorough review and official approval! All conflict prevention requirements, concurrency protections, multi-layered database constraints, and TDD evidence cycles have been verified with 100% test pass rate (57/57 tests). PR #11 is ready to merge into `sprint-1-staging`."_
+
+- **Outcome:** PR #11 approved for integration into `sprint-1-staging`.

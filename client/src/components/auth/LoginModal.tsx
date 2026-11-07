@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../layout/GlassCard';
 import { Lock, Mail, ShieldAlert, Sparkles, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { User, AuthResponse } from '../../types/auth';
@@ -18,6 +18,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -73,8 +88,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md">
+    <div
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <GlassCard className="relative border-pink-200/90 bg-white/95 shadow-2xl shadow-purple-200/50">
           {/* Close button */}
           <button
@@ -87,8 +108,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
           {/* Header */}
           <div className="mb-6 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 shadow-md shadow-pink-500/25 mb-3">
-              <Lock className="h-6 w-6 text-white" />
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 shadow-md shadow-purple-200/50 border border-pink-200/60 mb-3">
+              <Lock className="h-6 w-6 text-purple-950" />
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
               Sign In to SingSlot
@@ -101,7 +122,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* Quick-Fill Demo Buttons */}
           <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 shadow-sm">
             <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold uppercase tracking-wider text-purple-700">
-              <Sparkles className="h-3.5 w-3.5 text-pink-600" />
+              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
               <span>Sprint 1 Seeded Demo Accounts</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -173,7 +194,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-pink-500/20 hover:brightness-105 active:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-4 py-2.5 text-sm font-extrabold text-purple-950 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-pink-200/50 cursor-pointer"
             >
               {isLoading ? (
                 <>

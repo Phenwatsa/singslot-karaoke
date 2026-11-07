@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="sqGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbcfe8" />
+      <stop offset="50%" stop-color="#e9d5ff" />
+      <stop offset="100%" stop-color="#bae6fd" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#a855f7" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Pastel Rounded Squircle Container -->
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#sqGrad)" filter="url(#glow)" />
+
+  <!-- Lucide MicVocal centered at scale 2x -->
+  <g transform="translate(8, 8) scale(2)" stroke="#581c87" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="m11 7.601-5.994 8.19a1 1 0 0 0 .1 1.298l.817.818a1 1 0 0 0 1.314.087L15.09 12" />
+    <path d="M16.5 21.174C15.5 20.5 14.372 20 13 20c-2.058 0-3.928 2.356-6 2-2.072-.356-2.775-3.369-1.5-4.5" />
+    <circle cx="16" cy="7" r="5" />
+  </g>
+</svg>

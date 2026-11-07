@@ -205,6 +205,34 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.match(headerContent, /title/, 'PageHeader must accept title prop');
   });
 
+  await t.test('Booking Views and Detail Modal conform to Issue #6 contracts (F-05, F-06)', () => {
+    // MyBookingsView verification (F-05, AC-05)
+    const myBookingsPath = path.join(clientRoot, 'src', 'components', 'booking', 'MyBookingsView.tsx');
+    assert.strictEqual(fs.existsSync(myBookingsPath), true, 'MyBookingsView.tsx must exist');
+    const myBookingsContent = fs.readFileSync(myBookingsPath, 'utf8');
+    assert.match(myBookingsContent, /\/api\/bookings\/my/, 'MyBookingsView must query /api/bookings/my');
+    assert.match(myBookingsContent, /bookingCode/, 'MyBookingsView must render bookingCode');
+
+    // BookingDetailModal verification (F-05, AC-05b)
+    const detailModalPath = path.join(clientRoot, 'src', 'components', 'booking', 'BookingDetailModal.tsx');
+    assert.strictEqual(fs.existsSync(detailModalPath), true, 'BookingDetailModal.tsx must exist');
+    const detailModalContent = fs.readFileSync(detailModalPath, 'utf8');
+    assert.match(detailModalContent, /\/api\/bookings\/\$\{bookingId\}/, 'BookingDetailModal must query /api/bookings/:id');
+
+    // StaffMasterScheduleView verification (F-06, AC-06)
+    const staffSchedulePath = path.join(clientRoot, 'src', 'components', 'staff', 'StaffMasterScheduleView.tsx');
+    assert.strictEqual(fs.existsSync(staffSchedulePath), true, 'StaffMasterScheduleView.tsx must exist');
+    const staffScheduleContent = fs.readFileSync(staffSchedulePath, 'utf8');
+    assert.match(staffScheduleContent, /\/api\/bookings\/master\?date=/, 'StaffMasterScheduleView must query /api/bookings/master?date=');
+
+    // App.tsx wiring verification
+    const appPath = path.join(clientRoot, 'src', 'App.tsx');
+    const appContent = fs.readFileSync(appPath, 'utf8');
+    assert.match(appContent, /MyBookingsView/, 'App.tsx must include MyBookingsView component');
+    assert.match(appContent, /StaffMasterScheduleView/, 'App.tsx must include StaffMasterScheduleView component');
+    assert.match(appContent, /BookingDetailModal/, 'App.tsx must include BookingDetailModal component');
+  });
+
   await t.test('HTML Entry Point and Root Shell configured properly', () => {
     const htmlPath = path.join(clientRoot, 'index.html');
     const htmlContent = fs.readFileSync(htmlPath, 'utf8');

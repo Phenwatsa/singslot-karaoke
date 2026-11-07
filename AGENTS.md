@@ -14,7 +14,7 @@ Both team members use **MacBook M1 with 8GB RAM**. Past projects experienced sys
    - **NEVER** run Docker Desktop or `docker-compose` during Sprint 1 development. (Docker is assessed in Lab 5 on 15 Nov, NOT Deliverable 1 on 8 Nov).
    - Running Docker on 8GB Mac exhausts 3–4 GB of memory and will crash the OS.
 2. **NO HEADLESS BROWSERS (NO PLAYWRIGHT/CHROMIUM IN SPRINT 1):**
-   - Automated testing for Sprint 1 must use **Supertest + Jest/Vitest** (pure HTTP API tests).
+   - Automated testing for Sprint 1 must use **Supertest + Jest** (pure HTTP API tests).
    - Do **NOT** spin up headless Chromium/Playwright instances that consume 2GB+ RAM.
 3. **SERIAL TEST EXECUTION ONLY (`--runInBand`):**
    - All test commands must run with `--runInBand` or `--maxWorkers=1`.
@@ -22,7 +22,7 @@ Both team members use **MacBook M1 with 8GB RAM**. Past projects experienced sys
 4. **LIGHTWEIGHT STACK & DECOUPLED COMMANDS:**
    - **Frontend:** React + Vite (minimal memory footprint <100MB; NO heavy Next.js dev server).
    - **Backend:** Node.js + Express (<80MB).
-   - **Database:** Prisma with SQLite (zero background RAM) or native Homebrew PostgreSQL service.
+   - **Database:** PostgreSQL (Native Homebrew service or managed local instance).
    - Do **NOT** run multi-process concurrent watchers (`concurrently`) unless explicitly requested. Run backend and frontend commands in separate, bounded steps.
 
 ---
@@ -33,7 +33,7 @@ Both team members use **MacBook M1 with 8GB RAM**. Past projects experienced sys
    - **The AI assistant is strictly prohibited from running git write commands autonomously** (`git add`, `git commit`, `git push`, `git checkout -b`, or branch creation).
    - The AI must provide clear CLI copy-paste commands and Conventional Commit messages (e.g. `feat(auth): ...`, `test(booking): ...`) for the developer to execute manually in their terminal.
 2. **STRICT 1 ISSUE = 1 BRANCH (NO JUMPING / NO COMBINING):**
-   - Decompose work strictly into GitHub Issues. Complete **one issue at a time on one dedicated branch** (e.g., `feat/issue-2-auth`).
+   - Decompose work strictly into GitHub Issues. Complete **one issue at a time on one dedicated branch** (e.g., `feat/issue-2-auth-jwt-roles`).
    - Never jump across issues or combine multiple issues into a single branch.
 3. **FROZEN COMPLETED ISSUES (FORWARD-ONLY FIXES):**
    - We **never return to edit a closed/merged issue or branch**.
@@ -56,7 +56,7 @@ Both team members use **MacBook M1 with 8GB RAM**. Past projects experienced sys
 
 To guarantee that screens built by both developers (Customer vs. Staff) share a 100% identical look-and-feel, layout structure, and aesthetic polish:
 
-1. **CENTRALIZED LAYOUT PATTERN (`src/components/layout/`):**
+1. **CENTRALIZED LAYOUT PATTERN (`client/src/components/layout/`):**
    - All page views must be wrapped inside the shared layout template (e.g. `AppLayout.tsx`, `PageHeader.tsx`, `GlassCard.tsx`).
    - **Never create isolated custom page shells.** All navigation bars, footers, background gradients, padding, and typography hierarchies must be inherited directly from the shared layout.
 2. **PLUG-AND-PLAY FUNCTIONAL SLICES:**
@@ -83,7 +83,12 @@ To guarantee that screens built by both developers (Customer vs. Staff) share a 
 5. **TDD EVIDENCE FOR CORE BUSINESS RULES:**
    - For core rules (e.g., `TEST-04b`: rejecting bookings across occupied slots), retain verifiable Git evidence showing the test failed first before implementation and passed afterward.
 6. **MANDATORY TRACEABILITY IDS:**
-   - All requirements, features, and tests must reference stable IDs defined in `docs/`: `FR-01` to `FR-13`, `BR-01` to `BR-09`, `NFR-01` to `NFR-05`, `AC-01` to `AC-06`, `TEST-01` to `TEST-05b`.
+   - All requirements, features, and tests must reference stable IDs defined in `docs/`:
+     - Functional Requirements: `FR-01` to `FR-14`
+     - Business Rules: `BR-01` to `BR-10`
+     - Non-Functional Requirements: `NFR-01` to `NFR-05`
+     - Acceptance Criteria: `AC-01` to `AC-06`
+     - Software Tests: `TEST-01` to `TEST-06` (17 Test IDs: `TEST-01`, `01a`–`01e`, `02`, `03`, `04a`–`04f`, `05`, `05b`, `06`).
 
 ---
 
@@ -102,10 +107,10 @@ To guarantee that screens built by both developers (Customer vs. Staff) share a 
 Focus 100% on **The Golden Online Booking Slice**:
 - ✅ **In-Scope for Sprint 1:**
   1. Seeded User Authentication (Customer & Staff login via JWT, seeded accounts: `staff@singslot.local`, `customer1@singslot.local`).
-  2. Seeded Room Fleet (S01–S03, M01–M03, L01–L03) & 14 hourly slots (10:00–24:00).
-  3. Real-time availability lookup by date.
+  2. Seeded Room Fleet (S01–S03, M01–M03, L01–L03) & 14 hourly slots (10:00–24:00, indexed 0..13).
+  3. Server-calculated availability lookup by date.
   4. Online customer booking (1–5 contiguous hours in same room, no overlaps, no past slots).
-  5. Customer "My Bookings" page (with privacy/data isolation).
+  5. Customer "My Bookings" & Booking Detail view (with data isolation).
   6. Staff Master Schedule inspection page.
   7. Automated tests with 100% pass rate & clean evidence.
 - ❌ **Strictly Deferred to Sprint 2 / 3:**

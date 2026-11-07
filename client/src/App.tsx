@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { GlassCard } from './components/layout/GlassCard';
 import { LoginModal } from './components/auth/LoginModal';
@@ -219,6 +219,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleCloseBooking = useCallback(() => {
+    setIsBookingOpen(false);
+  }, []);
+
+  const handleCloseLogin = useCallback(() => {
+    setIsLoginOpen(false);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setIsDetailOpen(false);
+  }, []);
+
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
@@ -414,13 +426,13 @@ export const App: React.FC = () => {
     {/* Viewport-Root Modals (Rendered outside layout stacking context to guarantee full screen overlay and no click leaks) */}
     <LoginModal
       isOpen={isLoginOpen}
-      onClose={() => setIsLoginOpen(false)}
+      onClose={handleCloseLogin}
       onLoginSuccess={handleLoginSuccess}
     />
 
     <BookingModal
       isOpen={isBookingOpen}
-      onClose={() => setIsBookingOpen(false)}
+      onClose={handleCloseBooking}
       rooms={rooms}
       selectedRoomId={bookingRoomId}
       selectedDate={selectedDate}
@@ -439,7 +451,7 @@ export const App: React.FC = () => {
 
     <BookingDetailModal
       isOpen={isDetailOpen}
-      onClose={() => setIsDetailOpen(false)}
+      onClose={handleCloseDetail}
       bookingId={detailBookingId}
       token={token}
     />

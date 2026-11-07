@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '../layout/GlassCard';
 import { Room } from '../../types/room';
 import { User } from '../../types/auth';
@@ -89,6 +89,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
   }, [roomId, currentRoom?.capacity]);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     // Reset transient states on open and lock body scroll to prevent background jitter/clicks
     if (isOpen) {
@@ -98,7 +103,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       document.body.style.overflow = 'hidden';
 
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
+        if (e.key === 'Escape') onCloseRef.current();
       };
       window.addEventListener('keydown', handleKeyDown);
 
@@ -107,7 +112,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

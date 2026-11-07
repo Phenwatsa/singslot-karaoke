@@ -222,3 +222,4 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({
     </div>
   );
 };
+

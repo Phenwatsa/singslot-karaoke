@@ -21,7 +21,7 @@
 |  PR #   | Related Issue | Branch                                |   Author   |  Reviewer  | Review Status |      Verdict       |
 | :-----: | :-----------: | ------------------------------------- | :--------: | :--------: | :-----------: | :----------------: |
 | **#1**  | **Issue #1**  | `setup/issue-1-baseline-schema`       | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
-| **#2**  | **Issue #2**  | `feat/issue-2-auth-jwt-roles`         | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
+| **#8**  | **Issue #2**  | `feat/issue-2-auth-jwt-roles`         | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
 | **#9**  | **Issue #3**  | `feat/issue-3-room-availability-grid` | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
 | **#10** | **Issue #4**  | `feat/issue-4-booking-engine`         | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
 | **#11** | **Issue #5**  | `feat/issue-5-conflict-prevention`    | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |

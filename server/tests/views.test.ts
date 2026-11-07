@@ -16,6 +16,7 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
   };
 
   const TEST_DATE = getFutureBangkokDateString(25);
+  const OTHER_DATE = getFutureBangkokDateString(26);
   let customer1Token: string;
   let customer2Token: string;
   let staffToken: string;
@@ -26,6 +27,8 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
   let roomM01: { id: string; roomNumber: string; capacity: number };
   let c1BookingId: string;
   let c2BookingId: string;
+  let otherDateBookingId: string;
+  let cancelledBookingId: string;
   const createdBookingIds: string[] = [];
 
   beforeAll(async () => {
@@ -53,12 +56,14 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
     customer2Id = c2Login.body.user.id;
     staffId = staffLogin.body.user.id;
 
-    // 2. Fetch seeded rooms S01 and M01
-    const [s01, m01] = await Promise.all([
-      prisma.room.findUnique({ where: { roomNumber: 'S01' } }),
-      prisma.room.findUnique({ where: { roomNumber: 'M01' } })
-    ]);
+    // 2. Fetch all seeded rooms
+    const allRooms = await prisma.room.findMany({ orderBy: { roomNumber: 'asc' } });
+    if (allRooms.length < 9) {
+      throw new Error(`Database prerequisite missing: expected 9 rooms, found ${allRooms.length}`);
+    }
 
+    const s01 = allRooms.find((r) => r.roomNumber === 'S01');
+    const m01 = allRooms.find((r) => r.roomNumber === 'M01');
     if (!s01 || !m01) {
       throw new Error('Database prerequisite missing: S01 or M01 not found.');
     }
@@ -115,6 +120,70 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
     });
     c2BookingId = c2Booking.id;
     createdBookingIds.push(c2Booking.id);
+
+    // 5. Create confirmed bookings for the other 7 rooms on TEST_DATE to cover all 9 rooms
+    const remainingRooms = allRooms.filter(
+      (r) => r.roomNumber !== 'S01' && r.roomNumber !== 'M01'
+    );
+    for (const room of remainingRooms) {
+      const b = await prisma.booking.create({
+        data: {
+          bookingCode: `TEST-06-${room.roomNumber}-${Date.now()}`,
+          userId: customer1Id,
+          roomId: room.id,
+          bookingDate: TEST_DATE,
+          startSlot: 1,
+          durationHours: 1,
+          partySize: 2,
+          channel: 'ONLINE',
+          customerName: 'Customer One',
+          status: 'CONFIRMED',
+          slots: {
+            create: [{ roomId: room.id, bookingDate: TEST_DATE, slotIndex: 1 }]
+          }
+        }
+      });
+      createdBookingIds.push(b.id);
+    }
+
+    // 6. Create booking on OTHER_DATE to verify date isolation
+    const otherDateBooking = await prisma.booking.create({
+      data: {
+        bookingCode: `TEST-06-OTHER-${Date.now()}`,
+        userId: customer1Id,
+        roomId: roomS01.id,
+        bookingDate: OTHER_DATE,
+        startSlot: 8,
+        durationHours: 1,
+        partySize: 2,
+        channel: 'ONLINE',
+        customerName: 'Customer One',
+        status: 'CONFIRMED',
+        slots: {
+          create: [{ roomId: roomS01.id, bookingDate: OTHER_DATE, slotIndex: 8 }]
+        }
+      }
+    });
+    otherDateBookingId = otherDateBooking.id;
+    createdBookingIds.push(otherDateBooking.id);
+
+    // 7. Create CANCELLED booking on TEST_DATE to verify non-confirmed exclusion
+    const cancelledBooking = await prisma.booking.create({
+      data: {
+        bookingCode: `TEST-06-CANCELLED-${Date.now()}`,
+        userId: customer2Id,
+        roomId: roomS01.id,
+        bookingDate: TEST_DATE,
+        startSlot: 10,
+        durationHours: 1,
+        partySize: 2,
+        channel: 'ONLINE',
+        customerName: 'Customer Two',
+        status: 'CANCELLED'
+      }
+    });
+    cancelledBookingId = cancelledBooking.id;
+    createdBookingIds.push(cancelledBooking.id);
   });
 
   afterAll(async () => {
@@ -228,7 +297,7 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
   // TEST-06: Staff Master Schedule Endpoint (GET /api/bookings/master, AC-06, BR-08)
   // =========================================================================
   describe('TEST-06: Staff Master Schedule (AC-06, BR-08)', () => {
-    it('staff retrieves all confirmed bookings across all rooms for target date', async () => {
+    it('staff retrieves all confirmed bookings across all nine rooms for target date and excludes other dates and non-confirmed bookings', async () => {
       const res = await request(app)
         .get(`/api/bookings/master?date=${TEST_DATE}`)
         .set('Authorization', `Bearer ${staffToken}`);
@@ -238,11 +307,26 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
       expect(Array.isArray(res.body.bookings)).toBe(true);
 
       const bookings = res.body.bookings;
-      // Should include both Customer 1 (S01) and Customer 2 (M01) bookings
-      const foundC1 = bookings.some((b: any) => b.id === c1BookingId);
-      const foundC2 = bookings.some((b: any) => b.id === c2BookingId);
-      expect(foundC1).toBe(true);
-      expect(foundC2).toBe(true);
+
+      // 1. Verify that bookings across all 9 rooms are returned
+      const representedRooms = new Set(bookings.map((b: any) => b.room.roomNumber));
+      const expectedRooms = ['S01', 'S02', 'S03', 'M01', 'M02', 'M03', 'L01', 'L02', 'L03'];
+      expectedRooms.forEach((roomNum) => {
+        expect(representedRooms.has(roomNum)).toBe(true);
+      });
+      expect(representedRooms.size).toBe(9);
+
+      // 2. Verify that bookings from another date are NOT returned
+      const foundOtherDate = bookings.some((b: any) => b.id === otherDateBookingId);
+      expect(foundOtherDate).toBe(false);
+
+      // 3. Verify that non-CONFIRMED bookings (CANCELLED) are excluded
+      const foundCancelled = bookings.some((b: any) => b.id === cancelledBookingId);
+      expect(foundCancelled).toBe(false);
+
+      // 4. Verify that all returned bookings strictly have status CONFIRMED and matching date
+      expect(bookings.every((b: any) => b.status === 'CONFIRMED')).toBe(true);
+      expect(bookings.every((b: any) => b.bookingDate === TEST_DATE)).toBe(true);
     });
 
     it('rejects customer role from /api/bookings/master with HTTP 403 FORBIDDEN', async () => {

@@ -180,7 +180,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             {userRole === 'CUSTOMER' && (
               <button
                 onClick={() => onNavigate?.('my-bookings')}
-                title="Customer booking history (Active in Issue #5)"
+                title="Customer booking history (Active in Issue #6)"
                 className={`flex items-center gap-2 rounded-xl px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all ${
                   activeNav === 'my-bookings'
                     ? 'bg-white/80 text-purple-800 shadow-xs border border-purple-200/70'

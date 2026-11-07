@@ -134,8 +134,14 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               Reservation Detail
             </span>
             {booking && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                  booking.status === 'CONFIRMED'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}
+              >
+                <CheckCircle2 className={`h-3 w-3 ${booking.status === 'CONFIRMED' ? 'text-emerald-500' : 'text-slate-400'}`} />
                 {booking.status}
               </span>
             )}

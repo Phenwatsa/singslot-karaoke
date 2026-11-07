@@ -25,7 +25,7 @@
 | **#9**  | **Issue #3**  | `feat/issue-3-room-availability-grid` | @Phenwatsa | @lephirada | **Approved**  | **Ready to Merge** |
 | **#10** | **Issue #4**  | `feat/issue-4-booking-engine`         | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
 | **#11** | **Issue #5**  | `feat/issue-5-conflict-prevention`    | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
-| **#6**  | **Issue #6**  | `feat/issue-6-booking-views`          | @lephirada | @Phenwatsa |    Planned    |     _Upcoming_     |
+| **#12** | **Issue #6**  | `feat/issue-6-booking-views`          | @lephirada | @Phenwatsa | **Approved**  | **Ready to Merge** |
 
 ---
 
@@ -209,3 +209,40 @@
   > _"Thank you @Phenwatsa for the thorough review and official approval! All conflict prevention requirements, concurrency protections, multi-layered database constraints, and TDD evidence cycles have been verified with 100% test pass rate (57/57 tests). PR #11 is ready to merge into `sprint-1-staging`."_
 
 - **Outcome:** PR #11 approved for integration into `sprint-1-staging`.
+
+---
+
+### 📌 PR #12: `feat(views): implement customer my bookings, detail modal, and staff master schedule [Issue #6]`
+
+- **PR Link:** [https://github.com/Phenwatsa/singslot-karaoke/pull/12](https://github.com/Phenwatsa/singslot-karaoke/pull/12)
+- **Author:** @lephirada
+- **Reviewer:** @Phenwatsa
+- **Source Branch:** `feat/issue-6-booking-views`
+- **Target Branch:** `sprint-1-staging`
+- **Verdict:** **Approved**
+
+#### 🔍 Review Discussion
+
+- **Reviewer (@Phenwatsa):**
+
+  > _"Approved._
+  >
+  > _The implementation satisfies the acceptance criteria for Customer My Bookings, Booking Detail access control, and Staff Master Schedule._
+  >
+  > _AC-05: GET /api/bookings/my strictly scopes results using the authenticated user's req.user.id._
+  > _AC-05b: GET /api/bookings/:id correctly grants access to the booking owner or STAFF and returns HTTP 403 FORBIDDEN for unauthorized customers._
+  > _AC-06: GET /api/bookings/master is protected by STAFF role authorization and returns confirmed reservations for the selected date across all nine rooms._
+  > _The customer and staff interfaces are integrated into AppLayout, with booking detail inspection connected to the corresponding API._
+  > _Automated tests cover customer data isolation, booking ownership, staff access, all-nine-room schedule coverage, date filtering, and unauthorized access._
+  > _The PR reports 69/69 tests passing, with TypeScript typecheck and client production build also reported as successful. These results are author-provided evidence; no workflow run was available for independent CI verification._
+  >
+  > _No blocking issues were found within the scope of this PR._
+  >
+  > _Recommendation: Approve."_
+  - **Status:** **Approved**
+
+- **Developer Response (@lephirada):**
+
+  > _"Thank you @Phenwatsa for the rigorous review, valuable UX/domain recommendations, and official approval! All items—including the Global Schedule Matrix refactoring with unbroken continuous multi-hour blocks, TEST-06 9-room coverage with date and status isolation, factual legend alignment ('No Confirmed Booking'), AbortController race protection, and status-dependent badges—have been verified with 100% test pass rate (69/69 tests across server and client), 0 typecheck errors, and clean client build. PR #12 is ready for integration into `sprint-1-staging`."_
+
+- **Outcome:** PR #12 approved for integration into `sprint-1-staging`.

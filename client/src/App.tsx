@@ -5,6 +5,9 @@ import { LoginModal } from './components/auth/LoginModal';
 import { RoomCatalog } from './components/room/RoomCatalog';
 import { AvailabilityMatrix } from './components/room/AvailabilityMatrix';
 import { BookingModal } from './components/booking/BookingModal';
+import { BookingDetailModal } from './components/booking/BookingDetailModal';
+import { MyBookingsView } from './components/booking/MyBookingsView';
+import { StaffMasterScheduleView } from './components/staff/StaffMasterScheduleView';
 import { SplashScreen } from './components/layout/SplashScreen';
 import { DatePicker } from './components/common/DatePicker';
 import { User } from './types/auth';
@@ -48,6 +51,10 @@ export const App: React.FC = () => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingRoomId, setBookingRoomId] = useState<string | undefined>(undefined);
   const [bookingSlot, setBookingSlot] = useState<number>(0);
+
+  // Booking detail modal state (F-05, F-06, Issue #6)
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [notice, setNotice] = useState<{
     type: 'info' | 'success';
@@ -161,19 +168,9 @@ export const App: React.FC = () => {
         setIsLoginOpen(true);
         break;
       case 'booking':
-        setNotice(null);
-        break;
       case 'my-bookings':
-        setNotice({
-          type: 'info',
-          message: 'Notice: Customer booking history view will be activated in Issue #5.'
-        });
-        break;
       case 'staff-schedule':
-        setNotice({
-          type: 'info',
-          message: 'Notice: Staff master schedule grid will be activated in Issue #6.'
-        });
+        setNotice(null);
         break;
       default:
         setNotice(null);
@@ -255,6 +252,31 @@ export const App: React.FC = () => {
             Dismiss
           </button>
         </div>
+      )}
+
+      {/* Customer My Bookings View (F-05, AC-05) */}
+      {activeNav === 'my-bookings' && (
+        <MyBookingsView
+          token={token}
+          onSelectBooking={(bookingId) => {
+            setDetailBookingId(bookingId);
+            setIsDetailOpen(true);
+          }}
+          onBookNewRoom={() => setActiveNav('booking')}
+        />
+      )}
+
+      {/* Staff Master Schedule View (F-06, AC-06) */}
+      {activeNav === 'staff-schedule' && (
+        <StaffMasterScheduleView
+          token={token}
+          selectedDate={selectedDate}
+          onDateChange={(newDate) => setSelectedDate(newDate)}
+          onSelectBooking={(bookingId) => {
+            setDetailBookingId(bookingId);
+            setIsDetailOpen(true);
+          }}
+        />
       )}
 
       {/* Main Booking & Availability View */}
@@ -413,6 +435,13 @@ export const App: React.FC = () => {
         setAvailabilityRefreshTrigger((prev) => prev + 1);
       }}
       onRequestLogin={() => setIsLoginOpen(true)}
+    />
+
+    <BookingDetailModal
+      isOpen={isDetailOpen}
+      onClose={() => setIsDetailOpen(false)}
+      bookingId={detailBookingId}
+      token={token}
     />
     </>
   );

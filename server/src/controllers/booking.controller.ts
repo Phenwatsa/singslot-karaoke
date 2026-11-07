@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { prisma } from '../prisma';
 import { isValidDateString, isSlotInPast } from './availability.controller';
 
@@ -273,6 +273,182 @@ export const createOnlineBooking = async (
       }
       throw txError;
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/bookings/my (FR-05, AC-05)
+ * Customer personal booking history endpoint.
+ * Returns strictly the reservations belonging to the authenticated user (userId == req.user.id).
+ */
+export const getMyBookings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+
+    const bookings = await prisma.booking.findMany({
+      where: { userId },
+      include: {
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            type: true,
+            capacity: true,
+            description: true
+          }
+        },
+        slots: {
+          orderBy: { slotIndex: 'asc' }
+        }
+      },
+      orderBy: [{ bookingDate: 'desc' }, { startSlot: 'asc' }]
+    });
+
+    const enrichedBookings = bookings.map((b) => ({
+      ...b,
+      timeRange: formatBookingTimeRange(b.startSlot, b.durationHours)
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: enrichedBookings.length,
+      bookings: enrichedBookings
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/bookings/:id (FR-05, AC-05b, BR-07)
+ * Booking detail inspection endpoint enforcing strict ownership.
+ * Grants access if caller is the booking owner (userId == req.user.id) OR has role STAFF.
+ * Otherwise returns HTTP 403 FORBIDDEN.
+ */
+export const getBookingById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            type: true,
+            capacity: true,
+            description: true
+          }
+        },
+        slots: {
+          orderBy: { slotIndex: 'asc' }
+        }
+      }
+    });
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 'BOOKING_NOT_FOUND',
+          message: 'Booking not found.'
+        }
+      });
+      return;
+    }
+
+    // Ownership Guard (BR-07, AC-05b): Owner OR Staff role
+    if (booking.userId !== req.user!.id && req.user!.role !== Role.STAFF) {
+      res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You are not authorized to view this booking.'
+        }
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      booking: {
+        ...booking,
+        timeRange: formatBookingTimeRange(booking.startSlot, booking.durationHours)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/bookings/master?date=YYYY-MM-DD (FR-06, AC-06, BR-08)
+ * Staff master schedule query across all 9 rooms for a target calendar date.
+ * Restricted strictly to STAFF role.
+ */
+export const getMasterSchedule = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { date } = req.query;
+
+    if (!date || typeof date !== 'string' || !isValidDateString(date)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Valid date query parameter (YYYY-MM-DD) is required.'
+        }
+      });
+      return;
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        bookingDate: date,
+        status: 'CONFIRMED'
+      },
+      include: {
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            type: true,
+            capacity: true,
+            description: true
+          }
+        },
+        slots: {
+          orderBy: { slotIndex: 'asc' }
+        }
+      },
+      orderBy: [{ roomId: 'asc' }, { startSlot: 'asc' }]
+    });
+
+    const enrichedBookings = bookings.map((b) => ({
+      ...b,
+      timeRange: formatBookingTimeRange(b.startSlot, b.durationHours)
+    }));
+
+    res.status(200).json({
+      success: true,
+      date,
+      totalBookings: enrichedBookings.length,
+      bookings: enrichedBookings
+    });
   } catch (error) {
     next(error);
   }

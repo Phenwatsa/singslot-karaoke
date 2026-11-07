@@ -1,7 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { Role } from '@prisma/client';
 import { verifyToken, requireRole } from '../middlewares/auth';
-import { createOnlineBooking } from '../controllers/booking.controller';
+import {
+  createOnlineBooking,
+  getMyBookings,
+  getBookingById,
+  getMasterSchedule
+} from '../controllers/booking.controller';
 
 export const bookingRouter = Router();
 
@@ -20,20 +25,35 @@ bookingRouter.post(
 );
 
 /**
- * GET /api/bookings/master
- * Staff-only master schedule inspection route.
- * In Sprint 1 Issue #2, this route enforces RBAC guard (verifyToken + requireRole('STAFF')).
- * Full booking query implementation will be activated in Issue #6.
+ * GET /api/bookings/my (FR-05, AC-05)
+ * Customer personal booking history route.
+ * Returns strictly the reservations belonging to the authenticated user.
+ */
+bookingRouter.get(
+  '/my',
+  verifyToken,
+  getMyBookings
+);
+
+/**
+ * GET /api/bookings/master?date=YYYY-MM-DD (FR-06, AC-06, BR-08)
+ * Staff master schedule query route across all 9 rooms for a target calendar date.
+ * Restricted strictly to STAFF role.
  */
 bookingRouter.get(
   '/master',
   verifyToken,
   requireRole(Role.STAFF),
-  (_req: Request, res: Response) => {
-    res.status(200).json({
-      success: true,
-      message: 'Staff master schedule authorized',
-      bookings: []
-    });
-  }
+  getMasterSchedule
+);
+
+/**
+ * GET /api/bookings/:id (FR-05, AC-05b, BR-07)
+ * Booking detail inspection route enforcing strict ownership.
+ * Grants access if caller is the booking owner OR has role STAFF; returns 403 otherwise.
+ */
+bookingRouter.get(
+  '/:id',
+  verifyToken,
+  getBookingById
 );

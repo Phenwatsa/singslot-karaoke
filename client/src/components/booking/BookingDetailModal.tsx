@@ -185,25 +185,30 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 </div>
               </GlassCard>
 
-              {/* Schedule Info Grid */}
-              <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
-                  <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                    <Calendar className="h-3.5 w-3.5 text-purple-500" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Date</span>
+              {/* Schedule Info Grid (Equal Height Harmonized Columns) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                      <Calendar className="h-3.5 w-3.5 text-purple-500" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Date</span>
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-800">{booking.bookingDate}</div>
                   </div>
-                  <div className="text-sm font-extrabold text-slate-800">{booking.bookingDate}</div>
+                  <div className="text-[10px] font-semibold text-slate-400 mt-1">Asia/Bangkok (UTC+7)</div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
-                  <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                    <Clock className="h-3.5 w-3.5 text-sky-500" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Time Window</span>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                      <Clock className="h-3.5 w-3.5 text-sky-500" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Time Window</span>
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-800">
+                      {booking.timeRange || `${booking.startSlot + 10}:00 - ${booking.startSlot + booking.durationHours + 10}:00`}
+                    </div>
                   </div>
-                  <div className="text-sm font-extrabold text-slate-800">
-                    {booking.timeRange || `${booking.startSlot + 10}:00 - ${booking.startSlot + booking.durationHours + 10}:00`}
-                  </div>
-                  <div className="text-[10px] font-semibold text-purple-600 mt-0.5">{booking.durationHours} hrs reserved</div>
+                  <div className="text-[10px] font-semibold text-purple-600 mt-1">{booking.durationHours} hrs reserved</div>
                 </div>
               </div>
 
@@ -212,56 +217,61 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Guest Information</span>
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 shrink-0">
                       <User className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Customer</div>
-                      <div className="text-xs font-bold text-slate-800">{booking.customerName}</div>
+                      <div className="text-xs font-bold text-slate-800 truncate">{booking.customerName}</div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-pink-50 text-pink-600 shrink-0">
                       <Users className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Party Size</div>
-                      <div className="text-xs font-bold text-slate-800">{booking.partySize} Guests</div>
+                      <div className="text-xs font-bold text-slate-800 truncate">{booking.partySize} Guests</div>
                     </div>
                   </div>
                 </div>
 
                 {booking.customerPhone && (
                   <div className="flex items-center gap-2.5 pt-2 border-t border-slate-100">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600 shrink-0">
                       <Phone className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Contact Phone</div>
-                      <div className="text-xs font-bold text-slate-800">{booking.customerPhone}</div>
+                      <div className="text-xs font-bold text-slate-800 truncate">{booking.customerPhone}</div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Discrete Reserved Slots Pill Breakdown */}
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-2">
+              {/* Discrete Reserved Slots Breakdown (Balanced 2-Column Grid) */}
+              <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Reserved Hourly Slots</span>
-                  <span className="text-[11px] font-bold text-purple-600">{booking.slots.length} Slots</span>
+                  <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-extrabold text-purple-700 border border-purple-200/60 shadow-2xs">
+                    {booking.slots.length} {booking.slots.length > 1 ? 'Slots' : 'Slot'}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                   {booking.slots.map((slot) => {
                     const startH = 10 + slot.slotIndex;
                     const endH = startH + 1;
                     return (
-                      <span
+                      <div
                         key={slot.id || slot.slotIndex}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-purple-100 bg-purple-50/70 px-3 py-1 text-xs font-bold text-purple-900"
+                        className="flex items-center justify-between rounded-xl border border-purple-100/80 bg-purple-50/50 px-3.5 py-2 text-xs shadow-2xs hover:border-purple-200 transition-colors"
                       >
-                        Slot #{slot.slotIndex} ({startH}:00 – {endH}:00)
-                      </span>
+                        <span className="font-extrabold text-purple-950">Slot #{slot.slotIndex}</span>
+                        <span className="font-mono text-[11px] font-bold text-slate-700 bg-white/95 px-2.5 py-0.5 rounded-md border border-purple-100/70 shadow-2xs">
+                          {String(startH).padStart(2, '0')}:00 – {String(endH).padStart(2, '0')}:00
+                        </span>
+                      </div>
                     );
                   })}
                 </div>

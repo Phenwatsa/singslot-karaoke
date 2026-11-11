@@ -29,13 +29,16 @@
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** Clean validation, perfect fence balance, 0 typecheck errors, 12/12 passing tests.
 
-#### 6. Raw Bash Regex Verification & Syntax Execution Validation
-- **Prompt Intent:** Perform rigorous verification of the raw Bash regex in `docs/labs/lab-05/deployment.md` Section 6.1 and `docs/github-issues-guide.md` Task 8 per @lephirada's request:
-  1. Performed raw hex dump inspection (`xxd`) verifying the exact byte sequence `20 3d 7e 20` (` =~ `) and `5c 2e` (`\.`), confirming zero accidental backslashes (`=\~` or `\\.`) in the raw Markdown source.
-  2. Executed `bash -n` on extracted script snippets from both documents (exit code 0).
-  3. Authored and executed an automated Bash test suite testing valid digests vs. invalid formats (tags, truncated digests, uppercase characters, wrong regions, non-GCP URLs) confirming 100% regex discrimination.
-- **Tools Used:** `run_command` (`xxd`, `sed`, `bash -n`, `bash`).
-- **Outcome:** Proven 100% syntactically and logically valid Bash regex in the raw files.
+#### 7. Peer Review Refinements (Task 4 Target, Anchors, npm ci, and Rollback Checklist)
+- **Prompt Intent:** Resolve 5 actionable peer review items identified by @lephirada:
+  1. Clarified Task 4 PR Target in `docs/github-issues-guide.md` Table 4.1 (`feat/lab5-ci → sprint-1-staging (Feature PR) → main (Release PR)`).
+  2. Fixed GitHub Markdown slug anchor links in `docs/ai-use.md` and `docs/labs/lab-05/submission-checklist.md` pointing to `#4-lab-5-cloud-deployment--cicd-pipeline-tasks-1-to-8`.
+  3. Harmonized Runbook Section 3.1 dependencies install command to feature `npm ci` for lockfile reproducibility alongside `npm run install:all`.
+  4. Expanded `docs/labs/lab-05/submission-checklist.md` Part 3 with explicit Cloud Run migration job execution evidence items.
+  5. Expanded `docs/labs/lab-05/submission-checklist.md` Part 4 with detailed verification checklists for Automated Release 2, Container Rollback to Release 1, and Roll-forward to Release 2.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** All 5 items resolved with zero warnings. 100% clean validation across all suites.
+
 
 
 

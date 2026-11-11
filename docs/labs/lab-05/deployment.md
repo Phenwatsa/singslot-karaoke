@@ -66,7 +66,10 @@ Commands are organized by execution environment. Root-level scripts are used whe
 
 ### 3.1 Dependencies Installation
 ```bash
-# Install root, client, and server dependencies
+# Clean, reproducible installation using root lockfile and npm workspaces (preferred for fresh clones and CI):
+npm ci
+
+# Alternatively, workspace install helper defined in root package.json:
 npm run install:all
 ```
 

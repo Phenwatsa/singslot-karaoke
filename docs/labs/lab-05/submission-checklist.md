@@ -6,7 +6,7 @@
 - Developer 1: Phenwatsa (@Phenwatsa / Student ID: [YOUR_STUDENT_ID])
 - Developer 2: phirada (@lephirada / Student ID: [YOUR_STUDENT_ID])
 **Repository:** Public (`https://github.com/Phenwatsa/singslot-karaoke`)  
-**Work Allocation Reference:** [`docs/github-issues-guide.md`](../github-issues-guide.md#3-lab-5-cloud-deployment--cicd-pipeline-tasks-1-to-8)
+**Work Allocation Reference:** [`docs/github-issues-guide.md`](../github-issues-guide.md#4-lab-5-cloud-deployment--cicd-pipeline-tasks-1-to-8)
 
 ---
 
@@ -67,26 +67,38 @@
   - [ ] Captioned screenshot: Cloud Run service details (Min instances: 0, Max instances: <=3)
   - [ ] Captioned screenshot: Cloud SQL PostgreSQL instance (`storage-auto-increase: OFF`)
   - [ ] Captioned screenshot: Secret Manager secret names (Zero secret values visible)
-  - [ ] Verification of Cloud SQL connectivity and executed migration jobs
+  - [ ] **Cloud Run Migration Job Execution (`singslot-migrate`):**
+    - [ ] Captioned screenshot: Cloud Run Job configuration showing Service Account `singslot-migrator`, Cloud SQL instance attached, and Secret Manager bindings (`DATABASE_URL`, `STAFF_PASSWORD`)
+    - [ ] Captioned screenshot / terminal log: Execution status displaying successful exit code 0 (`npx prisma migrate deploy && npm run prisma:seed`)
+    - [ ] Evidence confirming migration job executes using the exact same immutable image digest (`@sha256:...`) as the service revision
 - [ ] **Data Persistence Verification (C-05 / R-04):**
-  - [ ] Captioned screenshot: Booking record created and visible on public URL before restart
-  - [ ] Captioned screenshot: Cloud Run restart / redeploy executed
-  - [ ] Captioned screenshot: Booking record still present and fully intact after restart/redeploy
+  - [ ] Verification log recording Booking Code, Room, Date, Time Slots, Commit SHA, and Deployed Digest
+  - [ ] Captioned screenshot: Booking record created and visible on public URL before redeployment
+  - [ ] Captioned screenshot: Cloud Run forced redeployment / new revision creation (using identical image digest and updated trigger variable) with 100% traffic shift
+  - [ ] Captioned screenshot: Booking record still present and fully intact on live URL after new revision activation (proving data resides in Cloud SQL rather than ephemeral container memory - C-05)
 
 ---
 
-## 🔄 Part 4: Repeatable Release Pipeline (15 Points)
+## 🔄 Part 4: Repeatable Release Pipeline & Rollback Verification (15 Points)
 
-- [ ] **Full Release Lifecycle (C-06 / R-07, R-08, R-09, R-10):**
+- [ ] **Full Release Lifecycle — Release 2 (C-06 / R-07, R-08, R-09, R-10):**
   - [ ] GitHub Issue with label `lab5`
   - [ ] Feature PR into `sprint-1-staging` with explicit peer review from teammate
   - [ ] Release PR from `sprint-1-staging` into `main` with approval and green CI
   - [ ] Automatic trigger of `.github/workflows/deploy.yml` upon merge to `main`
-  - [ ] Pipeline run summary recording Commit SHA, image digest, and Cloud Run service URL
-- [ ] **Verification of Active Running Revision:**
+  - [ ] Pipeline run summary recording Commit SHA, image digest, Cloud Run revision name, and public service URL
   - [ ] Captioned screenshot: Cloud Run latest revision matching the exact commit SHA / image digest
+  - [ ] Captioned screenshot: Live website UI updated with Release 2 string (e.g., `v1.0.1 - Cloud Verified`) without manual deploy commands (C-06)
+- [ ] **Automated Container Rollback Verification (Task 8 / C-05, C-06):**
+  - [ ] Captioned screenshot: GitHub Actions `workflow_dispatch` trigger with Release 1 commit SHA
+  - [ ] Captioned screenshot / logs: GitHub Actions pipeline deploys Release 1 immutable image digest directly without rebuilding and without executing migrations
+  - [ ] Captioned screenshot: Live website UI successfully reverts to Release 1
+  - [ ] Verification evidence: Pre-existing booking records remain completely intact in Cloud SQL and accessible on UI
+- [ ] **Automated Container Roll-forward Verification (Task 8):**
+  - [ ] Captioned screenshot: GitHub Actions `workflow_dispatch` trigger with Release 2 commit SHA deploying by historical digest without re-running migrations
+  - [ ] Captioned screenshot: Live website UI restored to Release 2 with all booking data preserved
 - [ ] **Release Runbook:**
-  - [ ] Direct link to release procedure documented in `docs/labs/lab-05/deployment.md`
+  - [ ] Direct link to release and rollback procedure documented in `docs/labs/lab-05/deployment.md`
 
 ---
 

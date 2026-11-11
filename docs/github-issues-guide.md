@@ -1014,6 +1014,7 @@ In-Scope:
               --quiet
 
         - name: Execute Automated Smoke Tests
+          if: inputs.image_tag == ''
           shell: bash
           run: |
             export SERVICE_URL="$(gcloud run services describe singslot --format='value(status.url)' --region="$REGION" --project="$PROJECT_ID")"
@@ -1153,7 +1154,7 @@ Acceptance Criteria:
 - [ ] Invalid or missing rollback image tags cause the workflow to fail safely without modifying Cloud Run resources.
 - [ ] `deploy/release.sh` receives explicit inputs (`IMAGE_TAG`, `PROJECT_ID`, `REGION`) and verifies existence in Artifact Registry before deploying by digest.
 - [ ] Cloud Run revision deployed by digest with 100% traffic allocation.
-- [ ] Smoke tests use the actual deployed Cloud Run service URL queried from live deployment.
+- [ ] Smoke tests use the actual deployed Cloud Run service URL queried from live deployment (executed via workflow step during automated release, and via `deploy/release.sh` during manual rollback/roll-forward without duplication).
 - [ ] Release Summary records the actual deployed image digest for both automated releases and manual rollback/roll-forward, together with the target commit SHA, Cloud Run revision name, and service URL.
 - [ ] The recorded image digest matches the immutable image used by the deployed Cloud Run revision.
 - [ ] Second release executed via PR lifecycle deploys automatically and updates live UI without manual intervention (C-06).
@@ -1183,7 +1184,9 @@ Prove database persistence across container instance restart and new revision de
 In-Scope:
 - Create a distinct karaoke room reservation on the live public URL (record Room, Date, Slots, Booking Code).
 - Execute Application Instance Restart / Container Recycling Proof:
-  - Demonstrate that data survives container process termination and cold start (e.g. Cloud Run idle scale-down to min-instances=0 or local `docker compose down` and `docker compose up -d` without volume deletion), confirming reservations are retrieved from PostgreSQL.
+  - Demonstrate that data survives container process termination and cold start:
+    - **Local Composition:** Record container ID before restart (`CONTAINER_A=$(docker compose ps -q singslot-app)`), execute `docker compose down && docker compose up -d` (without `-v`), and record new container ID `CONTAINER_B`. Verify `CONTAINER_A != CONTAINER_B`, confirming container process replacement while database volume retains all records intact.
+    - **Cloud Run Instance Recycling:** Record Cloud Run Metrics showing active container instance count dropping to 0 during idle scale-to-zero (`min-instances=0`). Send an HTTP request and capture Cloud Run Logs Explorer showing container startup log (`[Server] SingSlot API listening on port 8080`), proving the request is handled by a brand-new container instance. Confirm that the pre-existing booking record is retrieved from Cloud SQL without data loss (C-05).
 - Execute Cloud Run Redeployment / New Revision Persistence Test:
   - Enforce creation of a brand new Cloud Run revision using the exact same immutable image digest:
     ```bash
@@ -1237,7 +1240,7 @@ Out-of-Scope:
 - Destructive database schema rollbacks (Schema is additive; data must be preserved).
 
 Acceptance Criteria:
-- [ ] Booking record survives application instance restart and idle scale-to-zero cold start without data loss (C-05).
+- [ ] Application instance restart / process recycling is verified with concrete evidence: container replacement is proven (container ID change `ID A != ID B` in compose, or Cloud Run instance count 0 followed by container startup log in Logs Explorer), and the pre-existing booking record is retrieved intact from PostgreSQL (C-05).
 - [ ] Booking record created before redeployment remains intact after a new Cloud Run revision is deployed using the same immutable image digest (C-05).
 - [ ] Redeployment verified via new Cloud Run revision deployment (using same image digest + trigger variable) with 100% traffic shift, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
 - [ ] Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations.
@@ -1250,6 +1253,7 @@ Acceptance Criteria:
 Evidence Required for PDF (Part 3 & Part 4):
 - Explicit verification log recording Booking Code, Room Number, Date, and Time Slots before redeployment and verified completely intact afterward.
 - Release 1 and Release 2 full 40-character Commit SHAs and resolved immutable image digests.
+- Captioned screenshot of Cloud Run Metrics / Logs showing container instance count dropping to 0 (or Docker Compose container ID change `ID A != ID B`) and subsequent cold-start startup log proving fresh instance recreation.
 - Before-and-after screenshots of Cloud Run Revisions showing new revision name generation and 100% traffic shift while preserving identical image digest (C-05).
 - Before-and-after screenshots of booking data surviving restart/redeploy (C-05).
 - Captioned screenshot of GitHub Actions rollback workflow execution deploying Release 1 image without running migrations.

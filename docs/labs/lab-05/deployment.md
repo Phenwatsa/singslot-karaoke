@@ -197,8 +197,15 @@ All normal production releases follow this immutable forward release pipeline. C
 Per course requirements (**R-04, C-05**), data must survive both (a) an application instance restart / container recreation and (b) a new revision redeployment.
 
 #### 6.1.1 Instance Restart & Process Recycling Proof
-1. In local composition testing, execute `docker compose down` followed by `docker compose up -d` (without `-v`) and confirm previously seeded/created data remains intact.
-2. In Cloud Run, instances scale to zero (`min-instances=0`) when idle. When a new HTTP request arrives after scaling to zero, a cold start spins up a fresh container instance; data is fetched directly from Cloud SQL PostgreSQL without loss.
+1. **Local Composition Verification:**
+   - Record container ID before restart: `CONTAINER_A=$(docker compose ps -q singslot-app)`.
+   - Execute container process recycle: `docker compose down && docker compose up -d` (without `-v`).
+   - Record container ID after restart: `CONTAINER_B=$(docker compose ps -q singslot-app)`.
+   - Assert `CONTAINER_A != CONTAINER_B`, proving container recreation while database volume retains all records intact.
+2. **Cloud Run Instance Recycling Proof:**
+   - In Cloud Run, services scale to zero (`min-instances=0`) when idle. Capture Cloud Run Metrics showing active container instance count dropping to 0 (all previous instances terminated).
+   - Send an HTTP request to the live service URL. In Cloud Run Logs Explorer, capture the fresh container initialization event (`[Server] SingSlot API listening on port 8080`), proving the request is handled by a brand-new container instance.
+   - Confirm that the pre-existing booking record (Booking Code, Room, Date, Slots) is retrieved from Cloud SQL and rendered on the UI without data loss.
 
 #### 6.1.2 Cloud Run Redeployment / New Revision Persistence Test
 1. Sign in to the live Cloud Run application URL.

@@ -32,10 +32,12 @@
 ## 🛡️ Answer Part 1: CI and Quality Gate (30 Points)
 
 - [ ] **Workflow File:** Direct link to `.github/workflows/ci-docker.yml` on `main`
-- [ ] **Normal Passing PR (C-01 / R-05):**
-  - [ ] Direct link to passing PR into `sprint-1-staging`
+- [ ] **Feature PR into Staging (Task 4 Bootstrap):**
+  - [ ] Direct link to feature PR into `sprint-1-staging` with teammate peer review
+- [ ] **Post-Bootstrap CI Verification PR (C-01 / R-05):**
+  - [ ] Direct link to dedicated verification PR targeting `main` (proving live CI after workflow is on `main`)
   - [ ] Direct link to successful GitHub Actions run
-  - [ ] Test summary showing backend and frontend tests passed
+  - [ ] Test summary showing backend, frontend, and Docker build checks passed
 - [ ] **Merge Gate Configuration (R-06):**
   - [ ] Ruleset `protect-main` is Active on branch `main`
   - [ ] Bypass list is empty
@@ -81,9 +83,13 @@
 - [ ] **Data Persistence Verification (C-05 / R-04):**
   - [ ] Verification log recording Booking Code, Room, Date, Time Slots, Commit SHA, and Deployed Digest
   - [ ] Captioned screenshot: Booking record created and visible on public URL before restart / redeployment
-  - [ ] **Instance Restart Verification:** Container process restart / scale-to-zero cold start retains existing booking data
-  - [ ] **Redeployment Verification:** Cloud Run forced redeployment / new revision creation (using identical image digest and updated trigger variable) with 100% traffic shift
-  - [ ] Captioned screenshot: Booking record still present and fully intact on live URL after new revision activation (proving data resides in Cloud SQL rather than ephemeral container memory - C-05)
+  - [ ] **Instance Restart & Process Recycling Proof:**
+    - [ ] Captioned screenshot: Cloud Run Metrics / Logs showing container instance count dropping to 0 during idle scale-to-zero (or Docker Compose container ID change `ID A != ID B`)
+    - [ ] Captioned screenshot: Cloud Run Logs Explorer capturing container startup log (`[Server] SingSlot API listening on port...`) upon incoming request after scale-to-zero, proving a fresh instance was created
+    - [ ] Captioned screenshot: Pre-existing booking record retrieved completely intact by the fresh instance from Cloud SQL
+  - [ ] **Redeployment Verification:**
+    - [ ] Captioned screenshot: Cloud Run forced redeployment / new revision creation (using identical image digest and updated trigger variable) with 100% traffic shift
+    - [ ] Captioned screenshot: Booking record still present and fully intact on live URL after new revision activation (proving data resides in Cloud SQL rather than ephemeral container memory - C-05)
 
 ---
 

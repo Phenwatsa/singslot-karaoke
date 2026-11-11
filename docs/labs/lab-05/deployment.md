@@ -47,16 +47,18 @@ In production on Cloud Run, SingSlot operates as a unified single-container depl
 The application reads all configurations strictly from environment variables per Twelve-Factor App principles (**R-02**):
 
 | Variable Name | Purpose & Function | Secret? | Source / Provider | Example / Placeholder Value | Architecture Status |
-| :--- | :--- | :---: | :--- | :--- | :---: |
+| :--- | :--- | :--- | :--- | :--- | :---: |
 | `NODE_ENV` | Sets runtime optimization mode | No | System Environment | `production` (Cloud) / `development` (Local) | Active |
 | `PORT` | Listening port for Express HTTP server | No | Cloud Run / Local env | `8080` (Cloud Run default) / `5001` (Local default) | Active |
+| `TZ` | Timezone configuration for Node.js process runtime | No | System Environment / Dockerfile | `Asia/Bangkok` | Active |
+| `CLIENT_DIST_PATH` | Optional override for static assets directory path | No | Cloud Run / Local env | `/app/client/dist` (Defaults to `../../client/dist` relative to server dist) | Active |
 | `DATABASE_URL` | PostgreSQL connection string | **Yes** | Secret Manager / `.env` | `postgresql://USER:PASS@localhost:5432/DB` | Active |
 | `JWT_SECRET` | 256-bit cryptographic secret for signing JWTs | **Yes** | Secret Manager / `.env` | Cryptographically random base64 string | Active |
-| `STAFF_PASSWORD` | Password used to seed the initial Staff demo account | **Yes** | Secret Manager / `.env` | Secure password supplied through environment variable | Active |
+| `STAFF_PASSWORD` | Password used to seed the initial Staff demo account (mounted strictly to `singslot-migrate` job; omitted from runtime service) | **Yes** | Secret Manager / `.env` | Secure password supplied through environment variable | Active |
 | `CORS_ORIGIN` | Allowed web origin for decoupled API access | No | Cloud Run / Local env | `http://localhost:5173` (Optional: not required when served same-origin in production) | [PLANNED] |
 
 > [!CAUTION]
-> **Zero Secret Leaks (R-12):** Real credentials must never be written to this file, committed to Git, or exposed in build logs. In production, sensitive variables are mounted directly from GCP Secret Manager into the Cloud Run container runtime.
+> **Zero Secret Leaks (R-12):** Real credentials must never be written to this file, committed to Git, or exposed in build logs. In production, sensitive variables are mounted directly from GCP Secret Manager into the Cloud Run container runtime. `STAFF_PASSWORD` is scoped exclusively to the migration/seed job (`singslot-migrator` service account) and is not injected into the public runtime service (`singslot-runner`).
 
 ---
 
@@ -190,7 +192,15 @@ All normal production releases follow this immutable forward release pipeline. C
 
 ## 6. Verification, Persistence & Rollback Runbook [PLANNED - Task 8]
 
-### 6.1 Redeployment / New Revision Persistence Test (C-05)
+### 6.1 Data Persistence Verification (C-05 / R-04)
+
+Per course requirements (**R-04, C-05**), data must survive both (a) an application instance restart / container recreation and (b) a new revision redeployment.
+
+#### 6.1.1 Instance Restart & Process Recycling Proof
+1. In local composition testing, execute `docker compose down` followed by `docker compose up -d` (without `-v`) and confirm previously seeded/created data remains intact.
+2. In Cloud Run, instances scale to zero (`min-instances=0`) when idle. When a new HTTP request arrives after scaling to zero, a cold start spins up a fresh container instance; data is fetched directly from Cloud SQL PostgreSQL without loss.
+
+#### 6.1.2 Cloud Run Redeployment / New Revision Persistence Test
 1. Sign in to the live Cloud Run application URL.
 2. Create a distinct room reservation (record Room, Date, Slot Index, and Booking Code).
 3. Execute redeployment in Google Cloud Shell to force a brand-new Revision using the exact same immutable image digest:

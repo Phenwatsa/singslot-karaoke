@@ -10,19 +10,26 @@
 
 ---
 
-## 📌 Part 0: Team Information & Evidence Index
+## 📌 Answer Part 0: Team and Evidence Index
 
 - [ ] **Course, Section & Topic:** CPE 334, Section [XX], SingSlot (Karaoke Reservation)
 - [ ] **Team Information:** Full names, Student IDs, and GitHub Usernames for both members verified
 - [ ] **Repository Link:** Public GitHub repository link accessible without login
 - [ ] **Deployed Public URL:** Active Cloud Run URL (accessible during grading; scale-to-zero active with min-instances=0)
 - [ ] **Final Release Commit:** Full 40-character Commit SHA recorded
-- [ ] **Contribution Matrix:** Table detailing both members' actual work across Requirements, Testing, AI Supervision, Implementation, Review, and Deployment (referencing `docs/github-issues-guide.md`)
+- [ ] **GitHub Project Board Evidence (R-09):**
+  - [ ] Direct link to public GitHub Project Board
+  - [ ] Captioned screenshot: Project board showing all Lab 5 Issues organized across lifecycle columns (`Backlog`, `Specified`, `Started`, `PR Review`, `Done`)
+  - [ ] Captioned screenshot: Final board status with all Lab 5 tasks completed and closed
+- [ ] **Preserve History & CI Mandatory Confirmation (R-10):**
+  - [ ] Confirmation that Git commits, PRs, and CI run histories are preserved without rewriting or deletion
+  - [ ] Confirmation that `protect-main` branch ruleset and `test-and-docker` status check remain permanently active post-submission
+- [ ] **Contribution Matrix (R-11):** Table detailing both members' active work across Requirements, Testing, AI Supervision, Implementation, Review, and Deployment (referencing `docs/github-issues-guide.md`)
 - [ ] **Evidence Index Table:** Master table indexing all Required Checks (C-01 to C-06) with artifact links, commit SHAs, and verification results
 
 ---
 
-## 🛡️ Part 1: CI and Quality Gate (30 Points)
+## 🛡️ Answer Part 1: CI and Quality Gate (30 Points)
 
 - [ ] **Workflow File:** Direct link to `.github/workflows/ci-docker.yml` on `main`
 - [ ] **Normal Passing PR (C-01 / R-05):**
@@ -42,21 +49,21 @@
 
 ---
 
-## 🐳 Part 2: Docker and Reproducible Configuration (20 Points)
+## 🐳 Answer Part 2: Docker and Reproducible Configuration (20 Points)
 
 - [ ] **Docker Files:** Direct links to `Dockerfile`, `.dockerignore`, and `docker-compose.yml`
 - [ ] **Fresh Build & Running Container (C-03 / R-01):**
-  - [ ] Terminal command and output evidence showing clean clone build succeeds
-  - [ ] Evidence of application container successfully starting alongside PostgreSQL database
+  - [ ] Terminal command and output evidence showing clean clone build succeeds (`docker build -t singslot-app .`)
+  - [ ] Evidence of application container successfully starting alongside PostgreSQL database in `docker-compose`
   - [ ] Additional readiness verification: `/api/ready` responds with HTTP 200 `status: ready`
 - [ ] **Environment Configuration (R-02):**
   - [ ] Direct link to `server/.env.example` in repository
-  - [ ] Environment variable specification table in `docs/labs/lab-05/deployment.md`
+  - [ ] Environment variable specification table in `docs/labs/lab-05/deployment.md` (covering `NODE_ENV`, `PORT`, `TZ`, `CLIENT_DIST_PATH`, `DATABASE_URL`, `JWT_SECRET`, and `STAFF_PASSWORD`)
   - [ ] Audit confirmation: Zero real secrets or connection strings committed in repository, image, logs, or PDF
 
 ---
 
-## ☁️ Part 3: GCP Deployment and Persistence (35 Points)
+## ☁️ Answer Part 3: GCP Deployment and Persistence (35 Points)
 
 - [ ] **Public URL (R-03):** Public Cloud Run URL accessible without VPN or special auth
 - [ ] **End-to-End Domain Workflow (C-04 / R-03):**
@@ -73,17 +80,18 @@
     - [ ] Evidence confirming migration job executes using the exact same immutable image digest (`@sha256:...`) as the service revision
 - [ ] **Data Persistence Verification (C-05 / R-04):**
   - [ ] Verification log recording Booking Code, Room, Date, Time Slots, Commit SHA, and Deployed Digest
-  - [ ] Captioned screenshot: Booking record created and visible on public URL before redeployment
-  - [ ] Captioned screenshot: Cloud Run forced redeployment / new revision creation (using identical image digest and updated trigger variable) with 100% traffic shift
+  - [ ] Captioned screenshot: Booking record created and visible on public URL before restart / redeployment
+  - [ ] **Instance Restart Verification:** Container process restart / scale-to-zero cold start retains existing booking data
+  - [ ] **Redeployment Verification:** Cloud Run forced redeployment / new revision creation (using identical image digest and updated trigger variable) with 100% traffic shift
   - [ ] Captioned screenshot: Booking record still present and fully intact on live URL after new revision activation (proving data resides in Cloud SQL rather than ephemeral container memory - C-05)
 
 ---
 
-## 🔄 Part 4: Repeatable Release Pipeline & Rollback Verification (15 Points)
+## 🔄 Answer Part 4: Repeatable Release Pipeline & Rollback Verification (15 Points)
 
 - [ ] **Full Release Lifecycle — Release 2 (C-06 / R-07, R-08, R-09, R-10):**
-  - [ ] GitHub Issue with label `lab5`
-  - [ ] Feature PR into `sprint-1-staging` with explicit peer review from teammate
+  - [ ] Dedicated GitHub Issue with label `lab5` tracking visible release proof change (e.g., `[Lab 5 - Task 7b] Prove Repeatable Release via UI Update`)
+  - [ ] Feature PR into `sprint-1-staging` referencing the issue with explicit peer review from teammate
   - [ ] Release PR from `sprint-1-staging` into `main` with approval and green CI
   - [ ] Automatic trigger of `.github/workflows/deploy.yml` upon merge to `main`
   - [ ] Pipeline run summary recording Commit SHA, image digest, Cloud Run revision name, and public service URL

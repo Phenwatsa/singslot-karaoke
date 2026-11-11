@@ -264,6 +264,9 @@ sequenceDiagram
 
 - **Target:** Lab 5 (Cloud Deployment, Automated CI/CD, Quality Gate & Persistence)
 - **Label:** `lab5` (Mandatory on all Issues and Pull Requests per **R-10**)
+- **GitHub Project Board (R-09):** All 8 tasks and release proof issues are tracked on the public GitHub Project Board, advancing across lifecycle columns (`Backlog`, `Specified`, `Started`, `PR Review`, `Done`).
+- **Preserve History & CI Mandatory (R-10):** Do not delete or rewrite Git commits, contract revisions, or CI run histories. CI checks and the `protect-main` ruleset stay permanently mandatory after Lab 5.
+- **Team Participation Protocol (R-11):** Both members take active roles across all phases: requirements, testing, AI supervision, implementation, peer review, and deployment. While commit counts need not be identical, both developers participate substantively and review each other's pull requests.
 - **Documentation & PDF Submission:** Tracked separately via [`docs/labs/lab-05/submission-checklist.md`](./labs/lab-05/submission-checklist.md) (No GitHub Issue created per team agreement).
 
 ### 4.1 Master Work Allocation & Dependency Matrix
@@ -475,7 +478,10 @@ Acceptance Criteria:
 Evidence Required for PDF (Part 2):
 
 - Direct links to `Dockerfile`, `.dockerignore`, and `docker-compose.yml`.
-- Terminal commands and output showing successful clean docker build (C-03).
+- Terminal commands and output showing successful clean docker build from fresh clone (C-03).
+- Evidence of application container successfully starting alongside PostgreSQL database in `docker-compose`.
+- Verification that `/api/ready` responds with HTTP 200 `status: ready`.
+- Direct links to `server/.env.example` and environment variable specification table in `docs/labs/lab-05/deployment.md` proving zero secrets are committed.
 ````
 
 #### 📌 Task 4: CI Quality Gate on Pull Requests
@@ -845,6 +851,7 @@ Acceptance Criteria:
 - [ ] GitHub Ruleset `protect-main` is Active with bypass list empty, selecting registered check `test-and-docker`.
 - [ ] Temporary PR with failing test triggers red CI check and GitHub visibly blocks merge button (C-02).
 - [ ] Temporary PR closed and branch deleted with zero impact on released code.
+- [ ] Preserve commit, PR, and CI run history (do not delete or rewrite history). Keep the `protect-main` ruleset and `test-and-docker` status check permanently active post-submission (R-10).
 
 Evidence Required for PDF (Part 1):
 
@@ -1115,11 +1122,12 @@ In-Scope:
 - Open PR into `sprint-1-staging`, review, merge, then open Release PR into `main`.
 - Merge into `main` and observe automated deployment executing to completion.
 - Prove Repeatable Release (C-06):
-  1. Sync `sprint-1-staging` with `main`.
-  2. Create branch `feat/lab5-deploy-proof`, make a minor visible UI string update (e.g. `v1.0.1 - Cloud Verified`).
-  3. Open PR into staging, approve, merge.
-  4. Open Release PR into `main`, merge.
-  5. Verify pipeline auto-deploys revision 2 and live website displays updated text without manual deploy commands.
+  1. Create a dedicated GitHub Issue with label `lab5` (e.g. `[Lab 5 - Task 7b] Prove Repeatable Release via UI Update`) to maintain complete lifecycle traceability from Issue → PR → Deploy (R-09, C-06).
+  2. Sync `sprint-1-staging` with `main`.
+  3. Create branch `feat/lab5-deploy-proof`, make a minor visible UI string update (e.g. `v1.0.1 - Cloud Verified`).
+  4. Open Feature PR into staging referencing Issue #7b, request teammate peer review, approve, and merge.
+  5. Open Release PR into `main`, merge upon green CI.
+  6. Verify pipeline auto-deploys revision 2 and live website displays updated text without manual deploy commands.
 
 Out-of-Scope:
 
@@ -1128,6 +1136,7 @@ Out-of-Scope:
 Acceptance Criteria:
 
 - [ ] `.github/workflows/deploy.yml` triggers automatically upon merge to `main`.
+- [ ] Dedicated GitHub Issue with label `lab5` created to track the second release UI change (C-06).
 - [ ] The actual `deploy.yml` workflow implements both complete execution paths: automated release and manual rollback/roll-forward.
 - [ ] Workflow reuses `ci-docker.yml` via `uses: ./.github/workflows/ci-docker.yml` and grants `permissions: { contents: read, id-token: write }`.
 - [ ] Workflow explicitly authenticates using `google-github-actions/auth@v2` with configured `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` without Service Account JSON keys.
@@ -1151,6 +1160,7 @@ Acceptance Criteria:
 
 Evidence Required for PDF (Part 4):
 
+- Direct link to dedicated GitHub Issue with label `lab5` tracking release proof (C-06).
 - Direct links to Feature PRs, Release PRs, and GitHub Actions Deploy run.
 - Captioned screenshot of Cloud Run revisions showing revision matching commit SHA / image digest (C-06).
 - Captioned screenshot of live website showing updated UI text after second release.
@@ -1168,10 +1178,12 @@ Branch: None (GitHub Actions manual trigger & GCP Console)
 Label: lab5
 
 Objective:
-Prove database persistence across new revision deployment and demonstrate container rollback using historical commit SHA (R-04, C-05).
+Prove database persistence across container instance restart and new revision deployment, and demonstrate container rollback using historical commit SHA (R-04, C-05).
 
 In-Scope:
 - Create a distinct karaoke room reservation on the live public URL (record Room, Date, Slots, Booking Code).
+- Execute Application Instance Restart / Container Recycling Proof:
+  - Demonstrate that data survives container process termination and cold start (e.g. Cloud Run idle scale-down to min-instances=0 or local `docker compose down` and `docker compose up -d` without volume deletion), confirming reservations are retrieved from PostgreSQL.
 - Execute Cloud Run Redeployment / New Revision Persistence Test:
   - Enforce creation of a brand new Cloud Run revision using the exact same immutable image digest:
     ```bash
@@ -1225,6 +1237,7 @@ Out-of-Scope:
 - Destructive database schema rollbacks (Schema is additive; data must be preserved).
 
 Acceptance Criteria:
+- [ ] Booking record survives application instance restart and idle scale-to-zero cold start without data loss (C-05).
 - [ ] Booking record created before redeployment remains intact after a new Cloud Run revision is deployed using the same immutable image digest (C-05).
 - [ ] Redeployment verified via new Cloud Run revision deployment (using same image digest + trigger variable) with 100% traffic shift, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
 - [ ] Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations.

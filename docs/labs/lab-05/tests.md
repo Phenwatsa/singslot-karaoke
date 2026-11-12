@@ -19,8 +19,10 @@
 | **R-02 / Task 2** | Single-Flight Coalescing | `server/src/app.ts` | Concurrent probe deduplication test (shared in-flight driver query) | **PASS** |
 | **R-02 / Task 2** | Probe Timeout & Pending Query Preservation | `server/src/app.ts` | 3000ms bounded timeout test with pending driver query protection | **PASS** |
 | **R-02 / Task 2** | Zombie Query Recovery | `server/src/app.ts` | Hard stale TTL unblocks `activeDbCheck`, allowing clean recovery to 200 | **PASS** |
+| **R-02 / Task 2** | Concurrency Identity Guard | `server/src/app.ts` | Late-settling query does not clobber active probe query or cancel its timer | **PASS** |
 | **R-02 / Task 2** | Zero Hardcoded Passwords | `server/prisma/seed.ts` | Fail-fast env check for `STAFF_PASSWORD`, `CUSTOMER_PASSWORD` | **PASS** |
 | **R-02 / Task 2** | Client Dev-Only Quick Fill | `client/src/components/auth/LoginModal.tsx` | `import.meta.env.DEV` isolation & `VITE_STAFF_DEMO_PASSWORD` / `VITE_CUSTOMER_DEMO_PASSWORD` env bindings | **PASS** |
+| **R-02 / Task 2** | Local Dev Port in .env.example | `server/.env.example` | Documents `PORT=5001` matching Vite proxy, zero committed secrets | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
 | **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR targeting `main` | *Pending Task 4* |
@@ -47,25 +49,26 @@ $ npm --prefix server test tests/ready.test.ts
 > singslot-server@1.0.0 test
 > jest --runInBand --detectOpenHandles --forceExit tests/ready.test.ts
 
-PASS tests/ready.test.ts (10.335 s)
+PASS tests/ready.test.ts (13.693 s)
   Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-02, R-04)
     Twelve-Factor Configuration & Static Analysis Verification
-      ✓ server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0 (2 ms)
+      ✓ server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0 (3 ms)
       ✓ prisma/seed.ts reads STAFF_PASSWORD and CUSTOMER_PASSWORD from env and has zero hardcoded passwords (1 ms)
-      ✓ .env.example documents STAFF_PASSWORD and CUSTOMER_PASSWORD placeholders with zero secrets (1 ms)
+      ✓ .env.example documents development port 5001 and password placeholders with zero secrets (1 ms)
       ✓ client LoginModal.tsx supports role-specific demo passwords and restricts quick-fill to development mode (1 ms)
     Readiness Probe Dynamic Execution Contract
-      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (4 ms)
+      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (5 ms)
       ✓ returns HTTP 503 { status: "not_ready", error: "Database unreachable" } when database query fails (1 ms)
       ✓ returns HTTP 503 within bounded timeout when database query exceeds 3000ms (3003 ms)
       ✓ deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion (105 ms)
       ✓ prevents query accumulation when first probe times out while query is still pending (3008 ms)
-      ✓ recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query (3213 ms)
+      ✓ recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query (3212 ms)
+      ✓ ensures late-settling stale query does not clobber activeDbCheck or cancel timer of a newly active probe query (3234 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       10 passed, 10 total
+Tests:       11 passed, 11 total
 Snapshots:   0 total
-Time:        10.534 s
+Time:        13.887 s
 Ran all test suites matching /tests\/ready.test.ts/i.
 ✔ Exited with code 0
 ```

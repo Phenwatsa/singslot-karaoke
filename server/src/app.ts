@@ -50,28 +50,39 @@ export function _resetActiveDbCheck(): void {
 app.get('/api/ready', async (_req: Request, res: Response) => {
   if (!activeDbCheck) {
     let settled = false;
-    // Bind activeDbCheck to actual Prisma query with hard stale TTL to prevent zombie lockouts
-    activeDbCheck = (async () => {
+    let currentTimer: NodeJS.Timeout | null = null;
+
+    // Bind activeDbCheck to actual Prisma query with identity guard and hard stale TTL
+    const checkPromise: Promise<void> = (async () => {
       await prisma.$queryRaw`SELECT 1`;
     })().finally(() => {
       settled = true;
-      if (activeDbCheckTimer) {
-        clearTimeout(activeDbCheckTimer);
+      if (currentTimer) {
+        clearTimeout(currentTimer);
+        currentTimer = null;
+      }
+      // Concurrency guard: only clear global state if this promise is still the active one!
+      // Prevents a late-settling stale query from clobbering a newer active probe query or its timer.
+      if (activeDbCheck === checkPromise) {
+        activeDbCheck = null;
         activeDbCheckTimer = null;
       }
-      activeDbCheck = null;
     });
 
+    activeDbCheck = checkPromise;
+
     // Hard ceiling for zombie query prevention: unblock activeDbCheck if underlying driver query never settles
-    activeDbCheckTimer = setTimeout(() => {
-      if (!settled) {
+    currentTimer = setTimeout(() => {
+      if (!settled && activeDbCheck === checkPromise) {
         activeDbCheck = null;
         activeDbCheckTimer = null;
       }
     }, getStaleQueryTtlMs());
-    if (typeof activeDbCheckTimer.unref === 'function') {
-      activeDbCheckTimer.unref();
+
+    if (typeof currentTimer.unref === 'function') {
+      currentTimer.unref();
     }
+    activeDbCheckTimer = currentTimer;
   }
 
   let timer: NodeJS.Timeout | undefined;

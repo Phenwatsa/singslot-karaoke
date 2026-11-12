@@ -69,10 +69,11 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       expect(content).not.toMatch(/Pass1234!/);
     });
 
-    it('.env.example documents STAFF_PASSWORD and CUSTOMER_PASSWORD placeholders with zero secrets', () => {
+    it('.env.example documents development port 5001 and password placeholders with zero secrets', () => {
       expect(fs.existsSync(envExamplePath)).toBe(true);
       const content = fs.readFileSync(envExamplePath, 'utf8');
 
+      expect(content).toMatch(/PORT=5001/);
       expect(content).toMatch(/STAFF_PASSWORD=replace_with_/);
       expect(content).toMatch(/CUSTOMER_PASSWORD=replace_with_/);
       expect(content).not.toMatch(/Pass1234!/);
@@ -253,6 +254,67 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
           db: 'connected'
         });
         expect(queryCount).toBe(2);
+      } finally {
+        process.env.READINESS_STALE_TTL_MS = originalStaleTtl;
+      }
+    }, 8000);
+
+    it('ensures late-settling stale query does not clobber activeDbCheck or cancel timer of a newly active probe query', async () => {
+      const originalStaleTtl = process.env.READINESS_STALE_TTL_MS;
+      process.env.READINESS_STALE_TTL_MS = '3100';
+
+      try {
+        let resolveQuery1: (val: any) => void = () => {};
+        let resolveQuery2: (val: any) => void = () => {};
+        let queryCount = 0;
+
+        // Query 1: will hang past 3000ms timeout and past 3100ms TTL
+        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
+          queryCount++;
+          return new Promise((resolve) => {
+            resolveQuery1 = resolve;
+          });
+        });
+
+        // 1. Dispatch Probe A (times out at 3000ms -> 503)
+        const probeARes = await dispatchReadyRequest();
+        expect(probeARes.status).toBe(503);
+        expect(queryCount).toBe(1);
+
+        // 2. Wait for stale query TTL to expire (3100ms bound)
+        await new Promise((r) => setTimeout(r, 200));
+
+        // 3. Set up Query 2 for Probe B
+        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
+          queryCount++;
+          return new Promise((resolve) => {
+            resolveQuery2 = resolve;
+          });
+        });
+
+        // 4. Dispatch Probe B (now in-flight with Query 2)
+        const probeBPromise = dispatchReadyRequest();
+        expect(queryCount).toBe(2);
+
+        // 5. NOW let Query 1 (the old stale query) finally settle late!
+        resolveQuery1([{ '?column?': 1 }]);
+        // Give event loop tick for Query 1's .finally() callback to run
+        await new Promise((r) => setTimeout(r, 20));
+
+        // 6. Dispatch Probe C while Query 2 is still in-flight
+        // Concurrency assertion: Query 1's late settlement MUST NOT have cleared activeDbCheck!
+        // Therefore, Probe C MUST coalesce into Query 2 rather than launching Query 3!
+        const probeCPromise = dispatchReadyRequest();
+        expect(queryCount).toBe(2); // Still 2! Single-flight coalescing was NOT clobbered!
+
+        // 7. Resolve Query 2
+        resolveQuery2([{ '?column?': 1 }]);
+
+        const [probeBRes, probeCRes] = await Promise.all([probeBPromise, probeCPromise]);
+        expect(probeBRes.status).toBe(200);
+        expect(probeBRes.body).toEqual({ status: 'ready', db: 'connected' });
+        expect(probeCRes.status).toBe(200);
+        expect(probeCRes.body).toEqual({ status: 'ready', db: 'connected' });
       } finally {
         process.env.READINESS_STALE_TTL_MS = originalStaleTtl;
       }

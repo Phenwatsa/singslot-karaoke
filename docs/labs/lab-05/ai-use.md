@@ -146,3 +146,11 @@
   3. **Role-Specific Demo Password Consistency:** Updated `client/src/components/auth/LoginModal.tsx` to read `VITE_STAFF_DEMO_PASSWORD` for staff and `VITE_CUSTOMER_DEMO_PASSWORD` for customer quick-fill, while maintaining `VITE_DEMO_PASSWORD` as shared fallback. Updated `client/.env.example` and `client/tests/layout.test.mjs`.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
 - **Outcome:** 10/10 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, and 0 typecheck errors, completely resolving all peer review findings.
+
+#### 19. Task 2 Follow-Up Peer Review Resolution (PR #22 Round 2)
+- **Prompt Intent:** Resolve 2 specific edge-case and environment findings raised in the second review round of PR #22:
+  1. **Local Development Port in `.env.example`:** Changed `PORT=8080` to `PORT=5001` in `server/.env.example` with clear documentation so copying `.env.example` to `.env` immediately aligns with the client Vite proxy (`http://localhost:5001`), while Cloud Run automatically injects `PORT=8080` in production.
+  2. **Promise Identity Concurrency Guard (`server/src/app.ts`):** Prevented an asynchronous race condition where a late-settling stale query's `.finally()` callback could clobber a newly active probe query's state or cancel its timeout timer. Implemented an identity guard `if (activeDbCheck === checkPromise)` ensuring only the currently active query can clear global state.
+  3. **Concurrency Test Verification (`server/tests/ready.test.ts`):** Authored Test #11 explicitly reproducing a late-settling stale query while a subsequent probe query is in-flight, and asserting that single-flight coalescing and timer management remain 100% intact.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 11/11 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and robust concurrency safety.

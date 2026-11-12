@@ -260,27 +260,30 @@ sequenceDiagram
 
 ---
 
-## 4. Lab 5 Cloud Deployment & CI/CD Pipeline (Tasks 1 to 8)
+## 4. Lab 5 Cloud Deployment & CI/CD Pipeline (Tasks 1 to 8 + Step 9)
 
 - **Target:** Lab 5 (Cloud Deployment, Automated CI/CD, Quality Gate & Persistence)
 - **Label:** `lab5` (Mandatory on all Issues and Pull Requests per **R-10**)
 - **GitHub Project Board (R-09):** All 8 tasks and release proof issues are tracked on the public GitHub Project Board, advancing across lifecycle columns (`Backlog`, `Specified`, `Started`, `PR Review`, `Done`).
-- **Preserve History & CI Mandatory (R-10):** Do not delete or rewrite Git commits, contract revisions, or CI run histories. CI checks and the `protect-main` ruleset stay permanently mandatory after Lab 5.
+- **Substantive Peer Review (R-09):** Authors never approve their own Pull Requests. Every PR review must state a specific check, question, finding, or reason for approval (no empty approvals).
+- **Preserve History & CI Mandatory (R-10):** Do not delete or rewrite Git commits, contract revisions, or CI run histories. CI checks and the `protect-main` ruleset stay permanently mandatory after Lab 5 and through Lab 7.
 - **Team Participation Protocol (R-11):** Both members take active roles across all phases: requirements, testing, AI supervision, implementation, peer review, and deployment. While commit counts need not be identical, both developers participate substantively and review each other's pull requests.
-- **Documentation & PDF Submission:** Tracked separately via [`docs/labs/lab-05/submission-checklist.md`](./labs/lab-05/submission-checklist.md) (No GitHub Issue created per team agreement).
+- **Public Repository Mandate (R-12):** The repository must be public and remain public until all grading concludes, allowing TAs and the Lab 6 partner team to access code, issues, PRs, and CI runs without being added as collaborators. Zero secrets (.env, real passwords, database connection strings, or keys) may ever be committed.
+- **Documentation & Step 9 Delivery:** Finalization of `docs/labs/lab-05/deployment.md` and the PDF evidence index report (`lab5_sec<section>_<group_name>.pdf`) is tracked via [`docs/labs/lab-05/submission-checklist.md`](./labs/lab-05/submission-checklist.md) as Execution Step 9.
 
 ### 4.1 Master Work Allocation & Dependency Matrix
 
 | Task  | Title on GitHub                                               | Primary Owner |   Reviewer   |                    Dependencies                     | Branch / Interface          | PR Target                   | Key Deliverable & Evidence                                   |
 | :---: | :------------------------------------------------------------ | :-----------: | :----------: | :-------------------------------------------------: | :-------------------------- | :-------------------------- | :----------------------------------------------------------- |
 | **1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 | `@Phenwatsa`  | `@lephirada` |              None (Starts immediately)              | GCP Console                 | None                        | GCP Project, IAM Editor, Budget Alert ($30-$50/$250)         |
-| **2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      | `@lephirada`  | `@Phenwatsa` |              None (Starts immediately)              | `feat/lab5-cloud-ready`     | `sprint-1-staging`          | `/api/ready` endpoint, `server/.env.example`                 |
-| **3** | `[Lab 5 - Task 3] Docker Containerization`                    | `@Phenwatsa`  | `@lephirada` |                       Task 2                        | `feat/lab5-docker`          | `sprint-1-staging`          | Multi-stage `Dockerfile`, `.dockerignore`, compose           |
+| **2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      | `@lephirada`  | `@Phenwatsa` |              None (Starts immediately)              | `feat/lab5-cloud-ready`     | `sprint-1-staging`          | `/api/ready` endpoint, 6-point cloud readiness, `.env.example`|
+| **3** | `[Lab 5 - Task 3] Docker Containerization`                    | `@Phenwatsa`  | `@lephirada` |                       Task 2                        | `feat/lab5-docker`          | `sprint-1-staging`          | Multi-stage `Dockerfile`, `.dockerignore`, compose (C-03)    |
 | **4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           | `@lephirada`  | `@Phenwatsa` |                   Task 2, Task 3                    | `feat/lab5-ci`              | `sprint-1-staging` (Feature PR) → `main` (Release PR) | `ci-docker.yml`, passing CI (C-01), Release PR to `main`     |
 | **5** | `[Lab 5 - Task 5] First GCP Deployment`                       | `@Phenwatsa`  | `@lephirada` |             Task 1, Task 4 (on `main`)              | Cloud Shell                 | None                        | Cloud SQL, Cloud Run, auto-increase OFF, C-04 URL            |
-| **6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | `@lephirada`  | `@Phenwatsa` | Task 1, Task 4 (Post-Bootstrap CI check registered) | Console + `test/prove-gate` | `main`                      | WIF setup, Ruleset active, Blocked Merge proof (C-02)        |
+| **6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | `@lephirada`  | `@Phenwatsa` | Task 1, Task 4 (for 6A: WIF/Gate); Task 5 (for 6B: SA Bindings) | Console + `test/prove-gate` | `main`                      | WIF setup, Ruleset active, Blocked Merge proof (C-02), Bindings|
 | **7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              | `@Phenwatsa`  | `@lephirada` |               Task 4, Task 5, Task 6                | `feat/lab5-auto-deploy`     | `sprint-1-staging` → `main` | `deploy.yml`, auto-deploy on main, Repeatable Release (C-06) |
-| **8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        | `@lephirada`  | `@Phenwatsa` |                       Task 7                        | Actions & Console           | None                        | Booking persists restart (C-05), Rollback & Roll-forward     |
+| **8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        | `@lephirada`  | `@Phenwatsa` |                       Task 7                        | Actions & Console           | None                        | Data persists restart & redeploy (C-05); Rollback (Rec.)     |
+| **9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review  |                       Task 8                        | `docs/` & LEB2 PDF          | None                        | Completed `deployment.md`, checklist, and LEB2 PDF report    |
 
 ---
 
@@ -300,8 +303,8 @@ Objective:
 Set up team Google Cloud Platform environment with active Free Trial, grant teammate IAM access, and configure budget alerts to provide early cost visibility and reduce the risk of unexpected spending.
 
 In-Scope:
-- Activate GCP Free Trial with personal Gmail account ($300 credit, zero prepayment; do NOT click Upgrade).
-- Create Project: `cpe334-singslot-[team/id]` (record Project ID and Project Number).
+- Activate GCP Free Trial using a personal Gmail account that has NEVER used the Free Trial before ($300 credit for 90 days; do NOT use university `@mail.kmutt.ac.th` account to avoid prepayment blocks; zero prepayment; do NOT click Upgrade).
+- Create Project: `cpe334-singslot-[team/id]` (record Project ID and Project Number; this single project will be retained and reused for Lab 5, Lab 6, Lab 7, and the Final Project).
 - Grant IAM access to @lephirada with Role: Editor (`roles/editor`) per Student Guide Ep 1.3.
 - Enable Billing on project (verify `gcloud billing projects describe` returns True).
 - Create Alerts-only Budget:
@@ -315,7 +318,8 @@ Out-of-Scope:
 - Modifying repository code or branch configurations.
 
 Acceptance Criteria:
-- [ ] GCP Project created with unique Project ID and recorded Project Number.
+- [ ] GCP Free Trial activated using a personal Gmail account that has never used the trial before (no `@mail.kmutt.ac.th` used).
+- [ ] GCP Project created with unique Project ID and recorded Project Number, designated for reuse across Lab 5, Lab 6, Lab 7, and Final Project.
 - [ ] Teammate @lephirada added to IAM as Editor and confirmed access from their account.
 - [ ] Billing enabled confirmed via `gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)'` returning `True`.
 - [ ] Alerts-only Budget created with committed target amount, thresholds, and linked notification channels for both members.
@@ -341,21 +345,23 @@ PR Target: sprint-1-staging
 Label: lab5
 
 Objective:
-Refactor SingSlot application settings to adhere to Twelve-Factor configuration and Cloud Run runtime contracts (R-02, R-04).
+Refactor SingSlot application settings to adhere to Twelve-Factor configuration, Student Guide Episode 2 six-point cloud-readiness checklist, and Cloud Run runtime contracts (R-02, R-04).
 
 In-Scope:
-- Add readiness probe endpoint `GET /api/ready` in `server/src/app.ts`:
-  - Executes Prisma `$queryRaw` SELECT 1.
-  - Reuses the shared Prisma Client instance (`prisma` from `src/prisma.ts`), avoiding connection thrashing and never calling `$disconnect()` on every probe.
-  - Enforces a bounded timeout (configured to 3–5 seconds): if the database query exceeds this threshold or encounters an error, it returns HTTP 503 `{ status: "not_ready", error: "Database unreachable" }`.
-  - The readiness timeout implementation must avoid accumulating unresolved database queries or exhausting Prisma connection pool resources when repeated probes time out.
-  - Do not rely on `Promise.race()` alone as database query cancellation unless the underlying query is actually cancelled.
-  - Internal database errors, timeout exceptions, stack traces, and database credentials must be strictly masked from all HTTP responses.
-- Update `server/prisma/seed.ts` to read staff credentials dynamically from `process.env.STAFF_PASSWORD`:
-  - In production (`NODE_ENV=production`), `STAFF_PASSWORD` must be explicitly provided. If missing or empty, the seed script must terminate with a clear error (`process.exit(1)`) instead of falling back to a default password.
-  - For local development only (`NODE_ENV !== 'production'`), allow fallback to `'Pass1234!'` when `STAFF_PASSWORD` is not configured.
-  - Ensure seed execution remains idempotent and never prints credentials or secrets to console logs.
-- Audit PORT binding in `server/src/server.ts` to ensure dynamic PORT resolution from `process.env.PORT` listening on `0.0.0.0`.
+- Enforce Student Guide Episode 2.2 Six-Point Cloud-Readiness Checklist:
+  1. **Uploaded Files Isolation:** Ensure zero user-generated files are written to local container directories (SingSlot karaoke reservations and audit logs reside strictly in PostgreSQL).
+  2. **Production-Safe Seed & Demo Accounts:** Demo account credentials for staff (`staff@singslot.local`) and customers must come strictly from environment variables (`STAFF_PASSWORD`), never hardcoded in source code or committed to Git. For local development, credentials reside in `.env` (ignored by Git); in production, they are mounted via Secret Manager. The seed script must be idempotent and safe to rerun without duplicating records.
+  3. **No Development Shortcuts in Production:** Ensure no backdoor login selectors or hardcoded credentials appear on screen. The login modal quick-fill helper must not expose real passwords on screen or bypass authentication in production (`NODE_ENV=production`).
+  4. **Stateless Session Management:** SingSlot utilizes cryptographically signed stateless JWT tokens; no session state is maintained in container memory, ensuring users remain logged in across container restarts, new revisions, and instance scaling.
+  5. **Dynamic Port Binding:** Ensure `server/src/server.ts` reads `PORT` dynamically from `process.env.PORT` (defaulting to 8080 in production) and binds strictly to `0.0.0.0` (not localhost only).
+  6. **Readiness Probe Endpoint (`/api/ready`):** Implement `GET /api/ready` in `server/src/app.ts`:
+     - Executes Prisma `$queryRaw` SELECT 1.
+     - Reuses the shared Prisma Client instance (`prisma` from `src/prisma.ts`), avoiding connection thrashing and never calling `$disconnect()` on every probe.
+     - Enforces a bounded timeout (configured to 3–5 seconds): if the database query exceeds this threshold or encounters an error, it returns HTTP 503 `{ status: "not_ready", error: "Database unreachable" }`.
+     - The readiness timeout implementation must avoid accumulating unresolved database queries or exhausting Prisma connection pool resources when repeated probes time out.
+     - Do not rely on `Promise.race()` alone as database query cancellation unless the underlying query is actually cancelled.
+     - Internal database errors, timeout exceptions, stack traces, and database credentials must be strictly masked from all HTTP responses.
+- Update `server/prisma/seed.ts` to require `STAFF_PASSWORD` from environment variables without hardcoded fallback passwords in source code. If missing in production, fail safely with a clean error message.
 - Update `server/.env.example` with comprehensive placeholder variables and documentation (zero real secrets).
 - Verify compilation and test suites:
   - Run `npm run typecheck` across workspaces (zero TypeScript diagnostic errors).
@@ -368,14 +374,14 @@ Out-of-Scope:
 - Modifying core reservation business rules (frozen from Sprint 1).
 
 Acceptance Criteria:
+- [ ] Student Guide Episode 2 six-point cloud-readiness checklist fully verified (no local disk file storage, safe seed from env, no dev shortcuts/exposed passwords on screen, stateless JWT sessions, PORT bound to 0.0.0.0, and `/api/ready` endpoint).
 - [ ] `GET /api/ready` responds with HTTP 200 `{ status: "ready", db: "connected" }` when database query succeeds.
 - [ ] `GET /api/ready` responds with HTTP 503 `{ status: "not_ready", error: "Database unreachable" }` when database query fails or exceeds bounded timeout (3–5s).
 - [ ] Readiness checks reuse the shared Prisma Client instance and do not expose internal database errors, timeouts, or credentials in HTTP responses.
 - [ ] Automated tests in `server/tests/ready.test.ts` verify 200 (connected), 503 (error), and 503 (timeout) scenarios cleanly.
-- [ ] Production seed execution fails safely when `STAFF_PASSWORD` is missing or empty in production (`NODE_ENV=production`), without falling back to a default password.
-- [ ] Local development may use the documented fallback password (`Pass1234!`) when no environment variable is configured.
+- [ ] Demo account passwords come strictly from environment variables (`STAFF_PASSWORD`) without hardcoded fallback passwords in source code.
 - [ ] `server/src/server.ts` reads `PORT` from `process.env.PORT` and binds to `0.0.0.0`.
-- [ ] `server/.env.example` lists every required environment variable with placeholder values and no secrets.
+- [ ] `server/.env.example` lists every required environment variable with placeholder values and zero committed secrets.
 - [ ] TypeScript compilation (`npm run typecheck`) passes with zero diagnostic errors across client and server.
 - [ ] Client structural tests (`npm run test:client`) pass 12/12.
 - [ ] Feature PR opened into `sprint-1-staging`, reviewed, approved by @Phenwatsa, and merged.
@@ -478,9 +484,13 @@ Acceptance Criteria:
 Evidence Required for PDF (Part 2):
 
 - Direct links to `Dockerfile`, `.dockerignore`, and `docker-compose.yml`.
-- Terminal commands and output showing successful clean docker build from fresh clone (C-03).
-- Evidence of application container successfully starting alongside PostgreSQL database in `docker-compose`.
-- Verification that `/api/ready` responds with HTTP 200 `status: ready`.
+- Terminal commands and output showing successful clean clone build and run (C-03):
+  1. Fresh clone into a separate directory: `git clone https://github.com/Phenwatsa/singslot-karaoke.git fresh-clone`
+  2. Install dependencies from lockfile: `npm ci`
+  3. Copy and fill only `.env.example` placeholders into local `.env` (no committed secrets)
+  4. Build container image and start local composition with PostgreSQL: `docker compose up --build -d`
+  5. Verify system readiness: `curl -f http://localhost:8080/api/ready` returning HTTP 200 `{ status: "ready", db: "connected" }`
+  6. Verify web UI and API work together locally
 - Direct links to `server/.env.example` and environment variable specification table in `docs/labs/lab-05/deployment.md` proving zero secrets are committed.
 ````
 
@@ -566,7 +576,7 @@ In-Scope:
   9. Execute `docker build .` on root Dockerfile (verification only, zero push).
 - Bootstrap Exception & Verification Sequence:
   - Since `.github/workflows/ci-docker.yml` does not exist on base branches (`sprint-1-staging` and `main`) prior to Task 4, the initial PR introducing it cannot be evaluated by a pre-existing workflow on the base branch.
-  - Initial Bootstrap PR: Author executes and verifies `npm run typecheck`, client tests, and `docker build .` locally, recording test logs as PR verification evidence.
+  - Initial Bootstrap PR: Author executes and verifies `npm run typecheck`, backend test suite (`npm run test:server`), client test suite (`npm run test:client`), database migration & seed, deploy script offline tests (`deploy/tests/`), and `docker build .` locally, recording full terminal test logs as PR verification evidence.
   - Merge into `sprint-1-staging`, then open Release PR into `main` and merge to place `deploy/` and `ci-docker.yml` on `main`.
   - **Post-Bootstrap Live CI Verification (C-01):**
     - After the Release PR is merged into `main`, open a dedicated verification PR targeting `main` directly with a minor non-code change (e.g., test comment or README touch).
@@ -775,7 +785,7 @@ Evidence Required for PDF (Part 3):
 Type: Keyless Security & Quality Gate Enforcement
 Assignee: @lephirada
 Reviewer: @Phenwatsa
-Dependencies: Task 1 (GCP Project), Task 4 (CI test-and-docker job name registered on GitHub)
+Dependencies: Task 1, Task 4 (for Phase 6A: WIF/Gate); Task 5 (for Phase 6B: Service Account Bindings)
 Branch: None (GCP/GitHub Console) + test/prove-gate (Temporary branch)
 PR Target: main (for failing PR proof only)
 Label: lab5
@@ -785,7 +795,7 @@ Establish keyless GitHub-to-GCP authentication via Workload Identity Federation 
 
 In-Scope:
 
-- **Phase A (WIF Configuration on GCP):**
+- **Phase 6A (WIF Infrastructure, Environment & Merge Gate - Runnable in parallel with Task 5):**
   - Verify required APIs are enabled (`iam.googleapis.com`, `iamcredentials.googleapis.com`, `sts.googleapis.com`):
     ```bash
     gcloud services enable iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com
@@ -812,7 +822,7 @@ In-Scope:
       assertion.ref == 'refs/heads/main' &&
       assertion.workflow_ref == 'Phenwatsa/singslot-karaoke/.github/workflows/deploy.yml@refs/heads/main'
       ```
-  - Create deployer service account `singslot-deployer` with roles `Cloud Run Developer`, `Artifact Registry Writer` (scoped to `singslot` repository), and `Service Account User` (scoped to both `singslot-runner` and `singslot-migrator`). Zero JSON keys generated.
+  - Create deployer service account `singslot-deployer` with roles `Cloud Run Developer` and `Artifact Registry Writer` (scoped to `singslot` repository). Zero JSON keys generated.
   - Bind `roles/iam.workloadIdentityUser` to allow GitHub Actions to impersonate `singslot-deployer`:
     ```bash
     gcloud iam service-accounts add-iam-policy-binding \
@@ -821,20 +831,34 @@ In-Scope:
       --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/attribute.repository/Phenwatsa/singslot-karaoke"
     ```
   - Create GitHub Environment `demo` restricted to branch `main` with 4 WIF variables (`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`).
-- **Phase B (Merge Gate Enforcement & Verification):**
-  - Create GitHub Ruleset `protect-main` on branch `main`:
+  - Configure GitHub Ruleset `protect-main` on branch `main`:
     - Enforcement: Active.
-    - Require pull request before merging (1 required approval).
-    - Require status check: Select the real `test-and-docker` check that registered during Task 4 (selected from GitHub UI dropdown).
+    - Require pull request before merging (1 required approval; authors cannot approve their own PRs).
+    - Require status check: Select the actual registered check name that appeared in the GitHub Ruleset dropdown during Task 4 (e.g. `test-and-docker` or prefixed `CI & Docker Build / test-and-docker`). Do not type blindly; choose the exact name registered from live runs.
     - Require branches to be up to date before merging.
     - Bypass list: Empty (ensures gate is genuinely enforced).
   - Prove the gate works (C-02):
     1. Create temporary branch `test/prove-gate` from `main`.
     2. Intentionally modify a unit test assertion to fail.
     3. Open PR directly targeting `main`.
-    4. Wait for CI check `test-and-docker` to fail.
+    4. Wait for CI check to fail.
     5. Capture evidence showing the merge button is visibly BLOCKED by GitHub Ruleset.
     6. Close PR and delete branch without merging (zero impact on released code).
+
+- **Phase 6B (Service Account Delegation Binding - Executed after Task 5 creates accounts):**
+  - Once Task 5 completes and creates `singslot-runner` and `singslot-migrator`, grant `roles/iam.serviceAccountUser` to `singslot-deployer` on both accounts (Student Guide Ep 6.2 Step 8):
+    ```bash
+    gcloud iam service-accounts add-iam-policy-binding \
+      singslot-runner@$PROJECT_ID.iam.gserviceaccount.com \
+      --role="roles/iam.serviceAccountUser" \
+      --member="serviceAccount:singslot-deployer@$PROJECT_ID.iam.gserviceaccount.com"
+
+    gcloud iam service-accounts add-iam-policy-binding \
+      singslot-migrator@$PROJECT_ID.iam.gserviceaccount.com \
+      --role="roles/iam.serviceAccountUser" \
+      --member="serviceAccount:singslot-deployer@$PROJECT_ID.iam.gserviceaccount.com"
+    ```
+  - Confirms deployer can run the deployed app and migration job under their respective least-privilege identities without possessing JSON keys.
 
 Out-of-Scope:
 
@@ -848,10 +872,11 @@ Acceptance Criteria:
 - [ ] Deployer service account grants `roles/iam.workloadIdentityUser` to `principalSet` with `$PROJECT_NUMBER` and repository `Phenwatsa/singslot-karaoke`.
 - [ ] Deployer service account created with zero keys in IAM & Admin -> Service Accounts -> Keys.
 - [ ] GitHub Environment `demo` configured with 4 required variables and restricted to `main`.
-- [ ] GitHub Ruleset `protect-main` is Active with bypass list empty, selecting registered check `test-and-docker`.
+- [ ] GitHub Ruleset `protect-main` is Active with bypass list empty, selecting registered check name from live dropdown.
 - [ ] Temporary PR with failing test triggers red CI check and GitHub visibly blocks merge button (C-02).
 - [ ] Temporary PR closed and branch deleted with zero impact on released code.
-- [ ] Preserve commit, PR, and CI run history (do not delete or rewrite history). Keep the `protect-main` ruleset and `test-and-docker` status check permanently active post-submission (R-10).
+- [ ] Deployer service account bound with `roles/iam.serviceAccountUser` on `singslot-runner` and `singslot-migrator` after Task 5 creates them.
+- [ ] Preserve commit, PR, and CI run history (do not delete or rewrite history). Keep the `protect-main` ruleset and status check permanently active post-submission (R-10).
 
 Evidence Required for PDF (Part 1):
 
@@ -1024,6 +1049,7 @@ In-Scope:
         - name: Generate Release Summary
           shell: bash
           run: |
+            SERVICE_URL="$(gcloud run services describe singslot --format='value(status.url)' --region="$REGION" --project="$PROJECT_ID")"
             DEPLOYED_IMAGE="$(gcloud run services describe singslot \
               --format='value(spec.template.spec.containers[0].image)' \
               --region="$REGION" \
@@ -1240,14 +1266,14 @@ Out-of-Scope:
 - Destructive database schema rollbacks (Schema is additive; data must be preserved).
 
 Acceptance Criteria:
-- [ ] Application instance restart / process recycling is verified with concrete evidence: container replacement is proven (container ID change `ID A != ID B` in compose, or Cloud Run instance count 0 followed by container startup log in Logs Explorer), and the pre-existing booking record is retrieved intact from PostgreSQL (C-05).
-- [ ] Booking record created before redeployment remains intact after a new Cloud Run revision is deployed using the same immutable image digest (C-05).
-- [ ] Redeployment verified via new Cloud Run revision deployment (using same image digest + trigger variable) with 100% traffic shift, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
-- [ ] Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations.
-- [ ] Verify that Release 2 migrations completed successfully during its initial automated release before performing rollback.
-- [ ] Deploy Release 1 application image against the updated database schema.
-- [ ] Verify Release 1 can still read existing booking records and complete its required core operations.
-- [ ] Roll-forward to Release 2 and verify all existing booking records remain intact.
+- [ ] Application Instance Restart / Process Recycling (C-05):
+  - Verify that the Cloud Run service scales down to zero instances while idle (min-instances=0).
+  - Send a new request to trigger a fresh container instance.
+  - Capture evidence showing the previous instance count reached zero and a new instance started (Logs Explorer startup event `[Server] SingSlot API listening on port...`).
+  - Verify that the booking created before instance recycling remains intact and can still be retrieved from Cloud SQL.
+  - Local Docker Compose container ID change (`ID A != ID B`) may be captured as supporting evidence.
+- [ ] Redeployment Persistence (C-05): Booking record created before redeployment remains intact after a new Cloud Run revision is deployed using the same immutable image digest (with trigger environment variable) and 100% traffic shift, proving data resides in Cloud SQL rather than ephemeral container memory.
+- [ ] Optional Recommended Verification (Student Guide Episode 8): Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations; deploy Release 1 image against updated database schema and verify core operations; roll-forward restores Release 2 with all booking data preserved intact.
 - [ ] Zero destructive database operations executed during rollback.
 
 Evidence Required for PDF (Part 3 & Part 4):

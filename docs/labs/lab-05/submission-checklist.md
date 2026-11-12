@@ -12,18 +12,18 @@
 
 ## 📌 Answer Part 0: Team and Evidence Index
 
-- [ ] **Course, Section & Topic:** CPE 334, Section [XX], SingSlot (Karaoke Reservation)
+- [ ] **Course, Section & Team Number:** CPE 334, Section [XX], Team [YY], SingSlot (Karaoke Reservation)
 - [ ] **Team Information:** Full names, Student IDs, and GitHub Usernames for both members verified
-- [ ] **Repository Link:** Public GitHub repository link accessible without login
-- [ ] **Deployed Public URL:** Active Cloud Run URL (accessible during grading; scale-to-zero active with min-instances=0)
-- [ ] **Final Release Commit:** Full 40-character Commit SHA recorded
+- [ ] **Repository Link:** Public GitHub repository link accessible without login (must remain public until grading concludes per R-12)
+- [ ] **Submitted Tag or Commit:** Full 40-character Commit SHA or Git Tag submitted on LEB2
+- [ ] **Deployed Public URL & Running Commit:** Active Cloud Run URL serving the verified running Commit SHA (scale-to-zero active with min-instances=0)
 - [ ] **GitHub Project Board Evidence (R-09):**
   - [ ] Direct link to public GitHub Project Board
   - [ ] Captioned screenshot: Project board showing all Lab 5 Issues organized across lifecycle columns (`Backlog`, `Specified`, `Started`, `PR Review`, `Done`)
   - [ ] Captioned screenshot: Final board status with all Lab 5 tasks completed and closed
 - [ ] **Preserve History & CI Mandatory Confirmation (R-10):**
   - [ ] Confirmation that Git commits, PRs, and CI run histories are preserved without rewriting or deletion
-  - [ ] Confirmation that `protect-main` branch ruleset and `test-and-docker` status check remain permanently active post-submission
+  - [ ] Confirmation that `protect-main` branch ruleset and status check remain permanently active post-submission
 - [ ] **Contribution Matrix (R-11):** Table detailing both members' active work across Requirements, Testing, AI Supervision, Implementation, Review, and Deployment (referencing `docs/github-issues-guide.md`)
 - [ ] **Evidence Index Table:** Master table indexing all Required Checks (C-01 to C-06) with artifact links, commit SHAs, and verification results
 
@@ -54,10 +54,13 @@
 ## 🐳 Answer Part 2: Docker and Reproducible Configuration (20 Points)
 
 - [ ] **Docker Files:** Direct links to `Dockerfile`, `.dockerignore`, and `docker-compose.yml`
-- [ ] **Fresh Build & Running Container (C-03 / R-01):**
-  - [ ] Terminal command and output evidence showing clean clone build succeeds (`docker build -t singslot-app .`)
-  - [ ] Evidence of application container successfully starting alongside PostgreSQL database in `docker-compose`
-  - [ ] Additional readiness verification: `/api/ready` responds with HTTP 200 `status: ready`
+- [ ] **Fresh Clone Build & Run Verification (C-03 / R-01, R-02):**
+  - [ ] Terminal evidence of fresh clone in separate test directory: `git clone https://github.com/Phenwatsa/singslot-karaoke.git fresh-clone`
+  - [ ] Deterministic dependencies installation from lockfile: `npm ci`
+  - [ ] Copy and configure local environment from `.env.example` to `.env` using placeholder values (no secrets committed)
+  - [ ] Container image build and local composition startup with PostgreSQL: `docker compose up --build -d`
+  - [ ] Database readiness probe verification: `curl -f http://localhost:8080/api/ready` responds with HTTP 200 `{ status: "ready", db: "connected" }`
+  - [ ] Browser and API verification: Web UI loads properly and reservation API endpoints respond correctly
 - [ ] **Environment Configuration (R-02):**
   - [ ] Direct link to `server/.env.example` in repository
   - [ ] Environment variable specification table in `docs/labs/lab-05/deployment.md` (covering `NODE_ENV`, `PORT`, `TZ`, `CLIENT_DIST_PATH`, `DATABASE_URL`, `JWT_SECRET`, and `STAFF_PASSWORD`)
@@ -93,26 +96,27 @@
 
 ---
 
-## 🔄 Answer Part 4: Repeatable Release Pipeline & Rollback Verification (15 Points)
+## 🔄 Answer Part 4: Repeatable Release Pipeline (15 Points)
 
-- [ ] **Full Release Lifecycle — Release 2 (C-06 / R-07, R-08, R-09, R-10):**
-  - [ ] Dedicated GitHub Issue with label `lab5` tracking visible release proof change (e.g., `[Lab 5 - Task 7b] Prove Repeatable Release via UI Update`)
-  - [ ] Feature PR into `sprint-1-staging` referencing the issue with explicit peer review from teammate
-  - [ ] Release PR from `sprint-1-staging` into `main` with approval and green CI
-  - [ ] Automatic trigger of `.github/workflows/deploy.yml` upon merge to `main`
-  - [ ] Pipeline run summary recording Commit SHA, image digest, Cloud Run revision name, and public service URL
-  - [ ] Captioned screenshot: Cloud Run latest revision matching the exact commit SHA / image digest
-  - [ ] Captioned screenshot: Live website UI updated with Release 2 string (e.g., `v1.0.1 - Cloud Verified`) without manual deploy commands (C-06)
-- [ ] **Automated Container Rollback Verification (Task 8 / C-05, C-06):**
+### Required Part 4 Evidence (15 Points): Full Release Lifecycle — Release 2 (C-06 / R-07, R-08, R-09, R-10)
+- [ ] Dedicated GitHub Issue with label `lab5` tracking visible release proof change (e.g., `[Lab 5 - Task 7b] Prove Repeatable Release via UI Update`)
+- [ ] Feature PR into `sprint-1-staging` referencing the issue with explicit peer review from teammate (specific findings/checks stated)
+- [ ] Release PR from `sprint-1-staging` into `main` with approval and green CI
+- [ ] Automatic trigger of `.github/workflows/deploy.yml` upon merge to `main`
+- [ ] Pipeline run summary recording Commit SHA, image digest, Cloud Run revision name, and public service URL
+- [ ] Captioned screenshot: Cloud Run latest revision matching the exact commit SHA / image digest
+- [ ] Captioned screenshot: Live website UI updated with Release 2 string (e.g., `v1.0.1 - Cloud Verified`) without manual deploy commands (C-06)
+- [ ] **Release Runbook:** Direct link to release procedure documented in `docs/labs/lab-05/deployment.md` (R-08)
+
+### Optional Recommended Verification (Student Guide Episode 8 / Non-Scored Practice):
+- [ ] **Automated Container Rollback Verification (Episode 8):**
   - [ ] Captioned screenshot: GitHub Actions `workflow_dispatch` trigger with Release 1 commit SHA
   - [ ] Captioned screenshot / logs: GitHub Actions pipeline deploys Release 1 immutable image digest directly without rebuilding and without executing migrations
   - [ ] Captioned screenshot: Live website UI successfully reverts to Release 1
   - [ ] Verification evidence: Pre-existing booking records remain completely intact in Cloud SQL and accessible on UI
-- [ ] **Automated Container Roll-forward Verification (Task 8):**
+- [ ] **Automated Container Roll-forward Verification (Episode 8):**
   - [ ] Captioned screenshot: GitHub Actions `workflow_dispatch` trigger with Release 2 commit SHA deploying by historical digest without re-running migrations
-  - [ ] Captioned screenshot: Live website UI restored to Release 2 with all booking data preserved
-- [ ] **Release Runbook:**
-  - [ ] Direct link to release and rollback procedure documented in `docs/labs/lab-05/deployment.md`
+  - [ ] Captioned screenshot: Live website UI restored to Release 2 with all booking data preserved intact
 
 ---
 

@@ -109,16 +109,31 @@ npm run test:client
 npm test
 ```
 
-### 3.4 Container Build & Execution [PLANNED - Task 3]
+### 3.4 Fresh Clone Container Build & Execution [PLANNED - Task 3 / C-03]
 ```bash
-# Build production multi-stage container image
+# 1. Fresh clone into a separate directory:
+git clone https://github.com/Phenwatsa/singslot-karaoke.git fresh-clone
+cd fresh-clone
+
+# 2. Reproducible installation from lockfile:
+npm ci
+
+# 3. Configure local environment variables from template:
+cp server/.env.example server/.env
+# Fill only local development placeholders (e.g. DATABASE_URL, JWT_SECRET, STAFF_PASSWORD; no real secrets)
+
+# 4. Build production multi-stage container image:
 docker build -t singslot-app .
 
-# Start local composition with isolated database volume
+# 5. Start local composition with isolated PostgreSQL database volume:
 docker compose up --build -d
 
-# Verify system readiness probe (Task 2 endpoint)
+# 6. Verify system readiness probe (Task 2 endpoint):
 curl -f http://localhost:8080/api/ready
+# Expected response: {"status":"ready","db":"connected"}
+
+# 7. Verify web application and API work together:
+# Open http://localhost:8080 in browser and test room availability and booking creation
 ```
 
 ---

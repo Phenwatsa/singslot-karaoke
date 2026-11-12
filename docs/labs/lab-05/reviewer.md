@@ -19,17 +19,17 @@
 
 ## 2. Summary of Lab 5 Tasks & Pull Requests
 
-|    Task    | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                  | PR Target                   |   Status    | Verdict  |
-| :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :-------------------------- | :---------: | :------: |
-| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)        |    Done     | Verified |
-| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | `sprint-1-staging`          | In Progress | Pending  |
-| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | `sprint-1-staging`          |   Backlog   | Pending  |
-| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | `sprint-1-staging` → `main` |   Backlog   | Pending  |
-| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)      |   Backlog   | Pending  |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                      |   Backlog   | Pending  |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main` |   Backlog   | Pending  |
-| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)      |   Backlog   | Pending  |
-| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)           |   Backlog   | Pending  |
+|    Task    | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                  | PR Target                                                       |       Status       | Verdict  |
+| :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :-------------------------------------------------------------- | :----------------: | :------: | -------- |
+| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)                                            |        Done        | Verified |
+| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | `sprint-1-staging` | Approved | Verified |
+| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | `sprint-1-staging`                                              |      Backlog       | Pending  |
+| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | `sprint-1-staging` → `main`                                     |      Backlog       | Pending  |
+| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)                                          |      Backlog       | Pending  |
+| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                          |      Backlog       | Pending  |
+| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                     |      Backlog       | Pending  |
+| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                          |      Backlog       | Pending  |
+| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                               |      Backlog       | Pending  |
 
 ---
 
@@ -101,17 +101,31 @@
 ### 📌 Task 2: Prepare SingSlot for Cloud Deployment
 
 - **GitHub Issue:** [Issue #15](https://github.com/Phenwatsa/singslot-karaoke/issues/15)
-- **PR Link:**
+- **PR Link:** [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22)
 - **Source Branch:** `feat/lab5-cloud-ready`
 - **Target Branch:** `sprint-1-staging`
 - **Primary Owner:** @lephirada
 - **Reviewer:** @Phenwatsa
-- **Status:** Pending Review
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Reviewer (@Phenwatsa):**
+  Approved. The implementation meets the objectives of Lab 5 - Task 2, including environment-driven configuration, dynamic port binding, stateless JWT authentication, and production-safe credentials.
+
+  The readiness endpoint implements bounded HTTP timeout and safe error handling. The updated single-flight mechanism prevents duplicate database queries when concurrent requests time out.
+
+  Tests cover the key scenarios, and no blocking issues were identified.
+
+  Approved.
+
+- **Status:** Approved
+
+- **Developer Response (@lephirada):**
+  Thank you for the detailed and constructive review throughout this task! All 12 test cases in `server/tests/ready.test.ts`, client layout tests (12/12), and monorepo typechecks pass cleanly with 100% success. The branch `feat/lab5-cloud-ready` is ready to be merged into `sprint-1-staging`.
+
+- **Outcome:** PR #22 approved for integration into `sprint-1-staging`.
 
 ---
 

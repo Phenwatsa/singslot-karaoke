@@ -1205,7 +1205,7 @@ Branch: None (GitHub Actions manual trigger & GCP Console)
 Label: lab5
 
 Objective:
-Prove database persistence across container instance restart and new revision deployment, and demonstrate container rollback using historical commit SHA (R-04, C-05).
+Prove database persistence across container instance restart and new revision deployment (R-04, C-05), and optionally demonstrate container rollback using historical commit SHA (Recommended Practice per Student Guide Episode 8).
 
 In-Scope:
 - Create a distinct karaoke room reservation on the live public URL (record Room, Date, Slots, Booking Code).

@@ -262,7 +262,10 @@ Per course requirements (**R-04, C-05**), data must survive both (a) an applicat
    - 100% traffic is shifted to this new revision.
    - Refresh the application; the reservation record created in Step 2 remains completely intact in Cloud SQL and visible on the UI, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
 
-### 6.2 Rollback Safeguards & Runbook
+### 6.2 Rollback Safeguards & Runbook [Optional Recommended Practice - Student Guide Episode 8]
+> [!NOTE]
+> **Recommended Practice (Non-Scored):** Per Lab Sheet Section 5 and Figure 1, automated rollback is a recommended operational practice and is not scored separately under the Lab 5 rubric (15 points in Part 4 are scored strictly on the Repeatable Release Pipeline C-06). Teams may implement and execute this procedure as an advanced reliability and disaster recovery demonstration.
+
 > [!WARNING]
 > **Database Schema Compatibility:** Rolling back a container image redeploys previous application binaries but does **NOT** roll back database schema migrations. Database migrations must maintain backward compatibility with previous application revisions that might still be rolled back to (avoiding destructive drops or breaking structural changes until all older revisions are retired).
 

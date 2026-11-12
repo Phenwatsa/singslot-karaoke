@@ -308,7 +308,7 @@ In-Scope:
 - Grant IAM access to @lephirada with Role: Editor (`roles/editor`) per Student Guide Ep 1.3.
 - Enable Billing on project (verify `gcloud billing projects describe` returns True).
 - Create Alerts-only Budget:
-  - Choose one target amount: **$30–$50** (lean budget for Lab 5 duration) or **$250** (term-wide budget preserving $50 reserve out of $300 credit). Team commits to selecting one explicit value upon creation.
+  - Choose one target amount: **$30–$50 equivalent** (lean budget for Lab 5 duration) or **$250 equivalent** (term-wide budget preserving approximately $50 reserve out of the $300 credit). Use the billing account's currency (e.g., THB or USD) and record the actual budget amount and currency upon creation.
   - Configure actual cost alert thresholds at 10%, 20%, 50%, and 90%.
   - Link notification channels to both members' Gmail accounts.
   - Note: Budget alerts send email warnings but do NOT enforce hard spending caps or auto-pause services.
@@ -318,17 +318,17 @@ Out-of-Scope:
 - Modifying repository code or branch configurations.
 
 Acceptance Criteria:
-- [ ] GCP Free Trial activated using a personal Gmail account that has never used the trial before (no `@mail.kmutt.ac.th` used).
-- [ ] GCP Project created with unique Project ID and recorded Project Number, designated for reuse across Lab 5, Lab 6, Lab 7, and Final Project.
+- [ ] GCP Project created with unique Project ID and recorded Project Number (designated for reuse across Lab 5, Lab 6, Lab 7, and Final Project).
 - [ ] Teammate @lephirada added to IAM as Editor and confirmed access from their account.
 - [ ] Billing enabled confirmed via `gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)'` returning `True`.
 - [ ] Alerts-only Budget created with committed target amount, thresholds, and linked notification channels for both members.
+- [ ] Confirmation that budget notification channels are linked to both members' Gmail accounts recorded in the Issue comment.
 - [ ] Team acknowledges budget alerts provide notifications only and do not automatically cap spending.
 - [ ] Zero prepayment made and Upgrade button NOT clicked.
 
 Evidence Required for PDF (Part 0 & Part 3):
 
-- Screenshot of Billing -> Credits showing $300 credit and expiration.
+- Screenshot of Billing -> Credits showing $300 credit (or equivalent in billing currency) and expiration.
 - Screenshot of Cloud Shell showing billingEnabled=True.
 - Screenshot of Budgets & alerts dashboard showing active alert thresholds.
 ```
@@ -1164,7 +1164,7 @@ Acceptance Criteria:
 
 - [ ] `.github/workflows/deploy.yml` triggers automatically upon merge to `main`.
 - [ ] Dedicated GitHub Issue with label `lab5` created to track the second release UI change (C-06).
-- [ ] The actual `deploy.yml` workflow implements both complete execution paths: automated release and manual rollback/roll-forward.
+- [ ] The actual `deploy.yml` workflow implements automated release upon push to `main` (C-06); optionally supports `workflow_dispatch` for manual rollback/roll-forward per Student Guide Episode 8.
 - [ ] Workflow reuses `ci-docker.yml` via `uses: ./.github/workflows/ci-docker.yml` and grants `permissions: { contents: read, id-token: write }`.
 - [ ] Workflow explicitly authenticates using `google-github-actions/auth@v2` with configured `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` without Service Account JSON keys.
 - [ ] Google Cloud SDK is set up via `google-github-actions/setup-gcloud@v2` before executing gcloud commands.
@@ -1172,16 +1172,16 @@ Acceptance Criteria:
 - [ ] Automated release constructs `IMAGE_TAG` from full `GITHUB_SHA`, validates 40-character hexadecimal format, and constructs `IMAGE_URI` before Docker build and push.
 - [ ] Automated release builds and pushes the image, resolves its immutable digest, executes the migration job, updates Cloud Run, shifts traffic, and runs smoke tests in the required order.
 - [ ] Image URI and immutable digest are passed safely between workflow steps via `$GITHUB_ENV`.
-- [ ] Workflow explicitly supports `workflow_dispatch` with optional `image_tag` parameter restricted to `main`.
-- [ ] Manual rollback/roll-forward uses the historical image digest without rebuilding or executing migrations.
+- [ ] [Optional Recommended Practice - Episode 8] Workflow supports `workflow_dispatch` with optional `image_tag` parameter restricted to `main`.
+- [ ] [Optional Recommended Practice - Episode 8] Manual rollback/roll-forward uses the historical image digest without rebuilding or executing migrations.
 - [ ] Automated release explicitly updates `singslot-migrate` job image to the current release digest before executing migration.
 - [ ] Cloud Run migration job runs before service update; if migration fails, deployment aborts immediately.
-- [ ] Manual `image_tag` is validated as a full 40-character lowercase hexadecimal SHA before WIF authentication or any GCP operation.
-- [ ] Invalid or missing rollback image tags cause the workflow to fail safely without modifying Cloud Run resources.
+- [ ] [Optional Recommended Practice - Episode 8] Manual `image_tag` is validated as a full 40-character lowercase hexadecimal SHA before WIF authentication or any GCP operation.
+- [ ] [Optional Recommended Practice - Episode 8] Invalid or missing rollback image tags cause the workflow to fail safely without modifying Cloud Run resources.
 - [ ] `deploy/release.sh` receives explicit inputs (`IMAGE_TAG`, `PROJECT_ID`, `REGION`) and verifies existence in Artifact Registry before deploying by digest.
 - [ ] Cloud Run revision deployed by digest with 100% traffic allocation.
 - [ ] Smoke tests use the actual deployed Cloud Run service URL queried from live deployment (executed via workflow step during automated release, and via `deploy/release.sh` during manual rollback/roll-forward without duplication).
-- [ ] Release Summary records the actual deployed image digest for both automated releases and manual rollback/roll-forward, together with the target commit SHA, Cloud Run revision name, and service URL.
+- [ ] Release Summary records the actual deployed image digest for automated releases (and manual rollback/roll-forward if executed), together with the target commit SHA, Cloud Run revision name, and service URL.
 - [ ] The recorded image digest matches the immutable image used by the deployed Cloud Run revision.
 - [ ] Second release executed via PR lifecycle deploys automatically and updates live UI without manual intervention (C-06).
 
@@ -1200,7 +1200,7 @@ Evidence Required for PDF (Part 4):
 Type: Reliability, Disaster Recovery & Persistence Proof
 Assignee: @lephirada
 Reviewer: @Phenwatsa
-Dependencies: Task 7 (Requires active CD pipeline with workflow_dispatch and 2 deployed releases)
+Dependencies: Task 5 (Requires running Cloud Run service and Cloud SQL database); Task 7 for Repeatable Release verification (C-06). (Note: Container Rollback is an optional recommended practice once 2 releases are deployed)
 Branch: None (GitHub Actions manual trigger & GCP Console)
 Label: lab5
 
@@ -1250,17 +1250,18 @@ In-Scope:
     2. The new revision runs the exact same historical image digest.
     3. 100% traffic is shifted to this new revision.
     4. The booking created in Cloud SQL before redeployment remains visible and completely intact on the live UI, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
-- Execute Rollback via Pipeline:
-  1. Open GitHub Actions -> `Deploy demo` workflow -> Run workflow on `main`.
-  2. Provide `image_tag` parameter with full 40-character commit SHA of Release 1.
-  3. Verify that providing `image_tag` causes the workflow to skip the test, Docker build, and migration steps, then deploys the specified historical image digest without running migrations.
-  4. Verify live UI reverts to Release 1 text while reservation data remains intact.
-- Execute Roll-forward:
-  1. Target Release 2's required migrations must already have been successfully applied to the database during its initial release.
-  2. Run workflow providing the full 40-character Commit SHA of Release 2 to target the historical image directly without re-running migrations.
-  3. Verify UI updates back to Release 2 and reservation data remains fully intact.
-- Enforce Database Schema Invariance Safeguard:
-  - Confirm all database migrations are backward-compatible (additive) so older application container images run cleanly without schema conflicts.
+- [Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification:
+  - Execute Rollback via Pipeline:
+    1. Open GitHub Actions -> `Deploy demo` workflow -> Run workflow on `main`.
+    2. Provide `image_tag` parameter with full 40-character commit SHA of Release 1.
+    3. Verify that providing `image_tag` causes the workflow to skip the test, Docker build, and migration steps, then deploys the specified historical image digest without running migrations.
+    4. Verify live UI reverts to Release 1 text while reservation data remains intact.
+  - Execute Roll-forward:
+    1. Target Release 2's required migrations must already have been successfully applied to the database during its initial release.
+    2. Run workflow providing the full 40-character Commit SHA of Release 2 to target the historical image directly without re-running migrations.
+    3. Verify UI updates back to Release 2 and reservation data remains fully intact.
+  - Enforce Database Schema Invariance Safeguard:
+    - Confirm all database migrations are backward-compatible (additive) so older application container images run cleanly without schema conflicts.
 
 Out-of-Scope:
 - Destructive database schema rollbacks (Schema is additive; data must be preserved).
@@ -1276,12 +1277,18 @@ Acceptance Criteria:
 - [ ] Optional Recommended Verification (Student Guide Episode 8): Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations; deploy Release 1 image against updated database schema and verify core operations; roll-forward restores Release 2 with all booking data preserved intact.
 - [ ] Zero destructive database operations executed during rollback.
 
-Evidence Required for PDF (Part 3 & Part 4):
-- Explicit verification log recording Booking Code, Room Number, Date, and Time Slots before redeployment and verified completely intact afterward.
-- Release 1 and Release 2 full 40-character Commit SHAs and resolved immutable image digests.
-- Captioned screenshot of Cloud Run Metrics / Logs showing container instance count dropping to 0 (or Docker Compose container ID change `ID A != ID B`) and subsequent cold-start startup log proving fresh instance recreation.
-- Before-and-after screenshots of Cloud Run Revisions showing new revision name generation and 100% traffic shift while preserving identical image digest (C-05).
-- Before-and-after screenshots of booking data surviving restart/redeploy (C-05).
+Evidence Required for PDF:
+
+Required Evidence (Part 3 - C-05 Persistence & Part 4 - C-06 Release):
+- Explicit verification log recording Booking Code, Room Number, Date, and Time Slots before redeployment and verified completely intact afterward (C-05).
+- Release 1 and Release 2 full 40-character Commit SHAs and resolved immutable image digests (C-06).
+- Captioned screenshot of Cloud Run Metrics showing container instance count dropping to 0 during idle scale-to-zero (`min-instances=0`) and subsequent Logs Explorer cold-start startup log (`[Server] SingSlot API listening on port 8080`), proving fresh container instance recreation (C-05).
+- Before-and-after screenshots of Cloud Run Revisions showing new revision name generation and 100% traffic shift while preserving identical immutable image digest (C-05).
+- Before-and-after screenshots of booking data surviving restart/redeploy on live Cloud Run UI (C-05).
+- (Supporting local evidence): Docker Compose container ID replacement (`CONTAINER_A != CONTAINER_B`) with persistent local database volume.
+
+Optional Evidence (Part 4 Recommended Practice - Student Guide Episode 8):
 - Captioned screenshot of GitHub Actions rollback workflow execution deploying Release 1 image without running migrations.
+- Captioned screenshot of live website UI successfully reverting to Release 1 while booking data remains intact.
 - Captioned screenshot of restored application state after roll-forward to Release 2.
 ````

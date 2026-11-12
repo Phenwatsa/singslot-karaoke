@@ -80,3 +80,21 @@
   9. **AI Safety Governance (Lab Sheet Section 9):** Enforced strict human review of all proposed gcloud/console commands before execution; zero AI autonomous modification of billing, IAM, or databases; and zero secrets pasted into AI chats.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** 100% complete, verifiable, and unified baseline across all planning artifacts, ready for execution.
+
+#### 11. Rollback Decoupling & C-05 Cloud Run Primacy Harmonization
+- **Prompt Intent:** Resolve 5 legacy phrasing conflicts identified by @lephirada to strictly decouple the mandatory automated release path (C-06) and persistence requirement (C-05) from optional rollback practices:
+  1. **Task 7 Acceptance Criteria (`github-issues-guide.md`):** Updated `deploy.yml` criteria to require automated release upon push to `main` (C-06), annotating `workflow_dispatch` manual rollback/roll-forward as an optional recommended practice (Student Guide Episode 8).
+  2. **Task 8 Dependencies (`github-issues-guide.md`):** Replaced dependency on 2 deployed releases with `Task 5 (Requires running Cloud Run service and Cloud SQL database); Task 7 for release verification (C-06)`, unblocking C-05 persistence verification on Release 1.
+  3. **Task 8 In-Scope (`github-issues-guide.md`):** Explicitly grouped rollback and roll-forward execution under `[Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification`.
+  4. **Task 8 Evidence Required (`github-issues-guide.md`):** Clearly separated Required Evidence (Part 3 C-05 Persistence on Cloud Run + Part 4 C-06 Repeatable Release) from Optional Evidence (Episode 8 Rollback/Roll-forward screenshots).
+  5. **`deployment.md` §6.2 Rollback Section:** Added `[Optional Recommended Practice - Student Guide Episode 8]` to heading with an explicit Callout note clarifying that rollback is a non-scored reliability practice per Lab Sheet Section 5 and Figure 1.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** Complete alignment across all files, fully eliminating ambiguity between graded requirements and optional practices.
+
+#### 12. Task 1 GCP Billing Currency & Notification Channel Verification Alignment
+- **Prompt Intent:** Refine Task 1 specification in `docs/github-issues-guide.md` based on @lephirada's review:
+  1. **Billing Currency Neutrality:** Adjusted budget target description to explicitly allow local billing currency equivalent (e.g. ฿8,500 THB matching ~$250 USD) and recording of the exact currency upon creation, harmonizing issue spec with actual GCP Console THB display.
+  2. **Notification Channel Verification:** Added explicit Acceptance Criteria item requiring confirmation of budget notification channels linked to both members' Gmail accounts to be recorded in the GitHub Issue comment.
+  3. **Project Reuse & Conciseness:** Retained project reuse mandate (Lab 5–7 and Final Project) while streamlining acceptance criteria.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** Task 1 specification accurately reflects team's active GCP setup (THB currency) and verifies dual-member notifications.

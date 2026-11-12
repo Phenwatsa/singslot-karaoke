@@ -103,12 +103,84 @@ $ npm run typecheck
 ---
 
 ## 3. Task 3 Verification Evidence: Docker & Local Compose (C-03 / R-01)
-<!-- To be populated during Task 3 execution -->
 
-- **Clean Clone Command:** 
+### 3.1 Docker & SPA Routing Automated Contract Test Suite
+
+Command executed:
+
+```bash
+$ npm --prefix server test tests/docker.test.ts -- --runInBand
+```
+
+#### Raw Output:
+
+```
+> singslot-server@1.0.0 test
+> jest --runInBand --detectOpenHandles --forceExit tests/docker.test.ts --runInBand
+
+PASS tests/docker.test.ts
+  Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)
+    Root Dockerfile Multi-Stage Contract
+      ✓ declares root Dockerfile with 3 dedicated stages (client-builder, server-builder, production) (13 ms)
+      ✓ client-builder stage builds Vite frontend bundle with empty API URL for same-origin proxy (1 ms)
+      ✓ server-builder stage compiles TypeScript and explicitly executes Prisma Client generation from schema (1 ms)
+      ✓ production stage sets working directory to /app/server and copies both server and client artifacts (1 ms)
+      ✓ production stage enforces non-root USER node and configures port 8080 and graceful entrypoint (1 ms)
+      ✓ entrypoint script exists, is executable, and uses exec "$@" for PID 1 signal forwarding
+    .dockerignore Isolation Contract
+      ✓ excludes node_modules, build outputs, environment files, and version control (1 ms)
+    docker-compose.yml Orchestration Contract
+      ✓ defines postgres database service with healthcheck and persistent volume (1 ms)
+      ✓ defines migration runner service that waits for db health and executes migrate + seed (1 ms)
+      ✓ defines unified app service that waits for successful migration and exposes port 8080
+    SPA Routing & Unmatched /api 404 Protection Contract (app.ts)
+      ✓ strictly returns JSON 404 for unmatched /api requests without swallowing into HTML (2 ms)
+      ✓ strictly returns JSON 404 for unmatched /api/unknown-endpoint requests (1 ms)
+      ✓ strictly returns JSON 404 for non-GET unmatched /api requests
+      ✓ declares unambiguous route order where /api catch-all precedes static and SPA fallback (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        0.973 s
+Ran all test suites matching /tests\/docker.test.ts/i.
+✔ Exited with code 0
+```
+
+### 3.2 Clean Clone Build & Composition Verification Specification (C-03)
+
+- **Clean Clone Command:** `git clone https://github.com/Phenwatsa/singslot-karaoke.git fresh-clone && cd fresh-clone`
+- **Dependency Install Command:** `npm ci`
 - **Build & Up Command:** `docker compose up --build -d`
+- **Container Verification Commands:**
+  ```bash
+  # Filesystem & Prisma CLI binary verification
+  docker run --rm --entrypoint sh singslot-app -c \
+    'test -d /app/server/dist &&
+     test -f /app/server/dist/server.js &&
+     test -f /app/server/prisma/schema.prisma &&
+     test -f /app/client/dist/index.html &&
+     ./node_modules/.bin/prisma --version'
+
+  # Prisma Client instantiation verification
+  docker run --rm --entrypoint node singslot-app -e \
+    "const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); console.log('Prisma Client initialized successfully');"
+  ```
 - **Readiness Probe Response:** `curl -f http://localhost:8080/api/ready`
-- **Output Log:**
+  Expected JSON:
+  ```json
+  { "status": "ready", "db": "connected" }
+  ```
+- **Unmatched API 404 Protection Verification:** `curl -s -i http://localhost:8080/api/nonexistent`
+  Expected HTTP status: `404 Not Found`
+  Expected Content-Type: `application/json`
+  Expected JSON Body:
+  ```json
+  { "success": false, "error": { "code": "NOT_FOUND", "message": "API endpoint not found" } }
+  ```
+- **Frontend SPA Fallback Verification:** `curl -s -i http://localhost:8080/my-bookings`
+  Expected HTTP status: `200 OK`
+  Expected Content-Type: `text/html`
 
 ---
 

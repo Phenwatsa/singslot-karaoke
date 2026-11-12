@@ -23,7 +23,7 @@
 | :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :-------------------------------------------------------------- | :----------------: | :------: | -------- |
 | **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)                                            |        Done        | Verified |
 | **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | `sprint-1-staging` | Approved | Verified |
-| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | `sprint-1-staging`                                              |      Backlog       | Pending  |
+| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | `sprint-1-staging`                                              |    In Review       | Pending  |
 | **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | `sprint-1-staging` → `main`                                     |      Backlog       | Pending  |
 | **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)                                          |      Backlog       | Pending  |
 | **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                          |      Backlog       | Pending  |
@@ -132,17 +132,31 @@
 ### 📌 Task 3: Docker Containerization
 
 - **GitHub Issue:** [Issue #16](https://github.com/Phenwatsa/singslot-karaoke/issues/16)
-- **PR Link:**
+- **PR Link:** Pending PR Submission
 - **Source Branch:** `feat/lab5-docker`
 - **Target Branch:** `sprint-1-staging`
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** In Review
+- **Verdict:** Pending
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Developer (@Phenwatsa):**
+  PR submitted for review! Here is the implementation summary:
+  1. **Multi-Stage `Dockerfile`:** Authored 3-stage minimal Dockerfile:
+     - `client-builder`: Compiles Vite static assets to `/app/client/dist` using same-origin relative URLs (`/api/*`).
+     - `server-builder`: Compiles TypeScript server and explicitly generates Prisma Client (`npx prisma generate --schema=prisma/schema.prisma`).
+     - `production`: `node:20-alpine` with OpenSSL, sets `WORKDIR /app/server`, non-root `USER node`, copies server dist, node_modules (including Prisma CLI and ts-node for Cloud Run migration jobs), prisma schema, and client dist to `/app/client/dist`.
+  2. **PID 1 Signal Forwarding:** Authored executable `server/docker-entrypoint.sh` using `exec "$@"`.
+  3. **Strict SPA & API 404 Routing Order:** Express server (`server/src/app.ts`) routes API endpoints first, immediately catches unmatched `/api` and `/api/*` with JSON 404 (`{ success: false, error: { code: 'NOT_FOUND', message: 'API endpoint not found' } }`), followed by `express.static` and SPA fallback (`app.get('*')`) to ensure API 404s are never swallowed into HTML.
+  4. **Build Context & Composition:** Authored `.dockerignore` and `docker-compose.yml` with PostgreSQL 16 Alpine, migration runner, and app services.
+  5. **Verification & Quality Gates:**
+     - `ready.test.ts`: 12/12 passing.
+     - `docker.test.ts`: 14/14 passing.
+     - Client layout tests: 12/12 passing.
+     - `npm run typecheck`: 0 diagnostic errors across server and client.
+     - `npm run build`: builds cleanly without warnings.
 
 ---
 

@@ -1145,7 +1145,7 @@ In-Scope:
        f. **Smoke Test:** Resolves deployed Cloud Run service URL and runs automated smoke test on live URL.
        g. **Release Summary:** Outputs release summary with target SHA, resolved digest, Cloud Run revision name, and live URL.
     5. For Roll-forward: Target release's required migrations must already have been successfully applied during its initial automated release.
-- Configure Artifact Registry Image Retention: Configure Artifact Registry cleanup policies so release images tagged with commit SHAs remain permanently available for historical rollback. Do not apply automated deletion or purge policies to retained release images.
+- [Optional Recommended Practice - Student Guide Episode 8] Artifact Registry Image Retention: Configure Artifact Registry cleanup policies so release images tagged with commit SHAs remain permanently available for historical rollback. Do not apply automated deletion or purge policies to retained release images.
 - Open PR into `sprint-1-staging`, review, merge, then open Release PR into `main`.
 - Merge into `main` and observe automated deployment executing to completion.
 - Prove Repeatable Release (C-06):
@@ -1178,9 +1178,10 @@ Acceptance Criteria:
 - [ ] Cloud Run migration job runs before service update; if migration fails, deployment aborts immediately.
 - [ ] [Optional Recommended Practice - Episode 8] Manual `image_tag` is validated as a full 40-character lowercase hexadecimal SHA before WIF authentication or any GCP operation.
 - [ ] [Optional Recommended Practice - Episode 8] Invalid or missing rollback image tags cause the workflow to fail safely without modifying Cloud Run resources.
-- [ ] `deploy/release.sh` receives explicit inputs (`IMAGE_TAG`, `PROJECT_ID`, `REGION`) and verifies existence in Artifact Registry before deploying by digest.
+- [ ] [Optional Recommended Practice - Episode 8] `deploy/release.sh` receives explicit inputs (`IMAGE_TAG`, `PROJECT_ID`, `REGION`) and verifies existence in Artifact Registry before deploying by digest during manual rollback/roll-forward.
 - [ ] Cloud Run revision deployed by digest with 100% traffic allocation.
-- [ ] Smoke tests use the actual deployed Cloud Run service URL queried from live deployment (executed via workflow step during automated release, and via `deploy/release.sh` during manual rollback/roll-forward without duplication).
+- [ ] Smoke tests execute against the actual deployed Cloud Run service URL queried dynamically from live deployment during automated release.
+- [ ] [Optional Recommended Practice - Episode 8] Smoke tests execute via `deploy/release.sh` during manual rollback/roll-forward without duplication.
 - [ ] Release Summary records the actual deployed image digest for automated releases (and manual rollback/roll-forward if executed), together with the target commit SHA, Cloud Run revision name, and service URL.
 - [ ] The recorded image digest matches the immutable image used by the deployed Cloud Run revision.
 - [ ] Second release executed via PR lifecycle deploys automatically and updates live UI without manual intervention (C-06).
@@ -1274,8 +1275,11 @@ Acceptance Criteria:
   - Verify that the booking created before instance recycling remains intact and can still be retrieved from Cloud SQL.
   - Local Docker Compose container ID change (`ID A != ID B`) may be captured as supporting evidence.
 - [ ] Redeployment Persistence (C-05): Booking record created before redeployment remains intact after a new Cloud Run revision is deployed using the same immutable image digest (with trigger environment variable) and 100% traffic shift, proving data resides in Cloud SQL rather than ephemeral container memory.
-- [ ] Optional Recommended Verification (Student Guide Episode 8): Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations; deploy Release 1 image against updated database schema and verify core operations; roll-forward restores Release 2 with all booking data preserved intact.
-- [ ] Zero destructive database operations executed during rollback.
+- [ ] [Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification:
+  - Rollback workflow successfully deploys previous image tag by SHA without rebuilding or running migrations.
+  - Deploy Release 1 image against updated database schema and verify core operations.
+  - Roll-forward restores Release 2 with all booking data preserved intact.
+  - Zero destructive database operations executed during rollback.
 
 Evidence Required for PDF:
 

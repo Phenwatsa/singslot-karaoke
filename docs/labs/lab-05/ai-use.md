@@ -98,3 +98,10 @@
   3. **Project Reuse & Conciseness:** Retained project reuse mandate (Lab 5–7 and Final Project) while streamlining acceptance criteria.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** Task 1 specification accurately reflects team's active GCP setup (THB currency) and verifies dual-member notifications.
+
+#### 13. Task 7 & Task 8 Granular Rollback Tagging Harmonization
+- **Prompt Intent:** Resolve 2 remaining granular rollback alignment points identified by @lephirada:
+  1. **Task 7 Acceptance Criteria (`github-issues-guide.md`):** Tagged `deploy/release.sh` input handling and rollback smoke testing with `[Optional Recommended Practice - Episode 8]`, keeping automated release smoke testing strictly required. Added optional tag to Artifact Registry image retention.
+  2. **Task 8 Acceptance Criteria (`github-issues-guide.md`):** Nested the unlabelled criteria `Zero destructive database operations executed during rollback` under `[Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** 100% granular decoupling between mandatory release/persistence paths and optional rollback procedures.

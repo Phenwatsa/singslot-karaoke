@@ -14,15 +14,14 @@
 
 | Requirement / Check ID | Scope | Verification Target | Verification Method | Status |
 |---|---|---|---|---|
-| **R-02 / Task 2** | Dynamic Port & Host Binding | `server/src/server.ts` | Static & dynamic test: `PORT` from env, default 8080 (prod) / 5001 (dev), host `0.0.0.0` | **PASS** |
-| **R-02 / Task 2** | Readiness Probe Endpoint | `server/src/app.ts` | Dynamic mock test: `GET /api/ready` returns 200/503 | **PASS** |
-| **R-02 / Task 2** | Single-Flight Coalescing | `server/src/app.ts` | Concurrent probe deduplication test (shared in-flight driver query) | **PASS** |
-| **R-02 / Task 2** | Probe Timeout & Pending Query Preservation | `server/src/app.ts` | 3000ms bounded timeout test with pending driver query protection | **PASS** |
-| **R-02 / Task 2** | Zombie Query Recovery | `server/src/app.ts` | Hard stale TTL unblocks `activeDbCheck`, allowing clean recovery to 200 | **PASS** |
-| **R-02 / Task 2** | Concurrency Identity Guard | `server/src/app.ts` | Late-settling query does not clobber active probe query or cancel its timer | **PASS** |
-| **R-02 / Task 2** | Zero Hardcoded Passwords | `server/prisma/seed.ts` | Fail-fast env check for `STAFF_PASSWORD`, `CUSTOMER_PASSWORD` | **PASS** |
-| **R-02 / Task 2** | Client Dev-Only Quick Fill | `client/src/components/auth/LoginModal.tsx` | `import.meta.env.DEV` isolation & `VITE_STAFF_DEMO_PASSWORD` / `VITE_CUSTOMER_DEMO_PASSWORD` env bindings | **PASS** |
-| **R-02 / Task 2** | Local Dev Port in .env.example | `server/.env.example` | Documents `PORT=5001` matching Vite proxy, zero committed secrets | **PASS** |
+| **R-02 / Task 2** | Checklist 1: Uploaded Files Isolation | `server/package.json`, `server/src/app.ts` | Static analysis: zero file upload middleware (`multer`, etc.) and zero local storage | **PASS** |
+| **R-02 / Task 2** | Checklist 2: Production-Safe Seed & Idempotency | `server/prisma/seed.ts` | Static analysis: env passwords (`STAFF_PASSWORD`, `CUSTOMER_PASSWORD`), zero secrets, idempotent | **PASS** |
+| **R-02 / Task 2** | Checklist 3: No Dev Shortcuts in Production | `client/src/components/auth/LoginModal.tsx` | Static analysis: quick-fill isolated strictly to `import.meta.env.DEV`, role-specific passwords | **PASS** |
+| **R-02 / Task 2** | Checklist 4: Stateless Session Management | `server/src/middlewares/auth.ts` | Static analysis: stateless signed JWT verification, zero memory session store | **PASS** |
+| **R-02 / Task 2** | Checklist 5: Dynamic Port & Host Binding | `server/src/server.ts`, `.env.example` | Static analysis: `PORT` from env (5001 dev / 8080 prod), host `0.0.0.0` | **PASS** |
+| **R-02 / Task 2** | Checklist 6: Readiness Probe Endpoint | `server/src/app.ts` | Dynamic mock test: `GET /api/ready` returns 200 (connected) / 503 (database failure) | **PASS** |
+| **R-02 / Task 2** | Checklist 6: Single-Flight Coalescing | `server/src/app.ts` | Concurrent probe deduplication test (shared in-flight driver query) | **PASS** |
+| **R-02 / Task 2** | Checklist 6: Zero Query Accumulation | `server/src/app.ts` | Repeated probe timeouts while database is pending guarantee exactly 1 query launched | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
 | **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR targeting `main` | *Pending Task 4* |
@@ -49,26 +48,27 @@ $ npm --prefix server test tests/ready.test.ts
 > singslot-server@1.0.0 test
 > jest --runInBand --detectOpenHandles --forceExit tests/ready.test.ts
 
-PASS tests/ready.test.ts (13.693 s)
+PASS tests/ready.test.ts (16.042 s)
   Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-02, R-04)
-    Twelve-Factor Configuration & Static Analysis Verification
-      ✓ server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0 (3 ms)
-      ✓ prisma/seed.ts reads STAFF_PASSWORD and CUSTOMER_PASSWORD from env and has zero hardcoded passwords (1 ms)
-      ✓ .env.example documents development port 5001 and password placeholders with zero secrets (1 ms)
-      ✓ client LoginModal.tsx supports role-specific demo passwords and restricts quick-fill to development mode (1 ms)
+    Twelve-Factor Configuration & Six-Point Cloud-Readiness Static Analysis
+      ✓ Checklist 1 (Uploaded Files Isolation): zero file upload dependencies and zero local container file storage (3 ms)
+      ✓ Checklist 2 (Production-Safe Seed & Idempotency): reads passwords from env and implements idempotent upsert (1 ms)
+      ✓ Checklist 3 (No Development Shortcuts in Production): LoginModal restricts quick-fill to development mode (1 ms)
+      ✓ Checklist 4 (Stateless Session Management): relies strictly on signed JWT tokens without local session store (1 ms)
+      ✓ Checklist 5 (Dynamic Port & Host Binding): server.ts reads PORT from env (5001 dev / 8080 prod) and binds to 0.0.0.0 (1 ms)
+      ✓ Checklist 5b (.env.example): documents development port 5001 and password placeholders with zero secrets (1 ms)
     Readiness Probe Dynamic Execution Contract
-      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (5 ms)
+      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (8 ms)
       ✓ returns HTTP 503 { status: "not_ready", error: "Database unreachable" } when database query fails (1 ms)
-      ✓ returns HTTP 503 within bounded timeout when database query exceeds 3000ms (3003 ms)
-      ✓ deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion (105 ms)
-      ✓ prevents query accumulation when first probe times out while query is still pending (3008 ms)
-      ✓ recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query (3212 ms)
-      ✓ ensures late-settling stale query does not clobber activeDbCheck or cancel timer of a newly active probe query (3234 ms)
+      ✓ returns HTTP 503 within bounded timeout when database query exceeds 3000ms (3005 ms)
+      ✓ deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion (107 ms)
+      ✓ prevents query accumulation when first probe times out while query is still pending (3006 ms)
+      ✓ guarantees zero query accumulation across repeated probe timeouts while database query is pending, and recovers cleanly when query settles (9033 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       11 passed, 11 total
+Tests:       12 passed, 12 total
 Snapshots:   0 total
-Time:        13.887 s
+Time:        16.233 s
 Ran all test suites matching /tests\/ready.test.ts/i.
 ✔ Exited with code 0
 ```

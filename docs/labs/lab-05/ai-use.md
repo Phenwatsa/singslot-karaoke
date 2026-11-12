@@ -154,3 +154,11 @@
   3. **Concurrency Test Verification (`server/tests/ready.test.ts`):** Authored Test #11 explicitly reproducing a late-settling stale query while a subsequent probe query is in-flight, and asserting that single-flight coalescing and timer management remain 100% intact.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
 - **Outcome:** 11/11 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and robust concurrency safety.
+
+#### 20. Final Cloud-Readiness & Strict Lifecycle Concurrency Finalization (PR #22 Round 3)
+- **Prompt Intent:** Conclusively resolve all remaining peer review blocking points and verification gaps:
+  1. **Strict Query Lifecycle & Zero Query Accumulation (`server/src/app.ts`):** Removed artificial application-level TTL unblocking of in-flight checks. Bound `activeDbCheck` strictly to the underlying database driver query lifecycle with identity validation (`if (activeDbCheck === checkPromise)`), ensuring subsequent probes arriving across multiple timeout intervals coalesce into the existing in-flight query without spawning duplicate queries.
+  2. **Zero Query Accumulation Regression Test (`server/tests/ready.test.ts`):** Added a regression test proving that multiple consecutive probe timeouts while a database query is pending result in exactly 1 query sent to PostgreSQL, and that upon driver query settlement, subsequent probes immediately create a fresh query and recover to HTTP 200.
+  3. **Explicit Six-Point Checklist Verification Suite:** Added static analysis assertions in `server/tests/ready.test.ts` for Checklist Item 1 (Uploaded Files Isolation: zero file upload dependencies `multer`/`busboy`/`formidable` and zero local container storage) and Checklist Item 4 (Stateless Session Management: strictly signed stateless JWT verification without session memory stores).
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 12/12 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and 100% full compliance with all six cloud-readiness checklist items.

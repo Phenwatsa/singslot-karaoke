@@ -29,60 +29,31 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// Shared in-flight database check promise to prevent connection pool exhaustion
+// Shared in-flight database check promise to prevent connection pool exhaustion (R-02 single-flight)
 let activeDbCheck: Promise<void> | null = null;
-let activeDbCheckTimer: NodeJS.Timeout | null = null;
 const READINESS_TIMEOUT_MS = 3000;
-// Stale query ceiling: if underlying query hangs past this bound (zombie query),
-// reset activeDbCheck to allow subsequent probes to attempt fresh connection
-const getStaleQueryTtlMs = (): number => Number(process.env.READINESS_STALE_TTL_MS) || 5000;
 
 // Exported exclusively for testing isolation (resets in-flight state between test cases)
 export function _resetActiveDbCheck(): void {
-  if (activeDbCheckTimer) {
-    clearTimeout(activeDbCheckTimer);
-    activeDbCheckTimer = null;
-  }
   activeDbCheck = null;
 }
 
 // Readiness probe route for container orchestration and health monitoring (R-02)
 app.get('/api/ready', async (_req: Request, res: Response) => {
   if (!activeDbCheck) {
-    let settled = false;
-    let currentTimer: NodeJS.Timeout | null = null;
-
-    // Bind activeDbCheck to actual Prisma query with identity guard and hard stale TTL
+    // Bind activeDbCheck strictly to the actual Prisma Query Promise.
+    // Clears strictly when the underlying driver query settles (resolves or rejects).
+    // Zero queries accumulate because subsequent probes coalesce into this in-flight check
+    // until the underlying database operation actually terminates.
     const checkPromise: Promise<void> = (async () => {
       await prisma.$queryRaw`SELECT 1`;
     })().finally(() => {
-      settled = true;
-      if (currentTimer) {
-        clearTimeout(currentTimer);
-        currentTimer = null;
-      }
-      // Concurrency guard: only clear global state if this promise is still the active one!
-      // Prevents a late-settling stale query from clobbering a newer active probe query or its timer.
       if (activeDbCheck === checkPromise) {
         activeDbCheck = null;
-        activeDbCheckTimer = null;
       }
     });
 
     activeDbCheck = checkPromise;
-
-    // Hard ceiling for zombie query prevention: unblock activeDbCheck if underlying driver query never settles
-    currentTimer = setTimeout(() => {
-      if (!settled && activeDbCheck === checkPromise) {
-        activeDbCheck = null;
-        activeDbCheckTimer = null;
-      }
-    }, getStaleQueryTtlMs());
-
-    if (typeof currentTimer.unref === 'function') {
-      currentTimer.unref();
-    }
-    activeDbCheckTimer = currentTimer;
   }
 
   let timer: NodeJS.Timeout | undefined;

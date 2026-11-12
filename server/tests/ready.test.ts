@@ -44,13 +44,63 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
     _resetActiveDbCheck();
   });
 
-  describe('Twelve-Factor Configuration & Static Analysis Verification', () => {
+  describe('Twelve-Factor Configuration & Six-Point Cloud-Readiness Static Analysis', () => {
     const serverPath = path.resolve(__dirname, '../src/server.ts');
     const seedPath = path.resolve(__dirname, '../prisma/seed.ts');
     const envExamplePath = path.resolve(__dirname, '../.env.example');
     const clientModalPath = path.resolve(__dirname, '../../client/src/components/auth/LoginModal.tsx');
+    const packageJsonPath = path.resolve(__dirname, '../package.json');
+    const authMiddlewarePath = path.resolve(__dirname, '../src/middlewares/auth.ts');
+    const appPath = path.resolve(__dirname, '../src/app.ts');
 
-    it('server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0', () => {
+    it('Checklist 1 (Uploaded Files Isolation): zero file upload dependencies and zero local container file storage', () => {
+      expect(fs.existsSync(packageJsonPath)).toBe(true);
+      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+      // Asserts zero file upload middleware (multer, busboy, formidable)
+      expect(deps).not.toHaveProperty('multer');
+      expect(deps).not.toHaveProperty('formidable');
+      expect(deps).not.toHaveProperty('busboy');
+
+      // Asserts Express app does not mount local upload directories
+      const appContent = fs.readFileSync(appPath, 'utf8');
+      expect(appContent).not.toMatch(/multer/i);
+      expect(appContent).not.toMatch(/uploads\//i);
+    });
+
+    it('Checklist 2 (Production-Safe Seed & Idempotency): reads passwords from env and implements idempotent upsert', () => {
+      expect(fs.existsSync(seedPath)).toBe(true);
+      const content = fs.readFileSync(seedPath, 'utf8');
+
+      expect(content).toMatch(/process\.env\.STAFF_PASSWORD/);
+      expect(content).toMatch(/process\.env\.CUSTOMER_PASSWORD/);
+      expect(content).not.toMatch(/Pass1234!/);
+      // Asserts idempotent user and room upserts / existence checks
+      expect(content).toMatch(/upsert|findUnique/);
+    });
+
+    it('Checklist 3 (No Development Shortcuts in Production): LoginModal restricts quick-fill to development mode', () => {
+      expect(fs.existsSync(clientModalPath)).toBe(true);
+      const content = fs.readFileSync(clientModalPath, 'utf8');
+
+      expect(content).toMatch(/VITE_STAFF_DEMO_PASSWORD/);
+      expect(content).toMatch(/VITE_CUSTOMER_DEMO_PASSWORD/);
+      expect(content).toMatch(/VITE_DEMO_PASSWORD/);
+      expect(content).toMatch(/import\.meta\.env\.DEV/);
+      expect(content).not.toMatch(/Pass1234!/);
+    });
+
+    it('Checklist 4 (Stateless Session Management): relies strictly on signed JWT tokens without local session store', () => {
+      expect(fs.existsSync(authMiddlewarePath)).toBe(true);
+      const content = fs.readFileSync(authMiddlewarePath, 'utf8');
+
+      expect(content).toMatch(/jwt\.verify/);
+      expect(content).not.toMatch(/express-session/);
+      expect(content).not.toMatch(/sessionStore/i);
+    });
+
+    it('Checklist 5 (Dynamic Port & Host Binding): server.ts reads PORT from env (5001 dev / 8080 prod) and binds to 0.0.0.0', () => {
       expect(fs.existsSync(serverPath)).toBe(true);
       const content = fs.readFileSync(serverPath, 'utf8');
 
@@ -60,33 +110,13 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       expect(content).toMatch(/app\.listen\(PORT,\s*HOST/);
     });
 
-    it('prisma/seed.ts reads STAFF_PASSWORD and CUSTOMER_PASSWORD from env and has zero hardcoded passwords', () => {
-      expect(fs.existsSync(seedPath)).toBe(true);
-      const content = fs.readFileSync(seedPath, 'utf8');
-
-      expect(content).toMatch(/process\.env\.STAFF_PASSWORD/);
-      expect(content).toMatch(/process\.env\.CUSTOMER_PASSWORD/);
-      expect(content).not.toMatch(/Pass1234!/);
-    });
-
-    it('.env.example documents development port 5001 and password placeholders with zero secrets', () => {
+    it('Checklist 5b (.env.example): documents development port 5001 and password placeholders with zero secrets', () => {
       expect(fs.existsSync(envExamplePath)).toBe(true);
       const content = fs.readFileSync(envExamplePath, 'utf8');
 
       expect(content).toMatch(/PORT=5001/);
       expect(content).toMatch(/STAFF_PASSWORD=replace_with_/);
       expect(content).toMatch(/CUSTOMER_PASSWORD=replace_with_/);
-      expect(content).not.toMatch(/Pass1234!/);
-    });
-
-    it('client LoginModal.tsx supports role-specific demo passwords and restricts quick-fill to development mode', () => {
-      expect(fs.existsSync(clientModalPath)).toBe(true);
-      const content = fs.readFileSync(clientModalPath, 'utf8');
-
-      expect(content).toMatch(/VITE_STAFF_DEMO_PASSWORD/);
-      expect(content).toMatch(/VITE_CUSTOMER_DEMO_PASSWORD/);
-      expect(content).toMatch(/VITE_DEMO_PASSWORD/);
-      expect(content).toMatch(/import\.meta\.env\.DEV/);
       expect(content).not.toMatch(/Pass1234!/);
     });
   });
@@ -212,112 +242,53 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       expect(queryCallCount).toBe(1);
     }, 6000);
 
-    it('recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query', async () => {
-      // 1. Configure short stale query TTL (3100ms) for test execution
-      const originalStaleTtl = process.env.READINESS_STALE_TTL_MS;
-      process.env.READINESS_STALE_TTL_MS = '3100';
+    it('guarantees zero query accumulation across repeated probe timeouts while database query is pending, and recovers cleanly when query settles', async () => {
+      let resolveQuery: (value: any) => void = () => {};
+      let queryCallCount = 0;
 
-      try {
-        let queryCount = 0;
-        // Probe A experiences a zombie query that never resolves or rejects
-        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
-          queryCount++;
-          return new Promise(() => {}); // never settles
+      // Mock query that remains pending in the database driver
+      (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
+        queryCallCount++;
+        return new Promise((resolve) => {
+          resolveQuery = resolve;
         });
+      });
 
-        const probeAPromise = dispatchReadyRequest();
-        const probeARes = await probeAPromise;
+      // 1. Dispatch first probe (Probe 1) -> times out after 3000ms -> returns 503
+      const probe1Res = await dispatchReadyRequest();
+      expect(probe1Res.status).toBe(503);
+      expect(probe1Res.body).toEqual({
+        status: 'not_ready',
+        error: 'Database unreachable'
+      });
+      expect(queryCallCount).toBe(1);
 
-        expect(probeARes.status).toBe(503);
-        expect(probeARes.body).toEqual({
-          status: 'not_ready',
-          error: 'Database unreachable'
-        });
-        expect(queryCount).toBe(1);
+      // 2. Dispatch repeated subsequent probes while the original database query is STILL pending
+      // Concurrency invariant: Zero new queries may be created while a query is unresolved!
+      const probe2Res = await dispatchReadyRequest();
+      expect(probe2Res.status).toBe(503);
+      expect(queryCallCount).toBe(1); // STILL 1!
 
-        // Wait for stale query TTL to expire (3100ms - 3000ms = ~150ms remaining)
-        await new Promise((r) => setTimeout(r, 200));
+      const probe3Res = await dispatchReadyRequest();
+      expect(probe3Res.status).toBe(503);
+      expect(queryCallCount).toBe(1); // STILL 1!
 
-        // 2. Database recovers! Mock Prisma query to resolve successfully
-        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(async () => {
-          queryCount++;
-          return [{ '?column?': 1 }];
-        });
+      // 3. Now the database driver query finally settles
+      resolveQuery([{ '?column?': 1 }]);
+      await new Promise((r) => setTimeout(r, 20));
 
-        // 3. Subsequent probe (Probe B) arrives after database recovery
-        const probeBRes = await dispatchReadyRequest();
-
-        // Must launch a fresh query and succeed with HTTP 200 (no permanent 503 lockout)
-        expect(probeBRes.status).toBe(200);
-        expect(probeBRes.body).toEqual({
-          status: 'ready',
-          db: 'connected'
-        });
-        expect(queryCount).toBe(2);
-      } finally {
-        process.env.READINESS_STALE_TTL_MS = originalStaleTtl;
-      }
-    }, 8000);
-
-    it('ensures late-settling stale query does not clobber activeDbCheck or cancel timer of a newly active probe query', async () => {
-      const originalStaleTtl = process.env.READINESS_STALE_TTL_MS;
-      process.env.READINESS_STALE_TTL_MS = '3100';
-
-      try {
-        let resolveQuery1: (val: any) => void = () => {};
-        let resolveQuery2: (val: any) => void = () => {};
-        let queryCount = 0;
-
-        // Query 1: will hang past 3000ms timeout and past 3100ms TTL
-        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
-          queryCount++;
-          return new Promise((resolve) => {
-            resolveQuery1 = resolve;
-          });
-        });
-
-        // 1. Dispatch Probe A (times out at 3000ms -> 503)
-        const probeARes = await dispatchReadyRequest();
-        expect(probeARes.status).toBe(503);
-        expect(queryCount).toBe(1);
-
-        // 2. Wait for stale query TTL to expire (3100ms bound)
-        await new Promise((r) => setTimeout(r, 200));
-
-        // 3. Set up Query 2 for Probe B
-        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
-          queryCount++;
-          return new Promise((resolve) => {
-            resolveQuery2 = resolve;
-          });
-        });
-
-        // 4. Dispatch Probe B (now in-flight with Query 2)
-        const probeBPromise = dispatchReadyRequest();
-        expect(queryCount).toBe(2);
-
-        // 5. NOW let Query 1 (the old stale query) finally settle late!
-        resolveQuery1([{ '?column?': 1 }]);
-        // Give event loop tick for Query 1's .finally() callback to run
-        await new Promise((r) => setTimeout(r, 20));
-
-        // 6. Dispatch Probe C while Query 2 is still in-flight
-        // Concurrency assertion: Query 1's late settlement MUST NOT have cleared activeDbCheck!
-        // Therefore, Probe C MUST coalesce into Query 2 rather than launching Query 3!
-        const probeCPromise = dispatchReadyRequest();
-        expect(queryCount).toBe(2); // Still 2! Single-flight coalescing was NOT clobbered!
-
-        // 7. Resolve Query 2
-        resolveQuery2([{ '?column?': 1 }]);
-
-        const [probeBRes, probeCRes] = await Promise.all([probeBPromise, probeCPromise]);
-        expect(probeBRes.status).toBe(200);
-        expect(probeBRes.body).toEqual({ status: 'ready', db: 'connected' });
-        expect(probeCRes.status).toBe(200);
-        expect(probeCRes.body).toEqual({ status: 'ready', db: 'connected' });
-      } finally {
-        process.env.READINESS_STALE_TTL_MS = originalStaleTtl;
-      }
-    }, 8000);
+      // 4. Once the query has settled, subsequent probe creates a fresh query and immediately recovers to 200
+      (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(async () => {
+        queryCallCount++;
+        return [{ '?column?': 1 }];
+      });
+      const probe4Res = await dispatchReadyRequest();
+      expect(probe4Res.status).toBe(200);
+      expect(probe4Res.body).toEqual({
+        status: 'ready',
+        db: 'connected'
+      });
+      expect(queryCallCount).toBe(2);
+    }, 12000);
   });
 });

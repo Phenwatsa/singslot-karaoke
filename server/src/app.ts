@@ -33,30 +33,21 @@ app.get('/api/health', (_req: Request, res: Response) => {
 let activeDbCheck: Promise<void> | null = null;
 const READINESS_TIMEOUT_MS = 3000;
 
+// Exported exclusively for testing isolation (resets in-flight state between test cases)
+export function _resetActiveDbCheck(): void {
+  activeDbCheck = null;
+}
+
 // Readiness probe route for container orchestration and health monitoring (R-02)
 app.get('/api/ready', async (_req: Request, res: Response) => {
   if (!activeDbCheck) {
-    let checkTimeout: NodeJS.Timeout | undefined;
-    const internalTimeout = new Promise<never>((_, reject) => {
-      checkTimeout = setTimeout(() => {
-        reject(new Error('ACTIVE_DB_CHECK_TIMEOUT'));
-      }, READINESS_TIMEOUT_MS);
-      if (typeof checkTimeout.unref === 'function') {
-        checkTimeout.unref();
-      }
+    // Bind activeDbCheck strictly to the actual Prisma Query Promise
+    // Clears strictly when the underlying driver query settles (resolves or rejects)
+    activeDbCheck = (async () => {
+      await prisma.$queryRaw`SELECT 1`;
+    })().finally(() => {
+      activeDbCheck = null;
     });
-
-    activeDbCheck = Promise.race([
-      prisma.$queryRaw`SELECT 1`,
-      internalTimeout
-    ])
-      .then(() => undefined)
-      .finally(() => {
-        if (checkTimeout) {
-          clearTimeout(checkTimeout);
-        }
-        activeDbCheck = null;
-      });
   }
 
   let timer: NodeJS.Timeout | undefined;

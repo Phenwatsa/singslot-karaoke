@@ -1,7 +1,9 @@
+/// <reference types="jest" />
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { app } from '../src/app';
+import { app, _resetActiveDbCheck } from '../src/app';
 import { prisma } from '../src/prisma';
 
 // Helper to execute Express app pipeline in-memory without loopback network socket
@@ -25,16 +27,21 @@ function dispatchReadyRequest(): Promise<{ status: number; body: any }> {
       }
     };
 
-    app(req, res);
+    (app as any)(req, res);
   });
 }
 
 describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-02, R-04)', () => {
   const originalQueryRaw = prisma.$queryRaw;
 
+  beforeEach(() => {
+    _resetActiveDbCheck();
+  });
+
   afterEach(() => {
-    // Restore original query method after each test
+    // Restore original query method after each test and reset in-flight state
     prisma.$queryRaw = originalQueryRaw;
+    _resetActiveDbCheck();
   });
 
   describe('Twelve-Factor Configuration & Static Analysis Verification', () => {
@@ -83,7 +90,7 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
   describe('Readiness Probe Dynamic Execution Contract', () => {
     it('returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds', async () => {
       // Mock Prisma query to resolve successfully
-      prisma.$queryRaw = jest.fn().mockResolvedValue([{ '?column?': 1 }]);
+      (prisma as any).$queryRaw = jest.fn<any>().mockResolvedValue([{ '?column?': 1 }]);
 
       const res = await dispatchReadyRequest();
       expect(res.status).toBe(200);
@@ -95,7 +102,7 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
 
     it('returns HTTP 503 { status: "not_ready", error: "Database unreachable" } when database query fails', async () => {
       // Mock Prisma query to reject with database connection error
-      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('Connection terminated unexpectedly: postgres://user:secret@localhost:5432'));
+      (prisma as any).$queryRaw = jest.fn<any>().mockRejectedValue(new Error('Connection terminated unexpectedly: postgres://user:secret@localhost:5432'));
 
       const res = await dispatchReadyRequest();
       expect(res.status).toBe(503);
@@ -112,8 +119,11 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
     });
 
     it('returns HTTP 503 within bounded timeout when database query exceeds 3000ms', async () => {
-      // Mock Prisma query to hang indefinitely
-      prisma.$queryRaw = jest.fn().mockImplementation(() => new Promise(() => {}));
+      let resolveQuery: (value: any) => void = () => {};
+      // Mock Prisma query that hangs past 3000ms but can be resolved during test cleanup
+      (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => new Promise((resolve) => {
+        resolveQuery = resolve;
+      }));
 
       const startTime = Date.now();
       const res = await dispatchReadyRequest();
@@ -126,11 +136,14 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       });
       expect(durationMs).toBeGreaterThanOrEqual(2950);
       expect(durationMs).toBeLessThan(3500);
+
+      // Clean up hanging promise
+      resolveQuery([{ '?column?': 1 }]);
     }, 5000);
 
     it('deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion', async () => {
       let queryCallCount = 0;
-      prisma.$queryRaw = jest.fn().mockImplementation(async () => {
+      (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(async () => {
         queryCallCount++;
         await new Promise((r) => setTimeout(r, 100));
         return [{ '?column?': 1 }];
@@ -149,6 +162,50 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       // All 3 requests must share the single in-flight database query
       expect(queryCallCount).toBe(1);
     });
+
+    it('prevents query accumulation when first probe times out while query is still pending', async () => {
+      let resolveQuery: (value: any) => void = () => {};
+      let queryCallCount = 0;
+
+      // Mock query that remains pending past the 3000ms request timeout
+      (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
+        queryCallCount++;
+        return new Promise((resolve) => {
+          resolveQuery = resolve;
+        });
+      });
+
+      // 1. Dispatch first probe (Probe A)
+      const probeAPromise = dispatchReadyRequest();
+
+      // Probe A times out after 3000ms and returns 503
+      const probeARes = await probeAPromise;
+      expect(probeARes.status).toBe(503);
+      expect(probeARes.body).toEqual({
+        status: 'not_ready',
+        error: 'Database unreachable'
+      });
+      expect(queryCallCount).toBe(1);
+
+      // 2. Dispatch second probe (Probe B) while the original query is STILL pending
+      const probeBPromise = dispatchReadyRequest();
+
+      // Verify that Probe B does NOT spawn a new database query!
+      expect(queryCallCount).toBe(1);
+
+      // 3. Now let the pending database query finally settle
+      resolveQuery([{ '?column?': 1 }]);
+
+      // Probe B finishes successfully with 200
+      const probeBRes = await probeBPromise;
+      expect(probeBRes.status).toBe(200);
+      expect(probeBRes.body).toEqual({
+        status: 'ready',
+        db: 'connected'
+      });
+
+      // Still only 1 query was launched across both probes
+      expect(queryCallCount).toBe(1);
+    }, 6000);
   });
 });
-

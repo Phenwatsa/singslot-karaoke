@@ -112,3 +112,53 @@
   2. Annotated `If image_tag is provided` conditional execution logic bullet with `[Optional Recommended Practice - Student Guide Episode 8]`.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** Total consistency across In-Scope workflow templates and Acceptance Criteria.
+
+#### 15. Task 2 Implementation: Cloud-Ready Application Architecture & Resilient Readiness Probe
+- **Prompt Intent:** Implement Task 2 cloud-readiness specifications on branch `feat/lab5-cloud-ready` adhering to Twelve-Factor configuration, Student Guide Episode 2, and team security requirements (Option B):
+  1. **Dynamic Port & Host Binding (`server/src/server.ts`):** Bound Express port to `Number(process.env.PORT) || 8080` and host strictly to `0.0.0.0` for Cloud Run container routing, retaining fail-fast JWT secret check.
+  2. **Readiness Probe Endpoint (`server/src/app.ts`):** Implemented `GET /api/ready` executing `prisma.$queryRaw` `SELECT 1` via shared Prisma instance, with single-flight request coalescing bound strictly to the underlying Prisma driver query (cleared only when the driver query settles), per-request 3000ms bounded timeout, and strict error/credential masking returning `{ status: "ready", db: "connected" }` or `{ status: "not_ready", error: "Database unreachable" }`.
+  3. **Role-Separated Environment Passwords (`server/prisma/seed.ts`):** Eliminated all hardcoded passwords; required `STAFF_PASSWORD` (for staff demo) and `CUSTOMER_PASSWORD` (for customer demo) from environment with fail-fast validation.
+  4. **Client Quick-Fill Dev Isolation (`client/src/components/auth/LoginModal.tsx`):** Bound demo password to `import.meta.env.VITE_DEMO_PASSWORD` and restricted quick-fill helper rendering strictly to development mode (`import.meta.env.DEV`), eliminating demo shortcuts from production bundles.
+  5. **Environment Templates (`.env.example`):** Added comprehensive placeholders in `server/.env.example` and created `client/.env.example` (both `.env` files verified ignored by Git).
+  6. **Automated Testing & Quality Gates:** Authored 9 test cases in `server/tests/ready.test.ts` (100% passing) including verification that subsequent probes do not spawn new queries while a previous timed-out query is still pending in the driver, verified `npm run typecheck` across client/server (0 errors), `npm run test:client` (12/12 passing), and production builds.
+- **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`git status`, `git diff --check`, `npm run typecheck`, `npm run test:client`, `npm --prefix server test tests/ready.test.ts`, `npm run build`).
+- **Outcome:** Clean, robust cloud-ready codebase ready for PR review and merge into `sprint-1-staging`.
+
+#### 16. VS Code Test Runner Type Resolution Alignment in `ready.test.ts`
+- **Prompt Intent:** Resolve 57 TypeScript diagnostic errors (`ts(2304) Cannot find name 'expect' / 'it' / 'describe' / 'jest'`) surfaced in VS Code Problems panel when opening `server/tests/ready.test.ts`:
+  1. **Root Cause Identification:** `server/tsconfig.json` excludes the `tests` directory so that compilation for `dist/` is isolated to `src/`. When test files are opened in VS Code's editor outside of `server/tests/tsconfig.json` context, test runner globals are not automatically in scope without explicit imports.
+  2. **Resolution:** Added `/// <reference types="jest" />` and explicit imports `import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';` to `server/tests/ready.test.ts`, matching existing conventions in `booking.test.ts`, `conflict.test.ts`, and `views.test.ts`. Adjusted Prisma mock types with explicit generics to satisfy strict TypeScript definitions.
+  3. **Verification:** Executed `npm --prefix server test tests/ready.test.ts` (9/9 passed in 7.158s), `npm run typecheck` across server and client (0 errors), and verified clean diagnostics.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`tsc --noEmit -p server/tests/tsconfig.json`, `npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git status`).
+- **Outcome:** Zero TypeScript errors in both VS Code Problems panel and automated CI typechecks.
+
+#### 17. Lab 5 Reviewer Record & Test Evidence Documentation Scaffolding
+- **Prompt Intent:** Scaffold `docs/labs/lab-05/reviewer.md` and `docs/labs/lab-05/tests.md` aligned strictly with Lab 5 scope and team specifications:
+  1. **`reviewer.md` Skeleton Scaffolding:** Provided a neutral structural skeleton for peer review tracking across Tasks 1 through 8 (and Step 9) matching `docs/github-issues-guide.md` (§4.1 Master Allocation Matrix). Stripped all simulated discussion, dialogue, and approval comments so that team members (@Phenwatsa and @lephirada) author their own review notes and verdicts directly.
+  2. **`tests.md` Lab 5 Alignment:** Replaced previous Sprint 1 test traces (`AC-02`, `AC-07`, `layout.test.mjs`) with Lab 5 requirements (`R-01` to `R-12`) and Required Checks (`C-01` to `C-06`). Captured raw verification logs for Task 2 (`ready.test.ts` 9/9 passed, `npm run typecheck` 0 errors), and added structured evidence placeholders for Tasks 3–8.
+- **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`git status`).
+- **Outcome:** Clean, accurate documentation templates for Lab 5 peer reviews and test evidence.
+
+#### 18. Task 2 Peer Review Findings Resolution (PR #22 Feedback)
+- **Prompt Intent:** Resolve 3 substantive peer review findings raised on PR #22 (`feat/lab5-cloud-ready`):
+  1. **Development & Production Port Configuration Alignment:** Updated `server/src/server.ts` to set `DEFAULT_PORT = process.env.NODE_ENV === 'production' ? 8080 : 5001` so local development preserves port 5001 (matching Vite proxy) while production defaults to 8080. Updated `client/vite.config.ts` to proxy to `process.env.VITE_API_URL || 'http://localhost:5001'`.
+  2. **Zombie Query Recovery & Max Stale TTL:** In `server/src/app.ts`, implemented a hard stale TTL ceiling (`READINESS_STALE_TTL_MS`, default 5000ms) that unblocks and resets `activeDbCheck` if the underlying driver query stalls indefinitely, preventing permanent 503 lockout and allowing immediate recovery when the database returns. Added a 10th automated test in `server/tests/ready.test.ts` verifying clean recovery to HTTP 200 after a zombie query.
+  3. **Role-Specific Demo Password Consistency:** Updated `client/src/components/auth/LoginModal.tsx` to read `VITE_STAFF_DEMO_PASSWORD` for staff and `VITE_CUSTOMER_DEMO_PASSWORD` for customer quick-fill, while maintaining `VITE_DEMO_PASSWORD` as shared fallback. Updated `client/.env.example` and `client/tests/layout.test.mjs`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 10/10 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, and 0 typecheck errors, completely resolving all peer review findings.
+
+#### 19. Task 2 Follow-Up Peer Review Resolution (PR #22 Round 2)
+- **Prompt Intent:** Resolve 2 specific edge-case and environment findings raised in the second review round of PR #22:
+  1. **Local Development Port in `.env.example`:** Changed `PORT=8080` to `PORT=5001` in `server/.env.example` with clear documentation so copying `.env.example` to `.env` immediately aligns with the client Vite proxy (`http://localhost:5001`), while Cloud Run automatically injects `PORT=8080` in production.
+  2. **Promise Identity Concurrency Guard (`server/src/app.ts`):** Prevented an asynchronous race condition where a late-settling stale query's `.finally()` callback could clobber a newly active probe query's state or cancel its timeout timer. Implemented an identity guard `if (activeDbCheck === checkPromise)` ensuring only the currently active query can clear global state.
+  3. **Concurrency Test Verification (`server/tests/ready.test.ts`):** Authored Test #11 explicitly reproducing a late-settling stale query while a subsequent probe query is in-flight, and asserting that single-flight coalescing and timer management remain 100% intact.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 11/11 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and robust concurrency safety.
+
+#### 20. Final Cloud-Readiness & Strict Lifecycle Concurrency Finalization (PR #22 Round 3)
+- **Prompt Intent:** Conclusively resolve all remaining peer review blocking points and verification gaps:
+  1. **Strict Query Lifecycle & Zero Query Accumulation (`server/src/app.ts`):** Removed artificial application-level TTL unblocking of in-flight checks. Bound `activeDbCheck` strictly to the underlying database driver query lifecycle with identity validation (`if (activeDbCheck === checkPromise)`), ensuring subsequent probes arriving across multiple timeout intervals coalesce into the existing in-flight query without spawning duplicate queries.
+  2. **Zero Query Accumulation Regression Test (`server/tests/ready.test.ts`):** Added a regression test proving that multiple consecutive probe timeouts while a database query is pending result in exactly 1 query sent to PostgreSQL, and that upon driver query settlement, subsequent probes immediately create a fresh query and recover to HTTP 200.
+  3. **Explicit Six-Point Checklist Verification Suite:** Added static analysis assertions in `server/tests/ready.test.ts` for Checklist Item 1 (Uploaded Files Isolation: zero file upload dependencies `multer`/`busboy`/`formidable` and zero local container storage) and Checklist Item 4 (Stateless Session Management: strictly signed stateless JWT verification without session memory stores).
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 12/12 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and 100% full compliance with all six cloud-readiness checklist items.

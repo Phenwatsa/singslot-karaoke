@@ -68,10 +68,13 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.strictEqual(fs.existsSync(modalPath), true, 'LoginModal.tsx must exist');
     const content = fs.readFileSync(modalPath, 'utf8');
 
-    // Quick-fill buttons per Issue #2 Spec
+    // Quick-fill buttons per Issue #2 Spec and Twelve-Factor Cloud Readiness (R-02 / Ep 2.2)
     assert.match(content, /staff@singslot\.local/, 'LoginModal must provide staff quick-fill');
     assert.match(content, /customer1@singslot\.local/, 'LoginModal must provide customer quick-fill');
-    assert.match(content, /Pass1234!/, 'LoginModal must fill seeded demo password');
+    assert.match(content, /VITE_STAFF_DEMO_PASSWORD/, 'LoginModal must support role-specific staff demo password');
+    assert.match(content, /VITE_CUSTOMER_DEMO_PASSWORD/, 'LoginModal must support role-specific customer demo password');
+    assert.match(content, /VITE_DEMO_PASSWORD/, 'LoginModal must maintain backward-compatible shared demo password fallback');
+    assert.match(content, /import\.meta\.env\.DEV/, 'LoginModal must restrict quick-fill to development mode');
 
     // API contract endpoint
     assert.match(content, /\/api\/auth\/login/, 'LoginModal must post to /api/auth/login');

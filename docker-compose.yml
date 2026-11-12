@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: singslot-app:latest
     container_name: singslot-migrate
     restart: "no"
     depends_on:
@@ -38,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: singslot-app:latest
     container_name: singslot-app
     restart: unless-stopped
     depends_on:

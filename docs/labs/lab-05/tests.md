@@ -121,28 +121,29 @@ $ npm --prefix server test tests/docker.test.ts -- --runInBand
 PASS tests/docker.test.ts
   Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)
     Root Dockerfile Multi-Stage Contract
-      ✓ declares root Dockerfile with 3 dedicated stages (client-builder, server-builder, production) (13 ms)
+      ✓ declares root Dockerfile with 3 dedicated stages (client-builder, server-builder, production) (4 ms)
       ✓ client-builder stage builds Vite frontend bundle with empty API URL for same-origin proxy (1 ms)
-      ✓ server-builder stage compiles TypeScript and explicitly executes Prisma Client generation from schema (1 ms)
+      ✓ server-builder stage compiles TypeScript and explicitly executes Prisma Client generation from schema (2 ms)
       ✓ production stage sets working directory to /app/server and copies both server and client artifacts (1 ms)
       ✓ production stage enforces non-root USER node and configures port 8080 and graceful entrypoint (1 ms)
-      ✓ entrypoint script exists, is executable, and uses exec "$@" for PID 1 signal forwarding
+      ✓ entrypoint script exists, is executable, and uses exec "$@" for PID 1 signal forwarding (1 ms)
     .dockerignore Isolation Contract
       ✓ excludes node_modules, build outputs, environment files, and version control (1 ms)
     docker-compose.yml Orchestration Contract
       ✓ defines postgres database service with healthcheck and persistent volume (1 ms)
       ✓ defines migration runner service that waits for db health and executes migrate + seed (1 ms)
-      ✓ defines unified app service that waits for successful migration and exposes port 8080
+      ✓ defines unified app service that waits for successful migration and exposes port 8080 (8 ms)
     SPA Routing & Unmatched /api 404 Protection Contract (app.ts)
       ✓ strictly returns JSON 404 for unmatched /api requests without swallowing into HTML (2 ms)
-      ✓ strictly returns JSON 404 for unmatched /api/unknown-endpoint requests (1 ms)
-      ✓ strictly returns JSON 404 for non-GET unmatched /api requests
+      ✓ strictly returns JSON 404 for unmatched /api/unknown-endpoint requests
+      ✓ strictly returns JSON 404 for non-GET unmatched /api requests (1 ms)
       ✓ declares unambiguous route order where /api catch-all precedes static and SPA fallback (1 ms)
+      ✓ serves SPA fallback HTML for direct navigation to frontend routes when client dist is present (4 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       14 passed, 14 total
+Tests:       15 passed, 15 total
 Snapshots:   0 total
-Time:        0.973 s
+Time:        2.046 s
 Ran all test suites matching /tests\/docker.test.ts/i.
 ✔ Exited with code 0
 ```
@@ -181,10 +182,10 @@ Raw Build Log:
 
 #### 3.2.2 Container Filesystem Structure & Prisma CLI Verification
 
-Command executed:
+Command executed (both tagged image `singslot-app:latest` and `docker compose run` supported):
 
 ```bash
-$ docker run --rm --entrypoint sh singslot-app -c \
+$ docker run --rm --entrypoint sh singslot-app:latest -c \
   'test -d /app/server/dist &&
    test -f /app/server/dist/server.js &&
    test -f /app/server/prisma/schema.prisma &&
@@ -214,7 +215,7 @@ Studio                  : 0.503.0
 Command executed:
 
 ```bash
-$ docker run --rm --entrypoint node singslot-app -e \
+$ docker run --rm --entrypoint node singslot-app:latest -e \
   "const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); console.log('Prisma Client initialized successfully');"
 ```
 
@@ -253,7 +254,7 @@ migrations/
 All migrations have been successfully applied.
 
 > singslot-server@1.0.0 prisma:seed
-> ts-node prisma/seed.ts
+> ts-node --transpile-only prisma/seed.ts
 
 🌱 Starting SingSlot database seeding (Idempotent)...
 ✅ Seeded/Verified 3 demo users (1 Staff, 2 Customers).

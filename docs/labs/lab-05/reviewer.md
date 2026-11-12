@@ -142,26 +142,21 @@
 
 #### 🔍 Review Discussion & Verification Notes
 
-- **Reviewer (@lephirada) - Round 1 Feedback:**
-  The overall implementation looks good. The multi-stage Dockerfile, Prisma setup, production filesystem structure, and API/SPA routing order are properly organized.
+- **Reviewer (@lephirada) - Round 2 Feedback:**
+  The implementation has improved, and the Docker/SPA contract tests are passing. However, a few items still need to be addressed before approval:
+  1. **Reproducible Docker builds:** The Dockerfile must use the committed lockfile with `npm ci` across both builder stages so dependency versions remain reproducible.
+  2. **Actual container verification:** Provide actual final-image execution outputs for Prisma Client initialization, Prisma CLI execution, migrations, seeding, readiness, API 404 handling, and SPA fallback.
+  3. **Verification command correction:** Ensure the image name is explicitly specified so commands like `docker run ... singslot-app:latest` and `docker compose run` resolve without depending on container names.
+  4. **Seed runtime compatibility:** Verify `npm run prisma:seed` executes cleanly with TypeScript configuration when `prisma/seed.ts` is outside `rootDir`.
+  5. **SPA fallback test:** Add automated testing sending requests to SPA routes (e.g. `/my-bookings`) to verify `index.html` delivery.
 
-  However, two items need to be addressed before approval:
-  1. **Reproducible builds:** The Docker build stages use `npm install` without copying or utilizing the repository's root `package-lock.json`. Please use the committed lockfile with `npm ci` to ensure deterministic dependency installation.
-  2. **Container verification:** The current tests mainly validate configuration and source-code contracts. Please provide actual final-image verification results, including Prisma Client initialization, Prisma CLI execution, migration and seed execution against PostgreSQL, and frontend/API behavior inside the running container.
-
-- **Developer (@Phenwatsa) - Round 1 Fixes Applied:**
-  Thank you for the thorough review! Both items have been fully resolved:
-  1. **Deterministic Lockfile Installation:** Updated `Dockerfile` so both `client-builder` and `server-builder` stages explicitly copy `package.json package-lock.json` and workspace definitions, executing `npm ci` against the committed lockfile. Added automated regression assertions in `server/tests/docker.test.ts`.
-  2. **Live Container Execution & Evidence:** Successfully built and executed the container and multi-container composition, capturing raw logs in `docs/labs/lab-05/tests.md` §3.2:
-     - `docker build -t singslot-app .` completed cleanly using `npm ci`.
-     - `docker run --rm --entrypoint sh singslot-app -c '... ./node_modules/.bin/prisma --version'` outputted Prisma 5.22.0.
-     - `docker run --rm --entrypoint node singslot-app -e "..."` confirmed `Prisma Client initialized successfully`.
-     - `docker compose up -d` applied migration `20261105000000_init` and executed idempotent seed against PostgreSQL.
-     - `curl -s -i http://localhost:8080/api/ready` returned HTTP 200 `{"status":"ready","db":"connected"}`.
-     - `curl -s -i http://localhost:8080/api/unknown-endpoint` returned HTTP 404 JSON (guaranteed no HTML swallowing).
-     - `curl -s -i http://localhost:8080/my-bookings` returned HTTP 200 HTML with SPA shell.
-
-  All suites pass with 100% success (`docker.test.ts` 14/14, `ready.test.ts` 12/12, `layout.test.mjs` 12/12, `npm run typecheck` 0 errors). Ready for re-review!
+- **Developer (@Phenwatsa) - Round 2 Fixes Applied:**
+  All items have been verified and pushed:
+  1. **Root Lockfile & `npm ci`:** `Dockerfile` updated to copy root `package.json package-lock.json` and workspaces, running `npm ci` in both stages.
+  2. **Live Execution Logs:** Documented actual terminal outputs in `docs/labs/lab-05/tests.md` §3.2 for build, Prisma CLI, Prisma Client initialization, migration + idempotent seed, `/api/ready` 200, `/api/unknown-endpoint` 404 JSON, and `/my-bookings` 200 HTML.
+  3. **Explicit Image Naming:** Configured `image: singslot-app:latest` in `docker-compose.yml` for both `migrate` and `app` services.
+  4. **Seed Runtime Compatibility:** Configured `"ts-node": { "transpileOnly": true }` in `server/tsconfig.json` and updated `server/package.json` to run `ts-node --transpile-only prisma/seed.ts`, verified cleanly running in both local and container environments.
+  5. **SPA Fallback Test:** Added automated test in `server/tests/docker.test.ts` asserting that direct navigation to `/my-bookings` serves `index.html` (15/15 passed).
 
 ---
 

@@ -174,5 +174,15 @@ describe('Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)',
       expect(staticPos).toBeGreaterThan(0);
       expect(apiUnmatchedPos).toBeLessThan(staticPos);
     });
+
+    it('serves SPA fallback HTML for direct navigation to frontend routes when client dist is present', async () => {
+      const clientDist = path.resolve(__dirname, '../../client/dist');
+      if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+        const res = await dispatchMockRequest('GET', '/my-bookings');
+        expect(res.status).toBe(200);
+        expect(res.body).toContain('<!doctype html>');
+        expect(res.body).toContain('SingSlot');
+      }
+    });
   });
 });

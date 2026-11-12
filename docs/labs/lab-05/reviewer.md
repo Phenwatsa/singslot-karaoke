@@ -142,21 +142,26 @@
 
 #### 🔍 Review Discussion & Verification Notes
 
-- **Developer (@Phenwatsa):**
-  PR submitted for review! Here is the implementation summary:
-  1. **Multi-Stage `Dockerfile`:** Authored 3-stage minimal Dockerfile:
-     - `client-builder`: Compiles Vite static assets to `/app/client/dist` using same-origin relative URLs (`/api/*`).
-     - `server-builder`: Compiles TypeScript server and explicitly generates Prisma Client (`npx prisma generate --schema=prisma/schema.prisma`).
-     - `production`: `node:20-alpine` with OpenSSL, sets `WORKDIR /app/server`, non-root `USER node`, copies server dist, node_modules (including Prisma CLI and ts-node for Cloud Run migration jobs), prisma schema, and client dist to `/app/client/dist`.
-  2. **PID 1 Signal Forwarding:** Authored executable `server/docker-entrypoint.sh` using `exec "$@"`.
-  3. **Strict SPA & API 404 Routing Order:** Express server (`server/src/app.ts`) routes API endpoints first, immediately catches unmatched `/api` and `/api/*` with JSON 404 (`{ success: false, error: { code: 'NOT_FOUND', message: 'API endpoint not found' } }`), followed by `express.static` and SPA fallback (`app.get('*')`) to ensure API 404s are never swallowed into HTML.
-  4. **Build Context & Composition:** Authored `.dockerignore` and `docker-compose.yml` with PostgreSQL 16 Alpine, migration runner, and app services.
-  5. **Verification & Quality Gates:**
-     - `ready.test.ts`: 12/12 passing.
-     - `docker.test.ts`: 14/14 passing.
-     - Client layout tests: 12/12 passing.
-     - `npm run typecheck`: 0 diagnostic errors across server and client.
-     - `npm run build`: builds cleanly without warnings.
+- **Reviewer (@lephirada) - Round 1 Feedback:**
+  The overall implementation looks good. The multi-stage Dockerfile, Prisma setup, production filesystem structure, and API/SPA routing order are properly organized.
+
+  However, two items need to be addressed before approval:
+  1. **Reproducible builds:** The Docker build stages use `npm install` without copying or utilizing the repository's root `package-lock.json`. Please use the committed lockfile with `npm ci` to ensure deterministic dependency installation.
+  2. **Container verification:** The current tests mainly validate configuration and source-code contracts. Please provide actual final-image verification results, including Prisma Client initialization, Prisma CLI execution, migration and seed execution against PostgreSQL, and frontend/API behavior inside the running container.
+
+- **Developer (@Phenwatsa) - Round 1 Fixes Applied:**
+  Thank you for the thorough review! Both items have been fully resolved:
+  1. **Deterministic Lockfile Installation:** Updated `Dockerfile` so both `client-builder` and `server-builder` stages explicitly copy `package.json package-lock.json` and workspace definitions, executing `npm ci` against the committed lockfile. Added automated regression assertions in `server/tests/docker.test.ts`.
+  2. **Live Container Execution & Evidence:** Successfully built and executed the container and multi-container composition, capturing raw logs in `docs/labs/lab-05/tests.md` §3.2:
+     - `docker build -t singslot-app .` completed cleanly using `npm ci`.
+     - `docker run --rm --entrypoint sh singslot-app -c '... ./node_modules/.bin/prisma --version'` outputted Prisma 5.22.0.
+     - `docker run --rm --entrypoint node singslot-app -e "..."` confirmed `Prisma Client initialized successfully`.
+     - `docker compose up -d` applied migration `20261105000000_init` and executed idempotent seed against PostgreSQL.
+     - `curl -s -i http://localhost:8080/api/ready` returned HTTP 200 `{"status":"ready","db":"connected"}`.
+     - `curl -s -i http://localhost:8080/api/unknown-endpoint` returned HTTP 404 JSON (guaranteed no HTML swallowing).
+     - `curl -s -i http://localhost:8080/my-bookings` returned HTTP 200 HTML with SPA shell.
+
+  All suites pass with 100% success (`docker.test.ts` 14/14, `ready.test.ts` 12/12, `layout.test.mjs` 12/12, `npm run typecheck` 0 errors). Ready for re-review!
 
 ---
 

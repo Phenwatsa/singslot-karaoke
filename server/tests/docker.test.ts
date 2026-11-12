@@ -62,6 +62,8 @@ describe('Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)',
 
     it('client-builder stage builds Vite frontend bundle with empty API URL for same-origin proxy', () => {
       const content = fs.readFileSync(dockerfilePath, 'utf8');
+      expect(content).toMatch(/COPY\s+package\.json\s+package-lock\.json\s+\.\//);
+      expect(content).toMatch(/npm\s+ci/);
       expect(content).toMatch(/WORKDIR\s+\/app\/client/);
       expect(content).toMatch(/ENV\s+VITE_API_URL=["']?["']?/);
       expect(content).toMatch(/RUN\s+npm\s+run\s+build/);
@@ -69,6 +71,8 @@ describe('Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)',
 
     it('server-builder stage compiles TypeScript and explicitly executes Prisma Client generation from schema', () => {
       const content = fs.readFileSync(dockerfilePath, 'utf8');
+      expect(content).toMatch(/COPY\s+package\.json\s+package-lock\.json\s+\.\//);
+      expect(content).toMatch(/npm\s+ci/);
       expect(content).toMatch(/WORKDIR\s+\/app\/server/);
       expect(content).toMatch(/apk\s+add\s+--no-cache\s+openssl/);
       expect(content).toMatch(/npx\s+prisma\s+generate\s+--schema=prisma\/schema\.prisma/);

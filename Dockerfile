@@ -13,14 +13,17 @@
 # Stage 1: Build Frontend (React + TypeScript + Tailwind + Vite)
 # ============================================================================
 FROM node:24-alpine AS client-builder
-WORKDIR /app/client
+WORKDIR /app
 
-# Install frontend dependencies with cache optimization
-COPY client/package*.json ./
-RUN npm install
+# Install dependencies deterministically using root package-lock.json
+COPY package.json package-lock.json ./
+COPY client/package.json client/
+COPY server/package.json server/
+RUN npm ci
 
 # Build static production bundle with relative same-origin API configuration
-COPY client/ ./
+COPY client/ client/
+WORKDIR /app/client
 ENV VITE_API_URL=""
 RUN npm run build
 
@@ -28,18 +31,23 @@ RUN npm run build
 # Stage 2: Build Backend (Node.js + Express + TypeScript + Prisma)
 # ============================================================================
 FROM node:24-alpine AS server-builder
-WORKDIR /app/server
+WORKDIR /app
 
 # Prisma engine requires OpenSSL on Alpine Linux
 RUN apk add --no-cache openssl
 
-# Install backend dependencies (including Prisma CLI and TypeScript compilers)
-COPY server/package*.json ./
-RUN npm install
+# Install dependencies deterministically using root package-lock.json
+COPY package.json package-lock.json ./
+COPY client/package.json client/
+COPY server/package.json server/
+RUN npm ci
 
-# Copy source and generate Prisma Client from schema
-COPY server/ ./
-RUN npx prisma generate --schema=prisma/schema.prisma && npm run build
+# Copy server source and generate Prisma Client from schema
+COPY server/ server/
+WORKDIR /app/server
+RUN cp -r /app/node_modules /app/server/node_modules && \
+    npx prisma generate --schema=prisma/schema.prisma && \
+    npm run build
 
 # ============================================================================
 # Stage 3: Unified Production Runtime (Cloud Run & Local Container)

@@ -111,7 +111,9 @@ describe('Task 3: Docker Containerization & SPA Routing Contracts (R-01, C-03)',
 
       expect(content).toMatch(/node_modules/);
       expect(content).toMatch(/dist/);
-      expect(content).toMatch(/\.env/);
+      expect(content).toMatch(/\.env\*/);
+      expect(content).toMatch(/\*\*\/\.env\*/);
+      expect(content).toMatch(/!\.env\.example/);
       expect(content).toMatch(/\.git/);
     });
   });

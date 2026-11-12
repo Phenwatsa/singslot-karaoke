@@ -31,23 +31,47 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 // Shared in-flight database check promise to prevent connection pool exhaustion
 let activeDbCheck: Promise<void> | null = null;
+let activeDbCheckTimer: NodeJS.Timeout | null = null;
 const READINESS_TIMEOUT_MS = 3000;
+// Stale query ceiling: if underlying query hangs past this bound (zombie query),
+// reset activeDbCheck to allow subsequent probes to attempt fresh connection
+const getStaleQueryTtlMs = (): number => Number(process.env.READINESS_STALE_TTL_MS) || 5000;
 
 // Exported exclusively for testing isolation (resets in-flight state between test cases)
 export function _resetActiveDbCheck(): void {
+  if (activeDbCheckTimer) {
+    clearTimeout(activeDbCheckTimer);
+    activeDbCheckTimer = null;
+  }
   activeDbCheck = null;
 }
 
 // Readiness probe route for container orchestration and health monitoring (R-02)
 app.get('/api/ready', async (_req: Request, res: Response) => {
   if (!activeDbCheck) {
-    // Bind activeDbCheck strictly to the actual Prisma Query Promise
-    // Clears strictly when the underlying driver query settles (resolves or rejects)
+    let settled = false;
+    // Bind activeDbCheck to actual Prisma query with hard stale TTL to prevent zombie lockouts
     activeDbCheck = (async () => {
       await prisma.$queryRaw`SELECT 1`;
     })().finally(() => {
+      settled = true;
+      if (activeDbCheckTimer) {
+        clearTimeout(activeDbCheckTimer);
+        activeDbCheckTimer = null;
+      }
       activeDbCheck = null;
     });
+
+    // Hard ceiling for zombie query prevention: unblock activeDbCheck if underlying driver query never settles
+    activeDbCheckTimer = setTimeout(() => {
+      if (!settled) {
+        activeDbCheck = null;
+        activeDbCheckTimer = null;
+      }
+    }, getStaleQueryTtlMs());
+    if (typeof activeDbCheckTimer.unref === 'function') {
+      activeDbCheckTimer.unref();
+    }
   }
 
   let timer: NodeJS.Timeout | undefined;

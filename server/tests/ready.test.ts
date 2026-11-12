@@ -54,7 +54,8 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       expect(fs.existsSync(serverPath)).toBe(true);
       const content = fs.readFileSync(serverPath, 'utf8');
 
-      expect(content).toMatch(/Number\(process\.env\.PORT\)\s*\|\|\s*8080/);
+      expect(content).toMatch(/Number\(process\.env\.PORT\)\s*\|\|\s*DEFAULT_PORT/);
+      expect(content).toMatch(/DEFAULT_PORT\s*=\s*process\.env\.NODE_ENV\s*===\s*['"]production['"]\s*\?\s*8080\s*:\s*5001/);
       expect(content).toMatch(/HOST\s*=\s*['"]0\.0\.0\.0['"]/);
       expect(content).toMatch(/app\.listen\(PORT,\s*HOST/);
     });
@@ -77,10 +78,12 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       expect(content).not.toMatch(/Pass1234!/);
     });
 
-    it('client LoginModal.tsx reads VITE_DEMO_PASSWORD and restricts quick-fill to development mode', () => {
+    it('client LoginModal.tsx supports role-specific demo passwords and restricts quick-fill to development mode', () => {
       expect(fs.existsSync(clientModalPath)).toBe(true);
       const content = fs.readFileSync(clientModalPath, 'utf8');
 
+      expect(content).toMatch(/VITE_STAFF_DEMO_PASSWORD/);
+      expect(content).toMatch(/VITE_CUSTOMER_DEMO_PASSWORD/);
       expect(content).toMatch(/VITE_DEMO_PASSWORD/);
       expect(content).toMatch(/import\.meta\.env\.DEV/);
       expect(content).not.toMatch(/Pass1234!/);
@@ -207,5 +210,52 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
       // Still only 1 query was launched across both probes
       expect(queryCallCount).toBe(1);
     }, 6000);
+
+    it('recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query', async () => {
+      // 1. Configure short stale query TTL (3100ms) for test execution
+      const originalStaleTtl = process.env.READINESS_STALE_TTL_MS;
+      process.env.READINESS_STALE_TTL_MS = '3100';
+
+      try {
+        let queryCount = 0;
+        // Probe A experiences a zombie query that never resolves or rejects
+        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(() => {
+          queryCount++;
+          return new Promise(() => {}); // never settles
+        });
+
+        const probeAPromise = dispatchReadyRequest();
+        const probeARes = await probeAPromise;
+
+        expect(probeARes.status).toBe(503);
+        expect(probeARes.body).toEqual({
+          status: 'not_ready',
+          error: 'Database unreachable'
+        });
+        expect(queryCount).toBe(1);
+
+        // Wait for stale query TTL to expire (3100ms - 3000ms = ~150ms remaining)
+        await new Promise((r) => setTimeout(r, 200));
+
+        // 2. Database recovers! Mock Prisma query to resolve successfully
+        (prisma as any).$queryRaw = jest.fn<any>().mockImplementation(async () => {
+          queryCount++;
+          return [{ '?column?': 1 }];
+        });
+
+        // 3. Subsequent probe (Probe B) arrives after database recovery
+        const probeBRes = await dispatchReadyRequest();
+
+        // Must launch a fresh query and succeed with HTTP 200 (no permanent 503 lockout)
+        expect(probeBRes.status).toBe(200);
+        expect(probeBRes.body).toEqual({
+          status: 'ready',
+          db: 'connected'
+        });
+        expect(queryCount).toBe(2);
+      } finally {
+        process.env.READINESS_STALE_TTL_MS = originalStaleTtl;
+      }
+    }, 8000);
   });
 });

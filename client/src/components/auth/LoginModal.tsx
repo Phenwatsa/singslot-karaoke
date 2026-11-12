@@ -36,17 +36,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || '';
+  const staffDemoPassword =
+    import.meta.env.VITE_STAFF_DEMO_PASSWORD || import.meta.env.VITE_DEMO_PASSWORD || '';
+  const customerDemoPassword =
+    import.meta.env.VITE_CUSTOMER_DEMO_PASSWORD || import.meta.env.VITE_DEMO_PASSWORD || '';
 
   const handleQuickFillStaff = () => {
     setEmail('staff@singslot.local');
-    setPassword(demoPassword);
+    setPassword(staffDemoPassword);
     setErrorMessage(null);
   };
 
   const handleQuickFillCustomer = () => {
     setEmail('customer1@singslot.local');
-    setPassword(demoPassword);
+    setPassword(customerDemoPassword);
     setErrorMessage(null);
   };
 

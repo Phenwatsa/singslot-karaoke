@@ -14,12 +14,13 @@
 
 | Requirement / Check ID | Scope | Verification Target | Verification Method | Status |
 |---|---|---|---|---|
-| **R-02 / Task 2** | Dynamic Port & Host Binding | `server/src/server.ts` | Static & dynamic test: `PORT` from env (fallback 8080), host `0.0.0.0` | **PASS** |
+| **R-02 / Task 2** | Dynamic Port & Host Binding | `server/src/server.ts` | Static & dynamic test: `PORT` from env, default 8080 (prod) / 5001 (dev), host `0.0.0.0` | **PASS** |
 | **R-02 / Task 2** | Readiness Probe Endpoint | `server/src/app.ts` | Dynamic mock test: `GET /api/ready` returns 200/503 | **PASS** |
 | **R-02 / Task 2** | Single-Flight Coalescing | `server/src/app.ts` | Concurrent probe deduplication test (shared in-flight driver query) | **PASS** |
 | **R-02 / Task 2** | Probe Timeout & Pending Query Preservation | `server/src/app.ts` | 3000ms bounded timeout test with pending driver query protection | **PASS** |
+| **R-02 / Task 2** | Zombie Query Recovery | `server/src/app.ts` | Hard stale TTL unblocks `activeDbCheck`, allowing clean recovery to 200 | **PASS** |
 | **R-02 / Task 2** | Zero Hardcoded Passwords | `server/prisma/seed.ts` | Fail-fast env check for `STAFF_PASSWORD`, `CUSTOMER_PASSWORD` | **PASS** |
-| **R-02 / Task 2** | Client Dev-Only Quick Fill | `client/src/components/auth/LoginModal.tsx` | `import.meta.env.DEV` isolation & `VITE_DEMO_PASSWORD` env binding | **PASS** |
+| **R-02 / Task 2** | Client Dev-Only Quick Fill | `client/src/components/auth/LoginModal.tsx` | `import.meta.env.DEV` isolation & `VITE_STAFF_DEMO_PASSWORD` / `VITE_CUSTOMER_DEMO_PASSWORD` env bindings | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
 | **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR targeting `main` | *Pending Task 4* |
@@ -46,24 +47,25 @@ $ npm --prefix server test tests/ready.test.ts
 > singslot-server@1.0.0 test
 > jest --runInBand --detectOpenHandles --forceExit tests/ready.test.ts
 
-PASS tests/ready.test.ts (6.879 s)
+PASS tests/ready.test.ts (10.335 s)
   Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-02, R-04)
     Twelve-Factor Configuration & Static Analysis Verification
-      ✓ server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0 (3 ms)
+      ✓ server.ts binds PORT dynamically from process.env.PORT and binds to 0.0.0.0 (2 ms)
       ✓ prisma/seed.ts reads STAFF_PASSWORD and CUSTOMER_PASSWORD from env and has zero hardcoded passwords (1 ms)
       ✓ .env.example documents STAFF_PASSWORD and CUSTOMER_PASSWORD placeholders with zero secrets (1 ms)
-      ✓ client LoginModal.tsx reads VITE_DEMO_PASSWORD and restricts quick-fill to development mode (1 ms)
+      ✓ client LoginModal.tsx supports role-specific demo passwords and restricts quick-fill to development mode (1 ms)
     Readiness Probe Dynamic Execution Contract
-      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (7 ms)
+      ✓ returns HTTP 200 { status: "ready", db: "connected" } when database query succeeds (4 ms)
       ✓ returns HTTP 503 { status: "not_ready", error: "Database unreachable" } when database query fails (1 ms)
       ✓ returns HTTP 503 within bounded timeout when database query exceeds 3000ms (3003 ms)
-      ✓ deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion (106 ms)
-      ✓ prevents query accumulation when first probe times out while query is still pending (3007 ms)
+      ✓ deduplicates concurrent probes via single-flight activeDbCheck to prevent connection pool exhaustion (105 ms)
+      ✓ prevents query accumulation when first probe times out while query is still pending (3008 ms)
+      ✓ recovers cleanly and returns HTTP 200 on subsequent probe when underlying database recovers after zombie query (3213 ms)
 
 Test Suites: 1 passed, 1 total
-Tests:       9 passed, 9 total
+Tests:       10 passed, 10 total
 Snapshots:   0 total
-Time:        7.079 s
+Time:        10.534 s
 Ran all test suites matching /tests\/ready.test.ts/i.
 ✔ Exited with code 0
 ```

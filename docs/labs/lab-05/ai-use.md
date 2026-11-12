@@ -138,3 +138,11 @@
   2. **`tests.md` Lab 5 Alignment:** Replaced previous Sprint 1 test traces (`AC-02`, `AC-07`, `layout.test.mjs`) with Lab 5 requirements (`R-01` to `R-12`) and Required Checks (`C-01` to `C-06`). Captured raw verification logs for Task 2 (`ready.test.ts` 9/9 passed, `npm run typecheck` 0 errors), and added structured evidence placeholders for Tasks 3–8.
 - **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`git status`).
 - **Outcome:** Clean, accurate documentation templates for Lab 5 peer reviews and test evidence.
+
+#### 18. Task 2 Peer Review Findings Resolution (PR #22 Feedback)
+- **Prompt Intent:** Resolve 3 substantive peer review findings raised on PR #22 (`feat/lab5-cloud-ready`):
+  1. **Development & Production Port Configuration Alignment:** Updated `server/src/server.ts` to set `DEFAULT_PORT = process.env.NODE_ENV === 'production' ? 8080 : 5001` so local development preserves port 5001 (matching Vite proxy) while production defaults to 8080. Updated `client/vite.config.ts` to proxy to `process.env.VITE_API_URL || 'http://localhost:5001'`.
+  2. **Zombie Query Recovery & Max Stale TTL:** In `server/src/app.ts`, implemented a hard stale TTL ceiling (`READINESS_STALE_TTL_MS`, default 5000ms) that unblocks and resets `activeDbCheck` if the underlying driver query stalls indefinitely, preventing permanent 503 lockout and allowing immediate recovery when the database returns. Added a 10th automated test in `server/tests/ready.test.ts` verifying clean recovery to HTTP 200 after a zombie query.
+  3. **Role-Specific Demo Password Consistency:** Updated `client/src/components/auth/LoginModal.tsx` to read `VITE_STAFF_DEMO_PASSWORD` for staff and `VITE_CUSTOMER_DEMO_PASSWORD` for customer quick-fill, while maintaining `VITE_DEMO_PASSWORD` as shared fallback. Updated `client/.env.example` and `client/tests/layout.test.mjs`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
+- **Outcome:** 10/10 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, and 0 typecheck errors, completely resolving all peer review findings.

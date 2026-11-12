@@ -112,3 +112,14 @@
   2. Annotated `If image_tag is provided` conditional execution logic bullet with `[Optional Recommended Practice - Student Guide Episode 8]`.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** Total consistency across In-Scope workflow templates and Acceptance Criteria.
+
+#### 15. Task 2 Implementation: Cloud-Ready Application Architecture & Resilient Readiness Probe
+- **Prompt Intent:** Implement Task 2 cloud-readiness specifications on branch `feat/lab5-cloud-ready` adhering to Twelve-Factor configuration, Student Guide Episode 2, and team security requirements (Option B):
+  1. **Dynamic Port & Host Binding (`server/src/server.ts`):** Bound Express port to `Number(process.env.PORT) || 8080` and host strictly to `0.0.0.0` for Cloud Run container routing, retaining fail-fast JWT secret check.
+  2. **Readiness Probe Endpoint (`server/src/app.ts`):** Implemented `GET /api/ready` executing `prisma.$queryRaw` `SELECT 1` via shared Prisma instance, with bounded 3000ms timeout, single-flight request coalescing with internal timeout circuit breaker to prevent connection pool exhaustion, and strict error/credential masking returning `{ status: "ready", db: "connected" }` or `{ status: "not_ready", error: "Database unreachable" }`.
+  3. **Role-Separated Environment Passwords (`server/prisma/seed.ts`):** Eliminated all hardcoded passwords; required `STAFF_PASSWORD` (for staff demo) and `CUSTOMER_PASSWORD` (for customer demo) from environment with fail-fast validation.
+  4. **Client Quick-Fill Dev Isolation (`client/src/components/auth/LoginModal.tsx`):** Bound demo password to `import.meta.env.VITE_DEMO_PASSWORD` and restricted quick-fill helper rendering strictly to development mode (`import.meta.env.DEV`), eliminating demo shortcuts from production bundles.
+  5. **Environment Templates (`.env.example`):** Added comprehensive placeholders in `server/.env.example` and created `client/.env.example` (both `.env` files verified ignored by Git).
+  6. **Automated Testing & Quality Gates:** Authored 8 test cases in `server/tests/ready.test.ts` (100% passing), verified `npm run typecheck` across client/server (0 errors), `npm run test:client` (12/12 passing), and production builds.
+- **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`git status`, `git diff --check`, `npm run typecheck`, `npm run test:client`, `npm --prefix server test tests/ready.test.ts`, `npm run build`).
+- **Outcome:** Clean, robust cloud-ready codebase ready for PR review and merge into `sprint-1-staging`.

@@ -1,6 +1,9 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { prisma } from './prisma';
 import { authRouter } from './routes/auth.routes';
 import { bookingRouter } from './routes/booking.routes';
 import { roomRouter } from './routes/room.routes';
@@ -26,11 +29,85 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// Shared in-flight database check promise to prevent connection pool exhaustion
+let activeDbCheck: Promise<void> | null = null;
+const READINESS_TIMEOUT_MS = 3000;
+
+// Readiness probe route for container orchestration and health monitoring (R-02)
+app.get('/api/ready', async (_req: Request, res: Response) => {
+  if (!activeDbCheck) {
+    let checkTimeout: NodeJS.Timeout | undefined;
+    const internalTimeout = new Promise<never>((_, reject) => {
+      checkTimeout = setTimeout(() => {
+        reject(new Error('ACTIVE_DB_CHECK_TIMEOUT'));
+      }, READINESS_TIMEOUT_MS);
+      if (typeof checkTimeout.unref === 'function') {
+        checkTimeout.unref();
+      }
+    });
+
+    activeDbCheck = Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      internalTimeout
+    ])
+      .then(() => undefined)
+      .finally(() => {
+        if (checkTimeout) {
+          clearTimeout(checkTimeout);
+        }
+        activeDbCheck = null;
+      });
+  }
+
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error('READINESS_TIMEOUT'));
+    }, READINESS_TIMEOUT_MS);
+    if (typeof timer.unref === 'function') {
+      timer.unref();
+    }
+  });
+
+  try {
+    await Promise.race([activeDbCheck, timeoutPromise]);
+    return res.status(200).json({
+      status: 'ready',
+      db: 'connected'
+    });
+  } catch {
+    return res.status(503).json({
+      status: 'not_ready',
+      error: 'Database unreachable'
+    });
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+});
+
 // Domain Routes
 app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/rooms', roomRouter);
 app.use('/api/availability', availabilityRouter);
+
+// Static assets serving in production container (Single-Origin Cloud Run deployment)
+const clientDist = process.env.CLIENT_DIST_PATH || path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    const indexHtml = path.join(clientDist, 'index.html');
+    if (fs.existsSync(indexHtml)) {
+      return res.sendFile(indexHtml);
+    }
+    next();
+  });
+}
 
 // Unmatched route 404 handler
 app.use((_req: Request, res: Response) => {

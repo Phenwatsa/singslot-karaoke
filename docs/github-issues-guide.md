@@ -906,7 +906,7 @@ In-Scope:
   on:
     push:
       branches: [main]
-    workflow_dispatch:
+    workflow_dispatch: # [Optional Recommended Practice - Student Guide Episode 8]
       inputs:
         image_tag:
           description: "Full 40-character commit SHA to deploy (leave empty for latest main)"
@@ -941,7 +941,7 @@ In-Scope:
         - name: Checkout code
           uses: actions/checkout@v4
 
-        - name: Validate manual image tag
+        - name: Validate manual image tag # [Optional Recommended Practice - Student Guide Episode 8]
           if: github.event_name == 'workflow_dispatch' && inputs.image_tag != ''
           shell: bash
           env:
@@ -962,7 +962,7 @@ In-Scope:
         - name: Set up Cloud SDK
           uses: google-github-actions/setup-gcloud@v2
 
-        - name: Execute rollback or roll-forward
+        - name: Execute rollback or roll-forward # [Optional Recommended Practice - Student Guide Episode 8]
           if: github.event_name == 'workflow_dispatch' && inputs.image_tag != ''
           env:
             IMAGE_TAG: ${{ inputs.image_tag }}
@@ -1122,7 +1122,7 @@ In-Scope:
        python3 deploy/smoke_test.py "$SERVICE_URL"
        ```
     10. Outputs release summary (Commit SHA, immutable image digest, Cloud Run revision name, and public URL).
-  - If `image_tag` is provided (Manual Rollback / Roll-forward):
+  - [Optional Recommended Practice - Student Guide Episode 8] If `image_tag` is provided (Manual Rollback / Roll-forward):
     1. **Workflow Trigger & Local SHA Validation:** Enforces execution restricted to `main` branch only (matching WIF attribute condition `refs/heads/main`) and validates that `image_tag` conforms strictly to the 40-character lowercase hexadecimal SHA format (`^[0-9a-f]{40}$`) locally before initiating any cloud operations. If invalid or missing, workflow terminates immediately without calling cloud APIs.
     2. Workflow skips the test, Docker build, and migration steps when `inputs.image_tag` is provided.
     3. **WIF Authentication:** Authenticates to GCP using Workload Identity Federation (Keyless OIDC exchange). Workflow MUST abort immediately if WIF authentication fails.

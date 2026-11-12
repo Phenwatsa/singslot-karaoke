@@ -105,3 +105,10 @@
   2. **Task 8 Acceptance Criteria (`github-issues-guide.md`):** Nested the unlabelled criteria `Zero destructive database operations executed during rollback` under `[Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification`.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** 100% granular decoupling between mandatory release/persistence paths and optional rollback procedures.
+
+#### 14. Task 7 In-Scope Workflow Dispatch Optional Tagging Harmonization
+- **Prompt Intent:** Align Task 7 In-Scope workflow examples and execution logic with Acceptance Criteria:
+  1. Annotated `workflow_dispatch`, `Validate manual image tag`, and `Execute rollback or roll-forward` steps in `.github/workflows/deploy.yml` YAML with `[Optional Recommended Practice - Student Guide Episode 8]`.
+  2. Annotated `If image_tag is provided` conditional execution logic bullet with `[Optional Recommended Practice - Student Guide Episode 8]`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (Node.js Markdown fence validator, `git diff --check`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** Total consistency across In-Scope workflow templates and Acceptance Criteria.

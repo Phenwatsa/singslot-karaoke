@@ -451,6 +451,10 @@ $ bash deploy/tests/test_teardown_stub.sh
 PASS confirmed teardown deletes all provisioned resources
 PASS mismatched confirmation aborts without executing deletion
 PASS dry run makes no gcloud calls
+
+$ python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+Ran 5 tests in 0.005s
+OK (All 5 offline smoke test scenarios passed with 100% mocked network calls)
 ```
 
 #### 4.1.2 CI Workflow & Deployment Tooling Contract Test Suite

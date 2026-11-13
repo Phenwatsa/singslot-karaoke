@@ -77,8 +77,9 @@ class SmokeTests(unittest.TestCase):
 
     @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke@singslot.local'}, clear=True)
     def test_mismatched_single_credential_raises(self):
-        with self.assertRaisesRegex(RuntimeError, 'Set both SMOKE_EMAIL and SMOKE_PASSWORD'):
-            smoke.check('https://singslot-demo.test')
+        with patch.object(smoke, 'request', side_effect=self.response):
+            with self.assertRaisesRegex(RuntimeError, 'Set both SMOKE_EMAIL and SMOKE_PASSWORD'):
+                smoke.check('https://singslot-demo.test')
 
 
 if __name__ == '__main__':

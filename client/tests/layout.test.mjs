@@ -3,6 +3,9 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,11 +92,30 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.match(content, /saveClientSession\(/, 'App.tsx must invoke saveClientSession on login success');
     assert.match(content, /validateAndRestoreSession\(\)/, 'App.tsx must validate restored session with validateAndRestoreSession');
 
-    // Import session helper functions for true runtime unit execution
-    const sessionModule = await import('../src/utils/session.ts');
-    const { saveClientSession, clearClientSession, getStoredSession, validateAndRestoreSession, STORAGE_KEYS } = sessionModule;
+    // Asserts session utility contracts and implementation details (Node 20+ compatible)
+    const sessionPath = path.join(clientRoot, 'src', 'utils', 'session.ts');
+    assert.strictEqual(fs.existsSync(sessionPath), true, 'client/src/utils/session.ts must exist');
+    const sessionContent = fs.readFileSync(sessionPath, 'utf8');
 
-    // Create a concrete mock Storage implementation
+    assert.match(sessionContent, /export const STORAGE_KEYS/, 'session.ts must export STORAGE_KEYS');
+    assert.match(sessionContent, /singslot_token/, 'STORAGE_KEYS must define singslot_token');
+    assert.match(sessionContent, /singslot_user/, 'STORAGE_KEYS must define singslot_user');
+    assert.match(sessionContent, /export const saveClientSession/, 'session.ts must export saveClientSession');
+    assert.match(sessionContent, /export const clearClientSession/, 'session.ts must export clearClientSession');
+    assert.match(sessionContent, /export const getStoredSession/, 'session.ts must export getStoredSession');
+    assert.match(sessionContent, /export const validateAndRestoreSession/, 'session.ts must export validateAndRestoreSession');
+    assert.match(sessionContent, /\/api\/auth\/me/, 'validateAndRestoreSession must verify session with /api/auth/me');
+    assert.match(sessionContent, /removeItem\(STORAGE_KEYS\.TOKEN\)/, 'clearClientSession must purge token from storage');
+    assert.match(sessionContent, /removeItem\(STORAGE_KEYS\.USER\)/, 'clearClientSession must purge user from storage');
+
+    // True runtime unit execution via Node 20-safe in-memory transpilation
+    const ts = require('typescript');
+    const jsOutput = ts.transpileModule(sessionContent, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
+    }).outputText;
+    const dataUrl = 'data:text/javascript;base64,' + Buffer.from(jsOutput).toString('base64');
+    const { saveClientSession, clearClientSession, getStoredSession, validateAndRestoreSession, STORAGE_KEYS } = await import(dataUrl);
+
     const store = new Map();
     const mockStorage = {
       getItem: (key) => (store.has(key) ? store.get(key) : null),

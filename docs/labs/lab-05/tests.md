@@ -5,7 +5,7 @@
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Target:** Lab 5 (Cloud Deployment & CI/CD Pipeline)  
 **Document Status:** Working Evidence Log  
-**Last Updated:** 2026-11-12  
+**Last Updated:** 2026-11-13  
 **Repository:** `https://github.com/Phenwatsa/singslot-karaoke`  
 
 ---
@@ -24,7 +24,7 @@
 | **R-02 / Task 2** | Checklist 6: Zero Query Accumulation | `server/src/app.ts` | Repeated probe timeouts while database is pending guarantee exactly 1 query launched | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
-| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR targeting `main` | *Pending Task 4* |
+| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR (PR #24 bootstrap & PR targeting `main`) | **Bootstrap CI: PASS; Post-Bootstrap C-01: Pending** |
 | **C-02 / R-06 (Task 6)** | Blocked Merge on Failed Check | Branch ruleset `protect-main` | Temporary failing PR `test/prove-gate` showing blocked merge | *Pending Task 6* |
 | **C-04 / R-03 (Task 5, 6)** | End-to-End Cloud Run Workflow | Public Cloud Run URL | Login, room selection, slot booking, business rule rejection | *Pending Task 5/6* |
 | **C-05 / R-04 (Task 8)** | Data Persistence on Restart | Cloud Run & Cloud SQL | Scale-to-zero restart & redeploy with booking intact | *Pending Task 8* |
@@ -419,12 +419,142 @@ Keep-Alive: timeout=5
 
 ---
 
-## 4. Task 4 Verification Evidence: CI Pipeline Execution (C-01 / R-05)
-<!-- To be populated during Task 4 execution -->
+## 4. Task 4 Verification Evidence: CI Pipeline Execution (C-01 / R-05, R-07)
 
-- **PR Target:** `main`
-- **Workflow Run Link:** 
-- **Execution Summary:** 
+### 4.1 Local Offline Script Verification & Automated CI Contracts
+Prior to opening the PR and triggering GitHub Actions, all deployment automation scripts and CI workflow configurations were verified offline locally:
+
+#### 4.1.1 Deployment Scripts Syntax & Offline Stubs
+All deployment shell scripts passed bash static analysis (`bash -n`) and offline stub test suites (simulating GCP APIs without network access):
+
+```bash
+$ bash -n deploy/deploy.sh deploy/release.sh deploy/teardown.sh
+$ bash deploy/tests/test_deploy_stub.sh
+PASS: first_run (exit, migration gate, credential handling, secret redaction)
+PASS: rerun (exit, migration gate, credential handling, secret redaction)
+PASS: partial (exit, migration gate, credential handling, secret redaction)
+PASS: job-fail (exit, migration gate, credential handling, secret redaction)
+PASS: dry run makes no gcloud calls
+
+$ bash deploy/tests/test_release_stub.sh
+Service URL: https://singslot-demo.example.test
+PASS normal release uses digest and waits for migration
+Rollback: reuse existing image; skip tests, build, migration and seed.
+Service URL: https://singslot-demo.example.test
+PASS rollback reuses image without touching migration job
+PASS image failure blocks service update
+PASS migration failure blocks service update
+Invalid image tag.
+PASS invalid tag rejected before GCP calls
+
+$ bash deploy/tests/test_teardown_stub.sh
+PASS confirmed teardown deletes all provisioned resources
+PASS mismatched confirmation aborts without executing deletion
+PASS dry run makes no gcloud calls
+
+$ python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+Ran 11 tests in 0.043s
+OK (All 11 offline smoke test scenarios passed with 100% mocked urllib.request.urlopen calls covering HTTP 200, 404, 500, timeouts, connection errors, and auth flows)
+```
+
+#### 4.1.2 CI Workflow & Deployment Tooling Contract Test Suite
+Automated regression test suite `server/tests/ci.test.ts` asserting workflow metadata, permissions, PostgreSQL 16 service container, environment variables, language runtimes, step sequencing, and Table 4 resource alignment:
+
+```bash
+$ npm --prefix server test -- server/tests/ci.test.ts
+
+> singslot-server@1.0.0 test
+> jest --runInBand --detectOpenHandles --forceExit server/tests/ci.test.ts
+
+PASS tests/ci.test.ts
+  Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R-07, C-01)
+    .github/workflows/ci-docker.yml Workflow Contract
+      ✔ declares the CI workflow file with correct metadata, permissions, and concurrency (4 ms)
+      ✔ configures PostgreSQL 16 Alpine service container with healthy readiness probe options (2 ms)
+      ✔ injects all required test environment variables into CI job env (1 ms)
+      ✔ declares exact language setup and ordered pipeline steps (1 ms)
+    Deployment Automation Tooling & Offline Verification Suites (deploy/)
+      ✔ verifies existence and structure of deploy/deploy.sh (1 ms)
+      ✔ verifies existence and structure of deploy/release.sh (1 ms)
+      ✔ verifies existence and structure of deploy/teardown.sh
+      ✔ verifies existence and structure of deploy/smoke_test.py (1 ms)
+      ✔ verifies existence and structure of deploy/tests/test_deploy_stub.sh
+      ✔ verifies existence and structure of deploy/tests/test_release_stub.sh
+      ✔ verifies existence and structure of deploy/tests/test_teardown_stub.sh (1 ms)
+      ✔ verifies existence and structure of deploy/tests/test_smoke.py
+      ✔ verifies deploy.sh conforms to SingSlot GCP resource specifications (Table 4) (2 ms)
+      ✔ verifies release.sh pins immutable image digest and gates migration (1 ms)
+      ✔ verifies teardown.sh requires confirmation and safely purges all resources (1 ms)
+      ✔ verifies smoke_test.py checks health, ready, static SPA HTML, and seeded rooms
+
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        1.183 s
+```
+
+#### 4.1.3 Local Database Migration, Idempotent Seed & Full Server Regression Suite
+Explicit local test execution against local PostgreSQL instance verifying migration apply, seed idempotency, and 100% passing server test suite:
+
+```bash
+$ cd server && npx prisma migrate deploy && npm run prisma:seed && cd .. && npm run test:server
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "singslot_dev", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+No pending migrations to apply.
+
+> singslot-server@1.0.0 prisma:seed
+> ts-node --transpile-only prisma/seed.ts
+
+🌱 Starting SingSlot database seeding (Idempotent)...
+✅ Seeded/Verified 3 demo users (1 Staff, 2 Customers).
+✅ Seeded/Verified 9 karaoke rooms (3 Small, 3 Medium, 3 Large).
+🎉 Idempotent seeding completed successfully!
+
+> singslot-karaoke@1.0.0 test:server
+> npm --prefix server test
+
+> singslot-server@1.0.0 test
+> jest --runInBand --detectOpenHandles --forceExit
+
+PASS tests/booking.test.ts
+PASS tests/views.test.ts
+PASS tests/auth.test.ts
+PASS tests/conflict.test.ts
+PASS tests/baseline.test.ts
+PASS tests/ready.test.ts
+PASS tests/docker.test.ts
+PASS tests/ci.test.ts
+
+Test Suites: 9 passed, 9 total
+Tests:       100 passed, 100 total
+Snapshots:   0 total
+Time:        19.76 s
+Ran all test suites.
+```
+
+#### 4.1.4 Monorepo Typecheck, Client Tests & Production Build
+```bash
+$ npm run typecheck
+✔ server: tsc --noEmit (0 diagnostics)
+✔ client: tsc --noEmit (0 diagnostics)
+
+$ npm run test:client
+✔ Client Layout & UI Component Structural Verification (AC-07) (12 passed, 0 failed, 100% runtime assertions on Node 20)
+
+$ npm run build
+✔ server: tsc (dist/ compiled)
+✔ client: vite build (dist/ created, 1585 modules transformed)
+```
+
+### 4.2 GitHub Actions Live Verification (Bootstrap Sequence)
+- **Feature PR Target:** `sprint-1-staging` ([PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24))
+  - **Feature PR Workflow Run:** [GitHub Actions Run #6 (Run ID: 43386124522)](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/43386124522)
+  - **Execution Summary:** **SUCCESS (Green Check)** — All 13 ordered steps (checkout, node/python setup, npm ci, deployment stubs & smoke tests, migration & seed, typecheck, server tests, client tests, build, docker image verification) completed cleanly without accessing GCP.
+- **Release PR Target:** `main` (PR #25) — Pending merge of PR #24 into `sprint-1-staging`.
+- **Post-Bootstrap Verification PR (C-01):** Pending merge of Release PR #25 into `main`. Once merged into `main`, a non-functional verification PR targeting `main` will be opened to record final green check proof satisfying Requirement C-01. 
 
 ---
 

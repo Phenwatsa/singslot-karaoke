@@ -34,6 +34,8 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     return parseInt(hourStr, 10);
   };
 
+  const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'Pass1234!';
+  const CUSTOMER_PASSWORD = process.env.CUSTOMER_PASSWORD || 'Pass1234!';
   const TEST_DATE = getFutureBangkokDateString(20);
   let customerToken: string;
   let staffToken: string;
@@ -46,7 +48,7 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
       .post('/api/auth/login')
       .send({
         email: 'customer1@singslot.local',
-        password: 'Pass1234!'
+        password: CUSTOMER_PASSWORD
       });
 
     expect(customerLoginRes.status).toBe(200);
@@ -58,7 +60,7 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
       .post('/api/auth/login')
       .send({
         email: 'staff@singslot.local',
-        password: 'Pass1234!'
+        password: STAFF_PASSWORD
       });
 
     expect(staffLoginRes.status).toBe(200);

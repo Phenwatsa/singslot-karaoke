@@ -273,17 +273,17 @@ sequenceDiagram
 
 ### 4.1 Master Work Allocation & Dependency Matrix
 
-| Task  | Title on GitHub                                               | Primary Owner |   Reviewer   |                    Dependencies                     | Branch / Interface          | PR Target                   | Key Deliverable & Evidence                                   |
-| :---: | :------------------------------------------------------------ | :-----------: | :----------: | :-------------------------------------------------: | :-------------------------- | :-------------------------- | :----------------------------------------------------------- |
-| **1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 | `@Phenwatsa`  | `@lephirada` |              None (Starts immediately)              | GCP Console                 | None                        | GCP Project, IAM Editor, Budget Alert ($30-$50/$250)         |
-| **2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      | `@lephirada`  | `@Phenwatsa` |              None (Starts immediately)              | `feat/lab5-cloud-ready`     | `sprint-1-staging`          | `/api/ready` endpoint, 6-point cloud readiness, `.env.example`|
-| **3** | `[Lab 5 - Task 3] Docker Containerization`                    | `@Phenwatsa`  | `@lephirada` |                       Task 2                        | `feat/lab5-docker`          | `sprint-1-staging`          | Multi-stage `Dockerfile`, `.dockerignore`, compose (C-03)    |
-| **4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           | `@lephirada`  | `@Phenwatsa` |                   Task 2, Task 3                    | `feat/lab5-ci`              | `sprint-1-staging` (Feature PR) → `main` (Release PR) | `ci-docker.yml`, passing CI (C-01), Release PR to `main`     |
-| **5** | `[Lab 5 - Task 5] First GCP Deployment`                       | `@Phenwatsa`  | `@lephirada` |             Task 1, Task 4 (on `main`)              | Cloud Shell                 | None                        | Cloud SQL, Cloud Run, auto-increase OFF, C-04 URL            |
-| **6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | `@lephirada`  | `@Phenwatsa` | Task 1, Task 4 (for 6A: WIF/Gate); Task 5 (for 6B: SA Bindings) | Console + `test/prove-gate` | `main`                      | WIF setup, Ruleset active, Blocked Merge proof (C-02), Bindings|
-| **7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              | `@Phenwatsa`  | `@lephirada` |               Task 4, Task 5, Task 6                | `feat/lab5-auto-deploy`     | `sprint-1-staging` → `main` | `deploy.yml`, auto-deploy on main, Repeatable Release (C-06) |
-| **8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        | `@lephirada`  | `@Phenwatsa` |                       Task 7                        | Actions & Console           | None                        | Data persists restart & redeploy (C-05); Rollback (Rec.)     |
-| **9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review  |                       Task 8                        | `docs/` & LEB2 PDF          | None                        | Completed `deployment.md`, checklist, and LEB2 PDF report    |
+| Task  | Title on GitHub                                               | Primary Owner |   Reviewer   |                          Dependencies                           | Branch / Interface          | PR Target                                             | Key Deliverable & Evidence                                      |
+| :---: | :------------------------------------------------------------ | :-----------: | :----------: | :-------------------------------------------------------------: | :-------------------------- | :---------------------------------------------------- | :-------------------------------------------------------------- |
+| **1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 | `@Phenwatsa`  | `@lephirada` |                    None (Starts immediately)                    | GCP Console                 | None                                                  | GCP Project, IAM Editor, Budget Alert ($30-$50/$250)            |
+| **2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      | `@lephirada`  | `@Phenwatsa` |                    None (Starts immediately)                    | `feat/lab5-cloud-ready`     | `sprint-1-staging`                                    | `/api/ready` endpoint, 6-point cloud readiness, `.env.example`  |
+| **3** | `[Lab 5 - Task 3] Docker Containerization`                    | `@Phenwatsa`  | `@lephirada` |                             Task 2                              | `feat/lab5-docker`          | `sprint-1-staging`                                    | Multi-stage `Dockerfile`, `.dockerignore`, compose (C-03)       |
+| **4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           | `@lephirada`  | `@Phenwatsa` |                         Task 2, Task 3                          | `feat/lab5-ci`              | `sprint-1-staging` (Feature PR) → `main` (Release PR) | `ci-docker.yml`, passing CI (C-01), Release PR to `main`        |
+| **5** | `[Lab 5 - Task 5] First GCP Deployment`                       | `@Phenwatsa`  | `@lephirada` |                   Task 1, Task 4 (on `main`)                    | Cloud Shell                 | None                                                  | Cloud SQL, Cloud Run, auto-increase OFF, C-04 URL               |
+| **6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | `@lephirada`  | `@Phenwatsa` | Task 1, Task 4 (for 6A: WIF/Gate); Task 5 (for 6B: SA Bindings) | Console + `test/prove-gate` | `main`                                                | WIF setup, Ruleset active, Blocked Merge proof (C-02), Bindings |
+| **7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              | `@Phenwatsa`  | `@lephirada` |                     Task 4, Task 5, Task 6                      | `feat/lab5-auto-deploy`     | `sprint-1-staging` → `main`                           | `deploy.yml`, auto-deploy on main, Repeatable Release (C-06)    |
+| **8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        | `@lephirada`  | `@Phenwatsa` |                             Task 7                              | Actions & Console           | None                                                  | Data persists restart & redeploy (C-05); Rollback (Rec.)        |
+| **9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review  |                             Task 8                              | `docs/` & LEB2 PDF          | None                                                  | Completed `deployment.md`, checklist, and LEB2 PDF report       |
 
 ---
 
@@ -303,6 +303,7 @@ Objective:
 Set up team Google Cloud Platform environment with active Free Trial, grant teammate IAM access, and configure budget alerts to provide early cost visibility and reduce the risk of unexpected spending.
 
 In-Scope:
+
 - Activate GCP Free Trial using a personal Gmail account that has NEVER used the Free Trial before ($300 credit for 90 days; do NOT use university `@mail.kmutt.ac.th` account to avoid prepayment blocks; zero prepayment; do NOT click Upgrade).
 - Create Project: `cpe334-singslot-[team/id]` (record Project ID and Project Number; this single project will be retained and reused for Lab 5, Lab 6, Lab 7, and the Final Project).
 - Grant IAM access to @lephirada with Role: Editor (`roles/editor`) per Student Guide Ep 1.3.
@@ -314,10 +315,12 @@ In-Scope:
   - Note: Budget alerts send email warnings but do NOT enforce hard spending caps or auto-pause services.
 
 Out-of-Scope:
+
 - Creating Cloud Run or Cloud SQL compute resources (deferred to Task 5 to minimize running costs).
 - Modifying repository code or branch configurations.
 
 Acceptance Criteria:
+
 - [ ] GCP Project created with unique Project ID and recorded Project Number (designated for reuse across Lab 5, Lab 6, Lab 7, and Final Project).
 - [ ] Teammate @lephirada added to IAM as Editor and confirmed access from their account.
 - [ ] Billing enabled confirmed via `gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)'` returning `True`.
@@ -348,9 +351,10 @@ Objective:
 Refactor SingSlot application settings to adhere to Twelve-Factor configuration, Student Guide Episode 2 six-point cloud-readiness checklist, and Cloud Run runtime contracts (R-02, R-04).
 
 In-Scope:
+
 - Enforce Student Guide Episode 2.2 Six-Point Cloud-Readiness Checklist:
   1. **Uploaded Files Isolation:** Ensure zero user-generated files are written to local container directories (SingSlot karaoke reservations and audit logs reside strictly in PostgreSQL).
-  2. **Production-Safe Seed & Demo Accounts:** Demo account credentials for staff (`staff@singslot.local`) and customers must come strictly from environment variables (`STAFF_PASSWORD`), never hardcoded in source code or committed to Git. For local development, credentials reside in `.env` (ignored by Git); in production, they are mounted via Secret Manager. The seed script must be idempotent and safe to rerun without duplicating records.
+  2. **Production-Safe Seed & Demo Accounts:** Demo account credentials for staff (`staff@singslot.local`) and customers (`customer1@singslot.local`, `customer2@singslot.local`) must come strictly from environment variables (`STAFF_PASSWORD` and `CUSTOMER_PASSWORD`), never hardcoded in source code or committed to Git. For local development, credentials reside in `.env` (ignored by Git); in production, they are mounted via Secret Manager. The seed script must be idempotent and safe to rerun without duplicating records.
   3. **No Development Shortcuts in Production:** Ensure no backdoor login selectors or hardcoded credentials appear on screen. The login modal quick-fill helper must not expose real passwords on screen or bypass authentication in production (`NODE_ENV=production`).
   4. **Stateless Session Management:** SingSlot utilizes cryptographically signed stateless JWT tokens; no session state is maintained in container memory, ensuring users remain logged in across container restarts, new revisions, and instance scaling.
   5. **Dynamic Port Binding:** Ensure `server/src/server.ts` reads `PORT` dynamically from `process.env.PORT` (defaulting to 8080 in production) and binds strictly to `0.0.0.0` (not localhost only).
@@ -361,7 +365,7 @@ In-Scope:
      - The readiness timeout implementation must avoid accumulating unresolved database queries or exhausting Prisma connection pool resources when repeated probes time out.
      - Do not rely on `Promise.race()` alone as database query cancellation unless the underlying query is actually cancelled.
      - Internal database errors, timeout exceptions, stack traces, and database credentials must be strictly masked from all HTTP responses.
-- Update `server/prisma/seed.ts` to require `STAFF_PASSWORD` from environment variables without hardcoded fallback passwords in source code. If missing in production, fail safely with a clean error message.
+- Update `server/prisma/seed.ts` to require `STAFF_PASSWORD` and `CUSTOMER_PASSWORD` from environment variables without hardcoded fallback passwords in source code. If missing in production, fail safely with a clean error message.
 - Update `server/.env.example` with comprehensive placeholder variables and documentation (zero real secrets).
 - Verify compilation and test suites:
   - Run `npm run typecheck` across workspaces (zero TypeScript diagnostic errors).
@@ -370,16 +374,18 @@ In-Scope:
   - Note: Full server integration tests are verified when PostgreSQL test database is active (local or in CI container).
 
 Out-of-Scope:
+
 - Docker packaging (deferred to Task 3).
 - Modifying core reservation business rules (frozen from Sprint 1).
 
 Acceptance Criteria:
+
 - [ ] Student Guide Episode 2 six-point cloud-readiness checklist fully verified (no local disk file storage, safe seed from env, no dev shortcuts/exposed passwords on screen, stateless JWT sessions, PORT bound to 0.0.0.0, and `/api/ready` endpoint).
 - [ ] `GET /api/ready` responds with HTTP 200 `{ status: "ready", db: "connected" }` when database query succeeds.
 - [ ] `GET /api/ready` responds with HTTP 503 `{ status: "not_ready", error: "Database unreachable" }` when database query fails or exceeds bounded timeout (3–5s).
 - [ ] Readiness checks reuse the shared Prisma Client instance and do not expose internal database errors, timeouts, or credentials in HTTP responses.
 - [ ] Automated tests in `server/tests/ready.test.ts` verify 200 (connected), 503 (error), and 503 (timeout) scenarios cleanly.
-- [ ] Demo account passwords come strictly from environment variables (`STAFF_PASSWORD`) without hardcoded fallback passwords in source code.
+- [ ] Demo account passwords come strictly from environment variables (`STAFF_PASSWORD` and `CUSTOMER_PASSWORD`) without hardcoded fallback passwords in source code.
 - [ ] `server/src/server.ts` reads `PORT` from `process.env.PORT` and binds to `0.0.0.0`.
 - [ ] `server/.env.example` lists every required environment variable with placeholder values and zero committed secrets.
 - [ ] TypeScript compilation (`npm run typecheck`) passes with zero diagnostic errors across client and server.
@@ -454,14 +460,16 @@ In-Scope:
     docker run --rm --entrypoint node singslot-app -e \
       "const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); console.log('Prisma Client initialized successfully');"
     ```
-    *(Note: Instantiating `new PrismaClient()` verifies that generated client artifacts, typings, and runtime dependencies resolve cleanly inside the production image without requiring an active database connection. Live database connectivity is validated separately during migration and seed execution against PostgreSQL).*
+    _(Note: Instantiating `new PrismaClient()` verifies that generated client artifacts, typings, and runtime dependencies resolve cleanly inside the production image without requiring an active database connection. Live database connectivity is validated separately during migration and seed execution against PostgreSQL)._
   - Execute live container migration and seed test against a local PostgreSQL test container in `docker-compose` (`./node_modules/.bin/prisma migrate deploy` and `npm run prisma:seed`) to confirm schema detection, migration application, and seed idempotency inside the container environment.
 
 Out-of-Scope:
+
 - GitHub Actions CI workflow (deferred to Task 4).
 - Pushing images to Google Artifact Registry (deferred to Tasks 4/5).
 
 Acceptance Criteria:
+
 - [ ] Root `Dockerfile` builds a working container image from a fresh clone without host-specific files.
 - [ ] `.dockerignore` properly prevents sensitive and heavy directories from entering the build context.
 - [ ] Multi-stage build outputs a minimal production image containing runtime dependencies, built static assets, Prisma CLI, schema, and migration files with configured working directory.
@@ -544,7 +552,9 @@ In-Scope:
      env:
        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/singslot_test?schema=public
        STAFF_PASSWORD: ci-test-staff-pass-123!
+       CUSTOMER_PASSWORD: ci-test-cust-pass-123!
        JWT_SECRET: ci-test-jwt-secret-for-testing-only-not-production
+       PORT: 8080
      ```
   3. Checkout code and set up Node.js 20 with npm caching:
      ```yaml
@@ -552,7 +562,7 @@ In-Scope:
      - uses: actions/setup-node@v4
        with:
          node-version: 20
-         cache: 'npm'
+         cache: "npm"
      ```
   4. Install dependencies deterministically from root lockfile:
      ```bash
@@ -604,7 +614,6 @@ Evidence Required for PDF (Part 1):
 - Direct link to `.github/workflows/ci-docker.yml` on `main`.
 - Direct link to green CI run on PR with test summary (C-01).
 - Direct link to merged Release PR into `main`.
-
 ````
 
 #### 📌 Task 5: First GCP Deployment
@@ -621,7 +630,9 @@ Objective:
 Execute initial cloud deployment of SingSlot to Google Cloud Run with persistent Cloud SQL PostgreSQL database (R-03, R-04).
 
 In-Scope:
+
 - Cloud Shell Environment Initialization & Project Validation:
+
   ```bash
   export PROJECT_ID="$(gcloud config get-value project)"
   export REGION="asia-southeast1"
@@ -634,6 +645,7 @@ In-Scope:
   gcloud config set project "$PROJECT_ID"
   echo "Operating on Project: $PROJECT_ID, Region: $REGION"
   ```
+
 - Customize `deploy/deploy.sh` with SingSlot resource names (`asia-southeast1`).
 - Run `DRY_RUN=1` simulation in Cloud Shell, verify commands before execution.
 - Execute deployment script:
@@ -674,11 +686,11 @@ In-Scope:
   5. Enforce Principle of Least Privilege by creating two distinct Service Accounts:
      - `singslot-runner` (Cloud Run Service runtime SA):
        - Role `roles/cloudsql.client` on the project.
-       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-jwt-secret`. (Must NOT have Secret Accessor permission on `singslot-staff-password`).
+       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-jwt-secret`. (Must NOT have Secret Accessor permission on `singslot-staff-password` or `singslot-customer-password`).
      - `singslot-migrator` (Cloud Run Migration Job SA):
        - Role `roles/cloudsql.client` on the project.
-       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-staff-password`.
-  6. Store 3 secrets in Secret Manager (zero secrets committed or logged):
+       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url`, `singslot-staff-password`, and `singslot-customer-password`.
+  6. Store 4 secrets in Secret Manager (zero secrets committed or logged):
      - `singslot-database-url`: Prisma PostgreSQL Unix socket connection string:
        - Before storing `singslot-database-url` in Secret Manager:
          - Replace `$PROJECT_ID` and `$REGION` with the actual GCP Project ID and region to form the exact Cloud SQL connection name: `${PROJECT_ID}:${REGION}:singslot-pg`.
@@ -688,7 +700,9 @@ In-Scope:
          - Never print the complete DATABASE_URL or password in terminal output or logs.
      - `singslot-jwt-secret`: 256-bit cryptographic secret (`openssl rand -base64 32`) required by `server/src/config/jwt.ts` to sign/verify authentication tokens (prevents runtime boot crash).
      - `singslot-staff-password`: Seed application credentials for staff demo account (`staff@singslot.local`).
+     - `singslot-customer-password`: Seed application credentials for customer demo accounts (`customer1@singslot.local`, `customer2@singslot.local`).
   7. Build, push, and validate initial production container image in Artifact Registry:
+
      ```bash
      export IMAGE_TAG="$(git rev-parse HEAD)"
      export IMAGE_URI="${REGION}-docker.pkg.dev/$PROJECT_ID/singslot/singslot:$IMAGE_TAG"
@@ -704,6 +718,7 @@ In-Scope:
      export DIGEST_IMAGE="${REGION}-docker.pkg.dev/$PROJECT_ID/singslot/singslot@$DIGEST"
      echo "Verified Immutable Deployed Image: $DIGEST_IMAGE"
      ```
+
   8. Deploy and execute migration Cloud Run job `singslot-migrate`:
      - Uses immutable production image digest `$DIGEST_IMAGE`:
      ```bash
@@ -712,10 +727,10 @@ In-Scope:
        --region "$REGION" \
        --service-account "singslot-migrator@$PROJECT_ID.iam.gserviceaccount.com" \
        --set-cloudsql-instances "$PROJECT_ID:$REGION:singslot-pg" \
-       --set-secrets "DATABASE_URL=singslot-database-url:latest,STAFF_PASSWORD=singslot-staff-password:latest" \
+       --set-secrets "DATABASE_URL=singslot-database-url:latest,STAFF_PASSWORD=singslot-staff-password:latest,CUSTOMER_PASSWORD=singslot-customer-password:latest" \
        --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \
        --command "sh" \
-       --args "-c,cd /app/server && npx prisma migrate deploy && npm run prisma:seed" \
+       --args "-c,npx prisma migrate deploy && npm run prisma:seed" \
        --max-retries 1 \
        --task-timeout 300s
      ```
@@ -748,21 +763,24 @@ In-Scope:
        ```
   10. Enforce storage cap safeguard verification:
       `gcloud sql instances describe singslot-pg --format="value(settings.storageAutoResize)"` returns `False`.
+
 - Verify pipeline order: Migration job MUST execute and succeed BEFORE Cloud Run service is updated.
 - Execute read-only smoke tests: `/api/health`, `/api/ready` (asserting `db: "connected"`), and `python3 deploy/smoke_test.py`.
 
 Out-of-Scope:
+
 - Setting up GitHub Actions deployment automation (deferred to Task 7).
 - Generating or downloading any Service Account JSON private keys (Strictly prohibited).
 
 Acceptance Criteria:
+
 - [ ] Cloud SQL PostgreSQL instance active with storage-size=10 and storage auto-increase disabled.
 - [ ] Application database `singslot` and non-superuser created in Cloud SQL.
 - [ ] Distinct service accounts `singslot-runner` and `singslot-migrator` created with least-privilege secret access at resource level.
 - [ ] Initial production container image built, tagged with commit SHA, and pushed to Artifact Registry resolving to immutable digest.
-- [ ] Secrets `singslot-database-url`, `singslot-jwt-secret`, and `singslot-staff-password` created in Secret Manager.
+- [ ] Secrets `singslot-database-url`, `singslot-jwt-secret`, `singslot-staff-password`, and `singslot-customer-password` created in Secret Manager.
 - [ ] `singslot-database-url` contains the actual Cloud SQL connection name and a URL-encoded password, with no unresolved placeholders.
-- [ ] Cloud Run migration job mounts `DATABASE_URL` and `STAFF_PASSWORD`, running migrations and seed from `/app/server` with exit code 0.
+- [ ] Cloud Run migration job mounts `DATABASE_URL`, `STAFF_PASSWORD`, and `CUSTOMER_PASSWORD`, running migrations and seed from `/app/server` with exit code 0.
 - [ ] Cloud Run service configured with Cloud SQL unix socket, mounts `DATABASE_URL` and `JWT_SECRET`, runs with `NODE_ENV=production,TZ=Asia/Bangkok` under `singslot-runner`.
 - [ ] Cloud Run service allows unauthenticated invocation (`--allow-unauthenticated`) at infrastructure level, providing public URL access without Google login (C-04).
 - [ ] Public Cloud Run URL serves the production frontend successfully.
@@ -774,6 +792,7 @@ Acceptance Criteria:
 - [ ] Zero secrets or database passwords exposed in build logs or console outputs.
 
 Evidence Required for PDF (Part 3):
+
 - Active public Cloud Run URL.
 - Screenshots of working UI on public URL (login, booking creation, rule rejection - C-04).
 - Screenshots of Cloud Run service and Cloud SQL instance settings (`storageAutoResize: False`).
@@ -801,6 +820,7 @@ In-Scope:
     gcloud services enable iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com
     ```
   - Resolve and validate GCP Project ID and Project Number:
+
     ```bash
     export PROJECT_ID="$(gcloud config get-value project)"
     export PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
@@ -812,6 +832,7 @@ In-Scope:
 
     echo "Operating on Project ID: $PROJECT_ID, Project Number: $PROJECT_NUMBER"
     ```
+
   - Query GitHub Repository ID and Owner ID via GitHub API.
   - Create Workload Identity Pool `github-actions` and Provider `github-main` on GCP:
     - Attribute Mappings:
@@ -847,6 +868,7 @@ In-Scope:
 
 - **Phase 6B (Service Account Delegation Binding - Executed after Task 5 creates accounts):**
   - Once Task 5 completes and creates `singslot-runner` and `singslot-migrator`, grant `roles/iam.serviceAccountUser` to `singslot-deployer` on both accounts (Student Guide Ep 6.2 Step 8):
+
     ```bash
     gcloud iam service-accounts add-iam-policy-binding \
       singslot-runner@$PROJECT_ID.iam.gserviceaccount.com \
@@ -858,6 +880,7 @@ In-Scope:
       --role="roles/iam.serviceAccountUser" \
       --member="serviceAccount:singslot-deployer@$PROJECT_ID.iam.gserviceaccount.com"
     ```
+
   - Confirms deployer can run the deployed app and migration job under their respective least-privilege identities without possessing JSON keys.
 
 Out-of-Scope:
@@ -866,6 +889,7 @@ Out-of-Scope:
 - Creating Service Account JSON keys.
 
 Acceptance Criteria:
+
 - [ ] PROJECT_ID and PROJECT_NUMBER are explicitly resolved and validated before creating the Workload Identity User IAM binding.
 - [ ] Workload Identity Pool and Provider configured with repository, ref, and workflow attribute conditions.
 - [ ] Provider attribute mappings include `google.subject=assertion.sub` and `attribute.repository=assertion.repository`.
@@ -901,6 +925,7 @@ Implement automated CD workflow triggering upon merge to main with image digest 
 In-Scope:
 
 - Add `.github/workflows/deploy.yml` with exact workflow name `Deploy demo`:
+
   ```yaml
   name: Deploy demo
   on:
@@ -1082,6 +1107,7 @@ In-Scope:
        gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
        ```
     4. Validates commit SHA, constructs `IMAGE_TAG` and `IMAGE_URI`, then builds and pushes production image:
+
        ```bash
        IMAGE_TAG="${GITHUB_SHA}"
        if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
@@ -1096,6 +1122,7 @@ In-Scope:
        docker build -t "$IMAGE_URI" .
        docker push "$IMAGE_URI"
        ```
+
     5. Resolves immutable image digest from Artifact Registry and enforces strict digest format validation before deployment:
        ```bash
        export DIGEST="$(gcloud artifacts docker images describe "$IMAGE_URI" --format='value(image_summary.digest)')"
@@ -1122,6 +1149,7 @@ In-Scope:
        python3 deploy/smoke_test.py "$SERVICE_URL"
        ```
     10. Outputs release summary (Commit SHA, immutable image digest, Cloud Run revision name, and public URL).
+
   - [Optional Recommended Practice - Student Guide Episode 8] If `image_tag` is provided (Manual Rollback / Roll-forward):
     1. **Workflow Trigger & Local SHA Validation:** Enforces execution restricted to `main` branch only (matching WIF attribute condition `refs/heads/main`) and validates that `image_tag` conforms strictly to the 40-character lowercase hexadecimal SHA format (`^[0-9a-f]{40}$`) locally before initiating any cloud operations. If invalid or missing, workflow terminates immediately without calling cloud APIs.
     2. Workflow skips the test, Docker build, and migration steps when `inputs.image_tag` is provided.
@@ -1145,6 +1173,7 @@ In-Scope:
        f. **Smoke Test:** Resolves deployed Cloud Run service URL and runs automated smoke test on live URL.
        g. **Release Summary:** Outputs release summary with target SHA, resolved digest, Cloud Run revision name, and live URL.
     5. For Roll-forward: Target release's required migrations must already have been successfully applied during its initial automated release.
+
 - [Optional Recommended Practice - Student Guide Episode 8] Artifact Registry Image Retention: Configure Artifact Registry cleanup policies so release images tagged with commit SHAs remain permanently available for historical rollback. Do not apply automated deletion or purge policies to retained release images.
 - Open PR into `sprint-1-staging`, review, merge, then open Release PR into `main`.
 - Merge into `main` and observe automated deployment executing to completion.
@@ -1192,7 +1221,6 @@ Evidence Required for PDF (Part 4):
 - Direct links to Feature PRs, Release PRs, and GitHub Actions Deploy run.
 - Captioned screenshot of Cloud Run revisions showing revision matching commit SHA / image digest (C-06).
 - Captioned screenshot of live website showing updated UI text after second release.
-
 ````
 
 #### 📌 Task 8: Persistence & Rollback Verification
@@ -1209,6 +1237,7 @@ Objective:
 Prove database persistence across container instance restart and new revision deployment (R-04, C-05), and optionally demonstrate container rollback using historical commit SHA (Recommended Practice per Student Guide Episode 8).
 
 In-Scope:
+
 - Create a distinct karaoke room reservation on the live public URL (record Room, Date, Slots, Booking Code).
 - Execute Application Instance Restart / Container Recycling Proof:
   - Demonstrate that data survives container process termination and cold start:
@@ -1216,6 +1245,7 @@ In-Scope:
     - **Cloud Run Instance Recycling:** Record Cloud Run Metrics showing active container instance count dropping to 0 during idle scale-to-zero (`min-instances=0`). Send an HTTP request and capture Cloud Run Logs Explorer showing container startup log (`[Server] SingSlot API listening on port 8080`), proving the request is handled by a brand-new container instance. Confirm that the pre-existing booking record is retrieved from Cloud SQL without data loss (C-05).
 - Execute Cloud Run Redeployment / New Revision Persistence Test:
   - Enforce creation of a brand new Cloud Run revision using the exact same immutable image digest:
+
     ```bash
     # 1. Resolve and validate currently deployed immutable image digest
     export PROJECT_ID="$(gcloud config get-value project)"
@@ -1246,11 +1276,13 @@ In-Scope:
       --project="$PROJECT_ID" \
       --quiet
     ```
+
   - Verify 4-step proof:
     1. A brand new Cloud Run revision is deployed and active.
     2. The new revision runs the exact same historical image digest.
     3. 100% traffic is shifted to this new revision.
     4. The booking created in Cloud SQL before redeployment remains visible and completely intact on the live UI, proving data resides in Cloud SQL rather than ephemeral container memory (C-05).
+
 - [Optional Recommended Practice - Student Guide Episode 8] Container Rollback & Roll-forward Verification:
   - Execute Rollback via Pipeline:
     1. Open GitHub Actions -> `Deploy demo` workflow -> Run workflow on `main`.
@@ -1265,9 +1297,11 @@ In-Scope:
     - Confirm all database migrations are backward-compatible (additive) so older application container images run cleanly without schema conflicts.
 
 Out-of-Scope:
+
 - Destructive database schema rollbacks (Schema is additive; data must be preserved).
 
 Acceptance Criteria:
+
 - [ ] Application Instance Restart / Process Recycling (C-05):
   - Verify that the Cloud Run service scales down to zero instances while idle (min-instances=0).
   - Send a new request to trigger a fresh container instance.
@@ -1284,6 +1318,7 @@ Acceptance Criteria:
 Evidence Required for PDF:
 
 Required Evidence (Part 3 - C-05 Persistence & Part 4 - C-06 Release):
+
 - Explicit verification log recording Booking Code, Room Number, Date, and Time Slots before redeployment and verified completely intact afterward (C-05).
 - Release 1 and Release 2 full 40-character Commit SHAs and resolved immutable image digests (C-06).
 - Captioned screenshot of Cloud Run Metrics showing container instance count dropping to 0 during idle scale-to-zero (`min-instances=0`) and subsequent Logs Explorer cold-start startup log (`[Server] SingSlot API listening on port 8080`), proving fresh container instance recreation (C-05).
@@ -1292,6 +1327,7 @@ Required Evidence (Part 3 - C-05 Persistence & Part 4 - C-06 Release):
 - (Supporting local evidence): Docker Compose container ID replacement (`CONTAINER_A != CONTAINER_B`) with persistent local database volume.
 
 Optional Evidence (Part 4 Recommended Practice - Student Guide Episode 8):
+
 - Captioned screenshot of GitHub Actions rollback workflow execution deploying Release 1 image without running migrations.
 - Captioned screenshot of live website UI successfully reverting to Release 1 while booking data remains intact.
 - Captioned screenshot of restored application state after roll-forward to Release 2.

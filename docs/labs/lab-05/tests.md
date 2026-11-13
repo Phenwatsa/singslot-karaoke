@@ -178,7 +178,8 @@ added 558 packages in 3s
 $ cp server/.env.example server/.env
 $ cp client/.env.example client/.env
 ```
-*Result:* Local environment populated strictly from templates with zero committed secrets.
+*Note on Docker Compose Environment Interpolation:*
+Docker Compose automatically reads variable interpolations (`${...}`) from a root `.env` file if present, and falls back cleanly to the built-in default values defined in `docker-compose.yml` (`POSTGRES_USER=singslot`, `DATABASE_URL=...`, `JWT_SECRET=...`, and demo passwords). Copying `server/.env.example` to `server/.env` and `client/.env.example` to `client/.env` configures isolated workspace development environments without committing secrets. If custom environment overrides are desired for Docker Compose, a root `.env` can optionally be created or environment variables exported in the shell.
 
 ##### Step 4: Build Container Images and Start Multi-Container Composition
 ```bash

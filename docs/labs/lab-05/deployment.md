@@ -12,7 +12,7 @@
 SingSlot is developed as a separate frontend and backend within a monorepo, but is deployed as a unified single-container application in the production Cloud Run environment:
 
 - **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS (`client/`)
-- **Backend:** Node.js 20 + Express + TypeScript (`server/`)
+- **Backend:** Node.js 24 + Express + TypeScript (`server/`)
 - **ORM & Data Layer:** Prisma ORM 5.22 connecting to PostgreSQL 16
 - **Planned Cloud Infrastructure on Google Cloud Platform (GCP):**
   - **Compute:** Google Cloud Run (Serverless container runtime, scale to 0 instances when idle, max 3 instances, CPU: 1, Memory: 512Mi)

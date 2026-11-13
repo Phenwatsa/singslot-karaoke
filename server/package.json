@@ -11,10 +11,10 @@
     "test": "jest --runInBand --detectOpenHandles --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

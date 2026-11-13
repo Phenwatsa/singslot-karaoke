@@ -19,17 +19,17 @@
 
 ## 2. Summary of Lab 5 Tasks & Pull Requests
 
-|    Task    | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                  | PR Target                                                       |       Status       | Verdict  |
-| :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :-------------------------------------------------------------- | :----------------: | :------: | -------- |
-| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)                                            |        Done        | Verified |
-| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | `sprint-1-staging` | Approved | Verified |
-| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | `sprint-1-staging`                                              |      Backlog       | Pending  |
-| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | `sprint-1-staging` → `main`                                     |      Backlog       | Pending  |
-| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)                                          |      Backlog       | Pending  |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                          |      Backlog       | Pending  |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                     |      Backlog       | Pending  |
-| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                          |      Backlog       | Pending  |
-| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                               |      Backlog       | Pending  |
+| Task | Title / Scope | Primary Owner | Reviewer | Branch | PR Target | Status | Verdict |
+| :---: | :--- | :---: | :---: | :--- | :--- | :---: | :---: |
+| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control` | @Phenwatsa | @lephirada | GCP Console | None (Issue comment) | Done | Verified |
+| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment` | @lephirada | @Phenwatsa | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | Approved | Verified |
+| **Task 3** | `[Lab 5 - Task 3] Docker Containerization` | @Phenwatsa | @lephirada | `feat/lab5-docker` | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23) | Approved | Verified |
+| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests` | @lephirada | @Phenwatsa | `feat/lab5-ci` | `sprint-1-staging` → `main` | Backlog | Pending |
+| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment` | @Phenwatsa | @lephirada | Cloud Shell | None (Console / Issue) | Backlog | Pending |
+| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | @lephirada | @Phenwatsa | `test/prove-gate` | `main` | Backlog | Pending |
+| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline` | @Phenwatsa | @lephirada | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main` | Backlog | Pending |
+| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification` | @lephirada | @Phenwatsa | Actions & Console | None (Console / Issue) | Backlog | Pending |
+| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index` | Both Members | Peer Review | `docs/` & LEB2 PDF | None (Submission) | Backlog | Pending |
 
 ---
 
@@ -132,17 +132,48 @@
 ### 📌 Task 3: Docker Containerization
 
 - **GitHub Issue:** [Issue #16](https://github.com/Phenwatsa/singslot-karaoke/issues/16)
-- **PR Link:**
+- **PR Link:** [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23)
 - **Source Branch:** `feat/lab5-docker`
 - **Target Branch:** `sprint-1-staging`
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Reviewer (@lephirada):**
+  The implementation and submitted verification evidence cover the required packaging and runtime contracts:
+
+  - Multi-stage Docker build with deterministic dependency installation using the root lockfile and `npm ci`.
+  - Explicit Prisma Client generation using the correct schema path.
+  - Correct production filesystem structure and working directory.
+  - Prisma CLI and seed runtime available in the final container.
+  - Generated Prisma Client initialization verified successfully.
+  - Express API 404 handling is registered before static serving and SPA fallback.
+  - Frontend assets are served from the expected production path, with same-origin API requests.
+  - Docker Compose successfully orchestrates PostgreSQL, migration, seeding, and the application.
+  - Clean-clone lifecycle and container readiness verification evidence have been documented.
+  - Automated Docker, readiness, and client layout test results are included.
+  - The previously identified Node.js version documentation mismatch has also been corrected.
+
+  **Non-blocking documentation notes:**
+  - Clarify that Compose reads the root `.env` file for variable interpolation and does not automatically load `server/.env` or `client/.env`.
+  - Align the Docker test count in `ai-use.md` with the latest 15/15 result in `tests.md`.
+
+  These are documentation consistency improvements and do not prevent the demonstrated container workflow from functioning.
+
+  No blocking issues were identified in this review.
+
+  **Approved.**
+
+- **Developer (@Phenwatsa):**
+  Thank you for the thorough review and approval! All non-blocking documentation notes have been recorded and synchronized:
+  1. Updated `docs/labs/lab-05/ai-use.md` to reflect the latest 15/15 passed Docker tests.
+  2. Clarified in `docs/labs/lab-05/tests.md` §3.2.0 that Docker Compose uses the root `.env` for variable interpolation (with clean fallback defaults) and does not automatically load `server/.env` or `client/.env`.
+  3. Synchronized Node.js 24 Alpine runtime references across `deployment.md` and `ai-use.md`.
+
+  All Task 3 acceptance criteria are satisfied, and PR #23 is approved. Ready to merge into `sprint-1-staging`!
 
 ---
 

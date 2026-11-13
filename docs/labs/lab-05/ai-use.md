@@ -162,3 +162,31 @@
   3. **Explicit Six-Point Checklist Verification Suite:** Added static analysis assertions in `server/tests/ready.test.ts` for Checklist Item 1 (Uploaded Files Isolation: zero file upload dependencies `multer`/`busboy`/`formidable` and zero local container storage) and Checklist Item 4 (Stateless Session Management: strictly signed stateless JWT verification without session memory stores).
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm --prefix server test tests/ready.test.ts`, `npm run typecheck`, `npm --prefix client test`, `git diff --check`, `git status`).
 - **Outcome:** 12/12 tests passed in `ready.test.ts`, 12/12 passed in `layout.test.mjs`, 0 typecheck errors, and 100% full compliance with all six cloud-readiness checklist items.
+
+#### 21. Task 3 Implementation: Multi-Stage Production Docker Packaging & SPA Contract (R-01, C-03)
+- **Prompt Intent:** Implement Task 3 reproducible containerization on branch `feat/lab5-docker` meeting all Course R-01 and C-03 requirements:
+  1. **Root `Dockerfile` Multi-Stage Architecture:** Designed a 3-stage minimal image build:
+     - Stage 1 (`client-builder`): Builds static Vite frontend bundle into `/app/client/dist` with same-origin relative API requests (`VITE_API_URL=""`).
+     - Stage 2 (`server-builder`): Compiles TypeScript server into `/app/server/dist` and explicitly generates Prisma Client (`npx prisma generate --schema=prisma/schema.prisma`).
+     - Stage 3 (`production`): `node:24-alpine` runner with OpenSSL, sets `WORKDIR /app/server`, copies server dist, node_modules (including Prisma CLI and ts-node for Cloud Run migration jobs), prisma schema/migrations, and client dist to `/app/client/dist`. Enforces non-root `USER node`, dynamic port `EXPOSE 8080`, and runs via `server/docker-entrypoint.sh` using `exec "$@"` for PID 1 signal forwarding.
+  2. **Strict Production SPA & API 404 Protection Order (`server/src/app.ts`):** Mounted routers under `/api/*`, followed immediately by an unmatched API 404 handler (`app.all(['/api', '/api/*'])`) strictly returning JSON 404 to guarantee API 404s are never swallowed into HTML, followed by `express.static(clientDistPath)` and SPA fallback handler (`app.get('*')`) serving `/app/client/dist/index.html`.
+  3. **Build Context Optimization (`.dockerignore`):** Excluded `node_modules`, `dist`, `.env`, `.git`, `.DS_Store`, and test caches to ensure minimal, secure build context.
+  4. **Multi-Container Local Orchestration (`docker-compose.yml`):** Authored local composition defining `db` (`postgres:16-alpine` with healthcheck and persistent volume), `migrate` (`singslot-migrate` running `prisma migrate deploy` and `prisma:seed`), and `app` (`singslot-app` exposing port `8080:8080`).
+  5. **Automated Testing & Quality Gates:** Authored 15 automated tests in `server/tests/docker.test.ts` verifying Dockerfile stages, `.dockerignore`, `docker-compose.yml`, Express SPA fallback routing, and `/api` 404 routing contract (15/15 passed), validated `ready.test.ts` (12/12 passed), `layout.test.mjs` (12/12 passed), `npm run typecheck` across server and client (0 errors), and verified clean monorepo builds.
+- **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`git status`, `npm run typecheck`, `npm --prefix server test tests/ready.test.ts`, `npm --prefix server test tests/docker.test.ts`, `npm --prefix client test`, `npm run build`).
+- **Outcome:** Clean, robust Docker packaging and orchestration ready for PR review and merge into `sprint-1-staging`.
+
+#### 22. Task 3 Peer Review Findings Resolution: Lockfile Reproducibility (`npm ci`) & Live Container Evidence (PR #23)
+- **Prompt Intent:** Resolve 2 substantive peer review findings raised on PR #23 (`feat/lab5-docker`):
+  1. **Deterministic Lockfile Installation (`Dockerfile`):** Fixed builder stages (`client-builder` and `server-builder`) to copy root `package.json` and `package-lock.json` alongside workspace `package.json` files, switching installation strictly to `npm ci`. Configured dependency caching and node_modules layout so that exact pinned versions from the lockfile are preserved across builds.
+  2. **Automated Test Guard (`server/tests/docker.test.ts`):** Added assertions verifying that `Dockerfile` explicitly copies `package.json package-lock.json` and executes `npm ci` across both builder stages to prevent future regressions.
+  3. **Live Container & Multi-Container Runtime Evidence (`docs/labs/lab-05/tests.md`):** Executed real Docker build and composition against local PostgreSQL test database, capturing raw terminal logs:
+     - `docker build -t singslot-app .` successfully built production image in 64.3s with zero errors.
+     - Filesystem and Prisma CLI binary verification (`./node_modules/.bin/prisma --version`) verified Prisma 5.22.0 targeting `linux-musl-arm64-openssl-3.0.x`.
+     - Prisma Client instantiation test (`new PrismaClient()`) verified clean initialization inside final image without requiring DB connection.
+     - Multi-container `docker compose up -d` executed live migration (`prisma migrate deploy`) and seed (`npm run prisma:seed`) with idempotent creation of 3 demo accounts and 9 rooms.
+     - Live `/api/ready` probe returned HTTP 200 `{ "status": "ready", "db": "connected" }`.
+     - Live unmatched `/api/unknown-endpoint` returned JSON 404 `{ "success": false, "error": { "code": "NOT_FOUND", "message": "The requested API route was not found" } }` without falling through to HTML.
+     - Live frontend root (`/`) and SPA route (`/my-bookings`) returned HTTP 200 with `index.html`.
+- **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`docker build`, `docker run`, `docker compose up`, `docker logs`, `curl`, `npm run typecheck`, `npm --prefix server test tests/docker.test.ts`).
+- **Outcome:** 100% compliance with Lab 5 reproducible packaging requirements (R-01, C-03) and peer review approval criteria.

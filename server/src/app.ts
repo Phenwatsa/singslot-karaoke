@@ -90,14 +90,22 @@ app.use('/api/bookings', bookingRouter);
 app.use('/api/rooms', roomRouter);
 app.use('/api/availability', availabilityRouter);
 
+// Unmatched API 404 handler (strictly catches /api and /api/* so they NEVER fall through to HTML)
+app.all(['/api', '/api/*'], (_req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: 'The requested API route was not found'
+    }
+  });
+});
+
 // Static assets serving in production container (Single-Origin Cloud Run deployment)
 const clientDist = process.env.CLIENT_DIST_PATH || path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
-  app.get('*', (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/api/')) {
-      return next();
-    }
+  app.get('*', (_req: Request, res: Response, next: NextFunction) => {
     const indexHtml = path.join(clientDist, 'index.html');
     if (fs.existsSync(indexHtml)) {
       return res.sendFile(indexHtml);
@@ -106,7 +114,7 @@ if (fs.existsSync(clientDist)) {
   });
 }
 
-// Unmatched route 404 handler
+// Global unmatched route 404 handler (for non-GET routes or when static assets not mounted)
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     success: false,

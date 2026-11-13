@@ -220,3 +220,10 @@
   - **Resolution:** Wrapped `smoke.check` in `test_mismatched_single_credential_raises` with `with patch.object(smoke, 'request', side_effect=self.response):`, guaranteeing 100% mocked offline execution across all test cases.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `npm --prefix server test -- server/tests/ci.test.ts`).
 - **Outcome:** Offline unit tests in `deploy/tests/test_smoke.py` are 100% isolated and offline, resolving the CI failure.
+
+#### 25. CI Workflow Prisma Client Generation Fix (PR #24 GitHub Actions Diagnostics)
+- **Prompt Intent:** Resolve `@prisma/client did not initialize yet` failure in GitHub Actions step `Apply database migrations and seed`:
+  - **Root Cause Analysis:** In a fresh GitHub Actions runner VM, `npm ci` at the root workspace does not automatically generate the Prisma Client for `server/prisma/schema.prisma`. `npx prisma migrate deploy` applies migrations to PostgreSQL but does not compile the client runtime. When `npm run prisma:seed` ran `ts-node --transpile-only prisma/seed.ts`, `new PrismaClient()` threw `Error: @prisma/client did not initialize yet. Please run "prisma generate" and try to import it again.`.
+  - **Resolution:** Added `npx prisma generate` explicitly to `.github/workflows/ci-docker.yml` inside the `Apply database migrations and seed` step before migration and seeding, ensuring the Prisma Client is compiled and ready for seed, typecheck, and server tests.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `npm --prefix server test -- server/tests/ci.test.ts`).
+- **Outcome:** Prisma Client generates deterministically in clean CI environments.

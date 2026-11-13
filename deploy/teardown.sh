@@ -59,6 +59,7 @@ DEPLOYER_SA_EMAIL="singslot-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
 SECRET_DB_URL="singslot-database-url"
 SECRET_JWT_KEY="singslot-jwt-secret"
 SECRET_STAFF_PASS="singslot-staff-password"
+SECRET_CUST_PASS="singslot-customer-password"
 
 echo "=================================================================="
 echo "WARNING: This will permanently delete SingSlot resources in:"
@@ -69,7 +70,7 @@ echo "  - Cloud Run Service : ${SERVICE_NAME}"
 echo "  - Cloud Run Job     : ${MIGRATE_JOB_NAME}"
 echo "  - Cloud SQL Instance: ${SQL_INSTANCE} (ALL DATABASE DATA WILL BE LOST)"
 echo "  - Artifact Registry : ${REPO_NAME}"
-echo "  - Secrets           : ${SECRET_DB_URL}, ${SECRET_JWT_KEY}, ${SECRET_STAFF_PASS}"
+echo "  - Secrets           : ${SECRET_DB_URL}, ${SECRET_JWT_KEY}, ${SECRET_STAFF_PASS}, ${SECRET_CUST_PASS}"
 echo "  - Service Accounts  : ${RUNNER_SA_EMAIL}, ${MIGRATOR_SA_EMAIL}, ${DEPLOYER_SA_EMAIL}"
 echo "=================================================================="
 
@@ -94,6 +95,7 @@ run_cmd gcloud artifacts repositories delete "$REPO_NAME" --location "$REGION" -
 run_cmd gcloud secrets delete "$SECRET_DB_URL" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud secrets delete "$SECRET_JWT_KEY" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud secrets delete "$SECRET_STAFF_PASS" --project "$PROJECT_ID" --quiet || true
+run_cmd gcloud secrets delete "$SECRET_CUST_PASS" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud iam service-accounts delete "$RUNNER_SA_EMAIL" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud iam service-accounts delete "$MIGRATOR_SA_EMAIL" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud iam service-accounts delete "$DEPLOYER_SA_EMAIL" --project "$PROJECT_ID" --quiet || true

@@ -120,6 +120,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/SECRET_DB_URL="singslot-database-url"/);
       expect(content).toMatch(/SECRET_JWT_KEY="singslot-jwt-secret"/);
       expect(content).toMatch(/SECRET_STAFF_PASS="singslot-staff-password"/);
+      expect(content).toMatch(/SECRET_CUST_PASS="singslot-customer-password"/);
 
       // Flag requirements
       expect(content).toMatch(/--database-version=POSTGRES_16/);
@@ -151,6 +152,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/gcloud secrets delete "\$SECRET_DB_URL"/);
       expect(content).toMatch(/gcloud secrets delete "\$SECRET_JWT_KEY"/);
       expect(content).toMatch(/gcloud secrets delete "\$SECRET_STAFF_PASS"/);
+      expect(content).toMatch(/gcloud secrets delete "\$SECRET_CUST_PASS"/);
       expect(content).toMatch(/gcloud iam service-accounts delete "\$RUNNER_SA_EMAIL"/);
       expect(content).toMatch(/gcloud iam service-accounts delete "\$MIGRATOR_SA_EMAIL"/);
       expect(content).toMatch(/gcloud iam service-accounts delete "\$DEPLOYER_SA_EMAIL"/);

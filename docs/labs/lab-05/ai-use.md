@@ -260,3 +260,11 @@
   3. **Document Audit Date Synchronization:** Updated `docs/labs/lab-05/tests.md` header date to `2026-11-13` and documented GitHub Actions Run #6 (`43386124522`) green check evidence while clarifying post-bootstrap C-01 plan.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_deploy_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`, `npm run test:client`).
 - **Outcome:** 100% alignment with Table 4 specifications and peer review requirements.
+
+#### 30. Secret Manager Customer Credential Security & Documentation Alignment
+- **Prompt Intent:** Resolve 3 final security and documentation audit items identified in peer review:
+  1. **Customer Password Secret Migration:** Eliminated hardcoded `CUSTOMER_PASSWORD=Customer1234!` from `--set-env-vars` in `deploy/deploy.sh`. Added dedicated Secret Manager secret `singslot-customer-password` generated securely and idempotently via openssl, mounted via `--set-secrets` strictly on `singslot-migrate`, granted access strictly to `singslot-migrator` (never `singslot-runner`), and purged on `teardown.sh`. Added regression assertions in `test_deploy_stub.sh`, `test_teardown_stub.sh`, and `ci.test.ts`.
+  2. **Requirement C-01 Status Differentiation:** Clarified Table 1 status in `docs/labs/lab-05/tests.md` as `Bootstrap CI: PASS; Post-Bootstrap C-01: Pending` to accurately distinguish between PR #24 green check and post-bootstrap release verification.
+  3. **Migration Job Command Alignment:** Synchronized `docs/labs/lab-05/deployment.md` with `deploy/deploy.sh` to uniformly reference `npx prisma migrate deploy && npm run prisma:seed` executed from container `WORKDIR /app/server`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_deploy_stub.sh`, `bash deploy/tests/test_teardown_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`).
+- **Outcome:** Zero plaintext credentials in scripts, fully scoped Secret Accessor policies, and 100% documentation consistency.

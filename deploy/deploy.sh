@@ -85,6 +85,7 @@ IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:l
 SECRET_DB_URL="singslot-database-url"
 SECRET_JWT_KEY="singslot-jwt-secret"
 SECRET_STAFF_PASS="singslot-staff-password"
+SECRET_CUST_PASS="singslot-customer-password"
 
 echo "=================================================================="
 echo "SingSlot Cloud Run Deployment"
@@ -236,10 +237,25 @@ else
   fi
 fi
 
+# ==============================================================================
+# 8b. Create CUSTOMER_PASSWORD in Secret Manager (idempotent, Table 4)
+# ==============================================================================
+if [ "$DRY_RUN" = "1" ]; then
+  run_cmd gcloud secrets describe "$SECRET_CUST_PASS" --project "$PROJECT_ID"
+  run_cmd gcloud secrets create "$SECRET_CUST_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+  run_cmd gcloud secrets versions add "$SECRET_CUST_PASS" --data-file=- --project "$PROJECT_ID"
+else
+  if ! gcloud secrets describe "$SECRET_CUST_PASS" --project "$PROJECT_ID" >/dev/null 2>&1; then
+    GENERATED_CUST_PASSWORD="$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-14)Aa1!"
+    run_cmd gcloud secrets create "$SECRET_CUST_PASS" --replication-policy="automatic" --project "$PROJECT_ID"
+    printf "%s" "$GENERATED_CUST_PASSWORD" | gcloud secrets versions add "$SECRET_CUST_PASS" --data-file=- --project "$PROJECT_ID"
+  fi
+fi
+
 # ------------------------------------------------------------------------------
 # Secret access (strictly scoped per secret per Table 4, never project-wide)
-# runner   -> singslot-database-url, singslot-jwt-secret (NO staff password)
-# migrator -> singslot-database-url, singslot-staff-password (NO jwt secret)
+# runner   -> singslot-database-url, singslot-jwt-secret (NO staff/customer password)
+# migrator -> singslot-database-url, singslot-staff-password, singslot-customer-password (NO jwt secret)
 # ------------------------------------------------------------------------------
 for secret in "$SECRET_DB_URL" "$SECRET_JWT_KEY"; do
   run_cmd gcloud secrets add-iam-policy-binding "$secret" \
@@ -249,7 +265,7 @@ for secret in "$SECRET_DB_URL" "$SECRET_JWT_KEY"; do
     --quiet
 done
 
-for secret in "$SECRET_DB_URL" "$SECRET_STAFF_PASS"; do
+for secret in "$SECRET_DB_URL" "$SECRET_STAFF_PASS" "$SECRET_CUST_PASS"; do
   run_cmd gcloud secrets add-iam-policy-binding "$secret" \
     --member="serviceAccount:${MIGRATOR_SA_EMAIL}" \
     --role="roles/secretmanager.secretAccessor" \
@@ -267,7 +283,7 @@ run_cmd gcloud builds submit \
 # ==============================================================================
 # 10. Create/Update & Execute Cloud Run Job for Migration + Seed
 # ==============================================================================
-JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,STAFF_PASSWORD=${SECRET_STAFF_PASS}:latest"
+JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,STAFF_PASSWORD=${SECRET_STAFF_PASS}:latest,CUSTOMER_PASSWORD=${SECRET_CUST_PASS}:latest"
 
 run_cmd gcloud run jobs deploy "$MIGRATE_JOB_NAME" \
   --image "$IMAGE_URI" \
@@ -275,7 +291,7 @@ run_cmd gcloud run jobs deploy "$MIGRATE_JOB_NAME" \
   --service-account "$MIGRATOR_SA_EMAIL" \
   --set-cloudsql-instances "$SQL_CONN_NAME" \
   --set-secrets "$JOB_SECRETS" \
-  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok,CUSTOMER_PASSWORD=Customer1234!" \
+  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \
   --command "sh" \
   --args "-c,npx prisma migrate deploy && npm run prisma:seed" \
   --max-retries 1 \
@@ -330,5 +346,6 @@ printf '%s\n' "Health Check   : ${SERVICE_URL}/api/health"
 printf '%s\n' "Readiness Check: ${SERVICE_URL}/api/ready"
 printf '%s\n' "Staff Email    : staff@singslot.local"
 printf '%s\n' "Staff Password : Stored in Secret Manager: ${SECRET_STAFF_PASS} (not printed)."
+printf '%s\n' "Customer Pass  : Stored in Secret Manager: ${SECRET_CUST_PASS} (not printed)."
 printf '%s\n' "=================================================================="
 

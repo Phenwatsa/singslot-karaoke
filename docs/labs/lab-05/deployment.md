@@ -93,9 +93,9 @@ Commands are tailored to the execution environment:
   ```
 - **Cloud Run Migration Job (inside production container):**
   ```bash
-  cd /app/server && npx prisma migrate deploy && npm run prisma:seed
+  npx prisma migrate deploy && npm run prisma:seed
   ```
-  *(Note: Production container image bundles `ts-node` runtime and dependencies so `npm run prisma:seed` executes reliably inside the container.)*
+  *(Note: Production container image sets `WORKDIR /app/server` and bundles `ts-node` runtime and dependencies so `npm run prisma:seed` executes reliably inside the container.)*
 
 ### 3.3 Automated Test Suites (MacBook M1 8GB RAM Safe)
 ```bash
@@ -147,13 +147,14 @@ curl -f http://localhost:8080/api/ready
 | **Cloud SQL Instance** | `singslot-pg` | `asia-southeast1` | PostgreSQL 16, db-f1-micro, `--no-storage-auto-increase` |
 | **Database Name** | `singslot` | — | Default PostgreSQL application database |
 | **Runtime Service Account** | `singslot-runner` | — | Role: `Cloud SQL Client` + `Secret Accessor` (scoped to `DATABASE_URL`, `JWT_SECRET`) |
-| **Migration Service Account**| `singslot-migrator` | — | Role: `Cloud SQL Client` + `Secret Accessor` (scoped to `DATABASE_URL`, `STAFF_PASSWORD`) |
+| **Migration Service Account**| `singslot-migrator` | — | Role: `Cloud SQL Client` + `Secret Accessor` (scoped to `DATABASE_URL`, `STAFF_PASSWORD`, `CUSTOMER_PASSWORD`) |
 | **Deployer Service Account** | `singslot-deployer` | — | Keyless account impersonated via WIF. Required permissions: `roles/iam.workloadIdentityUser` (bound to authorized GitHub WIF principal), `roles/iam.serviceAccountUser` (on `singslot-runner` and `singslot-migrator`), and minimum required Cloud Run deployment (`roles/run.developer`) and Artifact Registry push (`roles/artifactregistry.writer`) roles |
 | **Cloud Run Service** | `singslot` | `asia-southeast1` | Min: 0, Max: 3, Memory: 512Mi, CPU: 1, Port: 8080 |
 | **Cloud Run Migration Job**| `singslot-migrate` | `asia-southeast1` | Pre-deploy database migration runner |
 | **Secret: DB URL** | `singslot-database-url` | — | Prisma PostgreSQL Unix socket connection string (resolved with actual project ID, region, and URL-encoded password) |
 | **Secret: JWT Key** | `singslot-jwt-secret` | — | 256-bit cryptographically secure token signing key |
 | **Secret: Staff Password** | `singslot-staff-password`| — | Seed credential for initial Staff demo account |
+| **Secret: Customer Password** | `singslot-customer-password`| — | Seed credential for initial Customer demo accounts |
 
 > [!NOTE]
 > **Task 4 vs. Task 6 Scope on Service Accounts:**

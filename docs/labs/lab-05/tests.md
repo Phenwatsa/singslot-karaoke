@@ -24,7 +24,7 @@
 | **R-02 / Task 2** | Checklist 6: Zero Query Accumulation | `server/src/app.ts` | Repeated probe timeouts while database is pending guarantee exactly 1 query launched | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
-| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR targeting `main` | *Pending Task 4* |
+| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR (PR #24 bootstrap & PR targeting `main`) | **Bootstrap CI: PASS; Post-Bootstrap C-01: Pending** |
 | **C-02 / R-06 (Task 6)** | Blocked Merge on Failed Check | Branch ruleset `protect-main` | Temporary failing PR `test/prove-gate` showing blocked merge | *Pending Task 6* |
 | **C-04 / R-03 (Task 5, 6)** | End-to-End Cloud Run Workflow | Public Cloud Run URL | Login, room selection, slot booking, business rule rejection | *Pending Task 5/6* |
 | **C-05 / R-04 (Task 8)** | Data Persistence on Restart | Cloud Run & Cloud SQL | Scale-to-zero restart & redeploy with booking intact | *Pending Task 8* |

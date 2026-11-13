@@ -116,8 +116,12 @@ for MODE in first_run rerun partial job-fail; do
   if grep -q "^secrets add-iam-policy-binding singslot-staff-password .*singslot-runner@stub-gcp-project" "$GCLOUD_LOG"; then
     echo 'FAIL: singslot-runner leaked access to staff password'; exit 1
   fi
+  if grep -q "^secrets add-iam-policy-binding singslot-customer-password .*singslot-runner@stub-gcp-project" "$GCLOUD_LOG"; then
+    echo 'FAIL: singslot-runner leaked access to customer password'; exit 1
+  fi
   grep -q "^secrets add-iam-policy-binding singslot-database-url .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"
   grep -q "^secrets add-iam-policy-binding singslot-staff-password .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"
+  grep -q "^secrets add-iam-policy-binding singslot-customer-password .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"
   if grep -q "^secrets add-iam-policy-binding singslot-jwt-secret .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"; then
     echo 'FAIL: singslot-migrator leaked access to jwt secret'; exit 1
   fi

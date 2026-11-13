@@ -125,6 +125,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/--database-version=POSTGRES_16/);
       expect(content).toMatch(/--edition=enterprise/);
       expect(content).toMatch(/--tier=db-f1-micro/);
+      expect(content).toMatch(/--no-storage-auto-increase/);
       expect(content).toMatch(/--port 8080/);
     });
 

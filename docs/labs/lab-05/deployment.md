@@ -155,6 +155,10 @@ curl -f http://localhost:8080/api/ready
 | **Secret: JWT Key** | `singslot-jwt-secret` | — | 256-bit cryptographically secure token signing key |
 | **Secret: Staff Password** | `singslot-staff-password`| — | Seed credential for initial Staff demo account |
 
+> [!NOTE]
+> **Task 4 vs. Task 6 Scope on Service Accounts:**
+> In Task 4 (PR #24), all three service accounts (`singslot-runner`, `singslot-migrator`, `singslot-deployer`) are provisioned by `deploy/deploy.sh` to establish predictable resource naming and Table 4 schema completeness. The runtime and migration accounts (`singslot-runner`, `singslot-migrator`) receive their strictly scoped IAM policies and Secret Accessor bindings in Task 4. The deployer account (`singslot-deployer`) has its Workload Identity Federation (WIF) pool, provider bindings, and deployment roles (`roles/run.developer`, `roles/artifactregistry.writer`, `roles/iam.serviceAccountUser`) configured explicitly in **Task 6 (Continuous Deployment Pipeline & WIF Setup)** when the GitHub Actions deploy workflow is established.
+
 ---
 
 ## 5. Release Procedure & Commit Traceability Runbook [PLANNED - Task 7]

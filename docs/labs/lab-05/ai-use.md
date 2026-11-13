@@ -252,3 +252,11 @@
   6. **Local Verification Evidence Completion:** Verified local migration, seed, and full server test suite (100/100 tests passing) against local PostgreSQL instance, updating Section 4.1 in `docs/labs/lab-05/tests.md`.
 - **Tools Used:** `read_file`, `edit_file`, `write_file`, `run_command` (`npm run test:client`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`, `npm run build`, `unittest`).
 - **Outcome:** All 7 peer review findings resolved with 100% test pass rate across all suites.
+
+#### 29. Final Peer Review Approval Adjustments (Cloud SQL Flag, Task Scope, Date Audit)
+- **Prompt Intent:** Resolve remaining minor audit findings from PR #24 peer review comment to reach final approval:
+  1. **Cloud SQL Storage Safeguard:** Added `--no-storage-auto-increase` to both DRY_RUN and live execution branches in `deploy/deploy.sh` matching `deployment.md` Table 4 resource specifications for cost control. Added test assertion in `server/tests/ci.test.ts` and stub assertion in `deploy/tests/test_deploy_stub.sh`.
+  2. **Task 6 Deployer Scope Clarification:** Clarified in `docs/labs/lab-05/deployment.md` that `singslot-deployer` is provisioned in Task 4, and its IAM/WIF bindings (`roles/run.developer`, `roles/artifactregistry.writer`, `roles/iam.serviceAccountUser`) are explicitly deferred to Task 6.
+  3. **Document Audit Date Synchronization:** Updated `docs/labs/lab-05/tests.md` header date to `2026-11-13` and documented GitHub Actions Run #6 (`43386124522`) green check evidence while clarifying post-bootstrap C-01 plan.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_deploy_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`, `npm run test:client`).
+- **Outcome:** 100% alignment with Table 4 specifications and peer review requirements.

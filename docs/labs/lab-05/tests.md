@@ -5,7 +5,7 @@
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Target:** Lab 5 (Cloud Deployment & CI/CD Pipeline)  
 **Document Status:** Working Evidence Log  
-**Last Updated:** 2026-11-12  
+**Last Updated:** 2026-11-13  
 **Repository:** `https://github.com/Phenwatsa/singslot-karaoke`  
 
 ---
@@ -550,11 +550,11 @@ $ npm run build
 ```
 
 ### 4.2 GitHub Actions Live Verification (Bootstrap Sequence)
-- **Feature PR Target:** `sprint-1-staging` (PR #24)
-- **Release PR Target:** `main` (PR #25)
-- **Post-Bootstrap Verification PR (C-01):** [To be recorded upon GitHub PR creation]
-- **Workflow Run Link:** [To be recorded upon GitHub PR run]
-- **Execution Summary:** [To be recorded upon GitHub Actions green check] 
+- **Feature PR Target:** `sprint-1-staging` ([PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24))
+  - **Feature PR Workflow Run:** [GitHub Actions Run #6 (Run ID: 43386124522)](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/43386124522)
+  - **Execution Summary:** **SUCCESS (Green Check)** — All 13 ordered steps (checkout, node/python setup, npm ci, deployment stubs & smoke tests, migration & seed, typecheck, server tests, client tests, build, docker image verification) completed cleanly without accessing GCP.
+- **Release PR Target:** `main` (PR #25) — Pending merge of PR #24 into `sprint-1-staging`.
+- **Post-Bootstrap Verification PR (C-01):** Pending merge of Release PR #25 into `main`. Once merged into `main`, a non-functional verification PR targeting `main` will be opened to record final green check proof satisfying Requirement C-01. 
 
 ---
 

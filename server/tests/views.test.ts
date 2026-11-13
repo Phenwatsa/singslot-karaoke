@@ -17,6 +17,8 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
 
   const TEST_DATE = getFutureBangkokDateString(25);
   const OTHER_DATE = getFutureBangkokDateString(26);
+  const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'Pass1234!';
+  const CUSTOMER_PASSWORD = process.env.CUSTOMER_PASSWORD || 'Pass1234!';
   let customer1Token: string;
   let customer2Token: string;
   let staffToken: string;
@@ -36,13 +38,13 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
     const [c1Login, c2Login, staffLogin] = await Promise.all([
       request(app)
         .post('/api/auth/login')
-        .send({ email: 'customer1@singslot.local', password: 'Pass1234!' }),
+        .send({ email: 'customer1@singslot.local', password: CUSTOMER_PASSWORD }),
       request(app)
         .post('/api/auth/login')
-        .send({ email: 'customer2@singslot.local', password: 'Pass1234!' }),
+        .send({ email: 'customer2@singslot.local', password: CUSTOMER_PASSWORD }),
       request(app)
         .post('/api/auth/login')
-        .send({ email: 'staff@singslot.local', password: 'Pass1234!' })
+        .send({ email: 'staff@singslot.local', password: STAFF_PASSWORD })
     ]);
 
     expect(c1Login.status).toBe(200);

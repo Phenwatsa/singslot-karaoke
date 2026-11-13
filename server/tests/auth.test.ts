@@ -4,6 +4,9 @@ import { app } from '../src/app';
 import { prisma } from '../src/prisma';
 import { getJwtSecret } from '../src/config/jwt';
 
+const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'Pass1234!';
+const CUSTOMER_PASSWORD = process.env.CUSTOMER_PASSWORD || 'Pass1234!';
+
 describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
   afterAll(async () => {
     await prisma.$disconnect();
@@ -36,7 +39,7 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
       .post('/api/auth/login')
       .send({
         email: 'staff@singslot.local',
-        password: 'Pass1234!'
+        password: STAFF_PASSWORD
       });
 
     expect(res.status).toBe(200);
@@ -122,7 +125,7 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
       .post('/api/auth/login')
       .send({
         email: 'customer1@singslot.local',
-        password: 'Pass1234!'
+        password: CUSTOMER_PASSWORD
       });
 
     expect(loginRes.status).toBe(200);
@@ -152,14 +155,14 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
     expect(staffDbUser?.passwordHash).toBeDefined();
     // Verify bcrypt format ($2a$ or $2b$) and round 10 prefix
     expect(staffDbUser?.passwordHash).toMatch(/^\$2[ab]\$10\$/);
-    expect(staffDbUser?.passwordHash).not.toBe('Pass1234!');
+    expect(staffDbUser?.passwordHash).not.toBe(STAFF_PASSWORD);
 
     // 2. Login to obtain token
     const loginRes = await request(app)
       .post('/api/auth/login')
       .send({
         email: 'staff@singslot.local',
-        password: 'Pass1234!'
+        password: STAFF_PASSWORD
       });
     const token = loginRes.body.token;
     expect(loginRes.body.user.passwordHash).toBeUndefined();
@@ -187,7 +190,7 @@ describe('Feature F-01: Seeded User Authentication & RBAC Suite', () => {
       .post('/api/auth/login')
       .send({
         email: 'customer1@singslot.local',
-        password: 'Pass1234!'
+        password: CUSTOMER_PASSWORD
       });
 
     const token = loginRes.body.token;

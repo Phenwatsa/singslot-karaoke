@@ -17,6 +17,7 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
   };
 
   const TEST_DATE = getFutureBangkokDateString(30);
+  const CUSTOMER_PASSWORD = process.env.CUSTOMER_PASSWORD || 'Pass1234!';
   const CONCURRENCY_DATE = getFutureBangkokDateString(35);
   const FIXTURE_SLOT3_CODE = `TEST-05-FIX-SLOT3-${Date.now()}`;
 
@@ -33,10 +34,10 @@ describe('Feature F-04: Conflict Prevention & Concurrency Protection Suite (Issu
     const [c1Login, c2Login] = await Promise.all([
       request(app)
         .post('/api/auth/login')
-        .send({ email: 'customer1@singslot.local', password: 'Pass1234!' }),
+        .send({ email: 'customer1@singslot.local', password: CUSTOMER_PASSWORD }),
       request(app)
         .post('/api/auth/login')
-        .send({ email: 'customer2@singslot.local', password: 'Pass1234!' })
+        .send({ email: 'customer2@singslot.local', password: CUSTOMER_PASSWORD })
     ]);
 
     expect(c1Login.status).toBe(200);

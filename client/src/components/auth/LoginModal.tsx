@@ -36,15 +36,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
+  const staffDemoPassword =
+    import.meta.env.VITE_STAFF_DEMO_PASSWORD || import.meta.env.VITE_DEMO_PASSWORD || '';
+  const customerDemoPassword =
+    import.meta.env.VITE_CUSTOMER_DEMO_PASSWORD || import.meta.env.VITE_DEMO_PASSWORD || '';
+
   const handleQuickFillStaff = () => {
     setEmail('staff@singslot.local');
-    setPassword('Pass1234!');
+    setPassword(staffDemoPassword);
     setErrorMessage(null);
   };
 
   const handleQuickFillCustomer = () => {
     setEmail('customer1@singslot.local');
-    setPassword('Pass1234!');
+    setPassword(customerDemoPassword);
     setErrorMessage(null);
   };
 
@@ -119,33 +124,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </p>
           </div>
 
-          {/* Quick-Fill Demo Buttons */}
-          <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 shadow-sm">
-            <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold uppercase tracking-wider text-purple-700">
-              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-              <span>Sprint 1 Seeded Demo Accounts</span>
+          {/* Quick-Fill Demo Buttons (Only rendered in development mode per Episode 2.2) */}
+          {import.meta.env.DEV && (
+            <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 shadow-sm">
+              <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold uppercase tracking-wider text-purple-700">
+                <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                <span>Sprint 1 Seeded Demo Accounts</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleQuickFillStaff}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-xs transition-all"
+                  title="Fill Staff credentials (staff@singslot.local)"
+                >
+                  <span>Staff Demo</span>
+                  <span className="text-[10px] text-purple-500 font-mono">(Cashier)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickFillCustomer}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-pink-200 bg-white px-2.5 py-1.5 text-xs font-medium text-pink-700 hover:bg-pink-100 hover:border-pink-300 shadow-xs transition-all"
+                  title="Fill Customer credentials (customer1@singslot.local)"
+                >
+                  <span>Customer Demo</span>
+                  <span className="text-[10px] text-pink-500 font-mono">(Alice)</span>
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleQuickFillStaff}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-purple-200 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-xs transition-all"
-                title="Fill Staff credentials (staff@singslot.local)"
-              >
-                <span>Staff Demo</span>
-                <span className="text-[10px] text-purple-500 font-mono">(Cashier)</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleQuickFillCustomer}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-pink-200 bg-white px-2.5 py-1.5 text-xs font-medium text-pink-700 hover:bg-pink-100 hover:border-pink-300 shadow-xs transition-all"
-                title="Fill Customer credentials (customer1@singslot.local)"
-              >
-                <span>Customer Demo</span>
-                <span className="text-[10px] text-pink-500 font-mono">(Alice)</span>
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Error Banner */}
           {errorMessage && (

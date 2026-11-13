@@ -6,6 +6,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting SingSlot database seeding (Idempotent)...');
 
+  // Enforce Twelve-Factor environment credentials (R-02, R-12)
+  const staffPassword = process.env.STAFF_PASSWORD;
+  const customerPassword = process.env.CUSTOMER_PASSWORD;
+
+  if (!staffPassword || !customerPassword) {
+    throw new Error(
+      'FATAL: Both STAFF_PASSWORD and CUSTOMER_PASSWORD environment variables must be defined before seeding.'
+    );
+  }
+
   // 1. Seed Users (Preserve existing passwordHash if user already exists to ensure true idempotency)
   const seedUsers = [
     {
@@ -13,21 +23,21 @@ async function main() {
       fullName: 'Cashier Staff',
       phone: '0812345678',
       role: Role.STAFF,
-      rawPassword: 'Pass1234!'
+      rawPassword: staffPassword
     },
     {
       email: 'customer1@singslot.local',
       fullName: 'Alice Customer',
       phone: '0898765432',
       role: Role.CUSTOMER,
-      rawPassword: 'Pass1234!'
+      rawPassword: customerPassword
     },
     {
       email: 'customer2@singslot.local',
       fullName: 'Bob Customer',
       phone: '0855554444',
       role: Role.CUSTOMER,
-      rawPassword: 'Pass1234!'
+      rawPassword: customerPassword
     }
   ];
 

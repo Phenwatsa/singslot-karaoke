@@ -19,17 +19,17 @@
 
 ## 2. Summary of Lab 5 Tasks & Pull Requests
 
-| Task | Title / Scope | Primary Owner | Reviewer | Branch | PR Target | Status | Verdict |
-| :---: | :--- | :---: | :---: | :--- | :--- | :---: | :---: |
-| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control` | @Phenwatsa | @lephirada | GCP Console | None (Issue comment) | Done | Verified |
-| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment` | @lephirada | @Phenwatsa | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | Approved | Verified |
-| **Task 3** | `[Lab 5 - Task 3] Docker Containerization` | @Phenwatsa | @lephirada | `feat/lab5-docker` | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23) | Approved | Verified |
-| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests` | @lephirada | @Phenwatsa | `feat/lab5-ci` | `sprint-1-staging` → `main` | Backlog | Pending |
-| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment` | @Phenwatsa | @lephirada | Cloud Shell | None (Console / Issue) | Backlog | Pending |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` | @lephirada | @Phenwatsa | `test/prove-gate` | `main` | Backlog | Pending |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline` | @Phenwatsa | @lephirada | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main` | Backlog | Pending |
-| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification` | @lephirada | @Phenwatsa | Actions & Console | None (Console / Issue) | Backlog | Pending |
-| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index` | Both Members | Peer Review | `docs/` & LEB2 PDF | None (Submission) | Backlog | Pending |
+|    Task    | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                  | PR Target                                                       |  Status  | Verdict  |
+| :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :-------------------------------------------------------------- | :------: | :------: |
+| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)                                            |   Done   | Verified |
+| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22) | Approved | Verified |
+| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23) | Approved | Verified |
+| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | `sprint-1-staging` → `main`                                     | Backlog  | Pending  |
+| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)                                          | Backlog  | Pending  |
+| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                          | Backlog  | Pending  |
+| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                     | Backlog  | Pending  |
+| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                          | Backlog  | Pending  |
+| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                               | Backlog  | Pending  |
 
 ---
 
@@ -144,7 +144,6 @@
 
 - **Reviewer (@lephirada):**
   The implementation and submitted verification evidence cover the required packaging and runtime contracts:
-
   - Multi-stage Docker build with deterministic dependency installation using the root lockfile and `npm ci`.
   - Explicit Prisma Client generation using the correct schema path.
   - Correct production filesystem structure and working directory.
@@ -180,18 +179,16 @@
 ### 📌 Task 4: CI Quality Gate on Pull Requests
 
 - **GitHub Issue:** [Issue #17](https://github.com/Phenwatsa/singslot-karaoke/issues/17)
-- **PR Link (Feature PR):**
-- **PR Link (Release PR to main):**
+- **PR Link (Feature PR):** [Pending Submission to `sprint-1-staging`]
+- **PR Link (Release PR to main):** [Pending Submission to `main`]
 - **Source Branch:** `feat/lab5-ci`
 - **Target Branch:** `sprint-1-staging` → `main`
 - **Primary Owner:** @lephirada
 - **Reviewer:** @Phenwatsa
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** In Review
+- **Verdict:** Pending PR Merge & GitHub Actions Run
 
 #### 🔍 Review Discussion & Verification Notes
-
-<!-- Team members add discussion and verification notes here -->
 
 ---
 

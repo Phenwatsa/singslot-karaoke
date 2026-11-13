@@ -419,12 +419,96 @@ Keep-Alive: timeout=5
 
 ---
 
-## 4. Task 4 Verification Evidence: CI Pipeline Execution (C-01 / R-05)
-<!-- To be populated during Task 4 execution -->
+## 4. Task 4 Verification Evidence: CI Pipeline Execution (C-01 / R-05, R-07)
 
-- **PR Target:** `main`
-- **Workflow Run Link:** 
-- **Execution Summary:** 
+### 4.1 Local Offline Script Verification & Automated CI Contracts
+Prior to opening the PR and triggering GitHub Actions, all deployment automation scripts and CI workflow configurations were verified offline locally:
+
+#### 4.1.1 Deployment Scripts Syntax & Offline Stubs
+All deployment shell scripts passed bash static analysis (`bash -n`) and offline stub test suites (simulating GCP APIs without network access):
+
+```bash
+$ bash -n deploy/deploy.sh deploy/release.sh deploy/teardown.sh
+$ bash deploy/tests/test_deploy_stub.sh
+PASS: first_run (exit, migration gate, credential handling, secret redaction)
+PASS: rerun (exit, migration gate, credential handling, secret redaction)
+PASS: partial (exit, migration gate, credential handling, secret redaction)
+PASS: job-fail (exit, migration gate, credential handling, secret redaction)
+PASS: dry run makes no gcloud calls
+
+$ bash deploy/tests/test_release_stub.sh
+Service URL: https://singslot-demo.example.test
+PASS normal release uses digest and waits for migration
+Rollback: reuse existing image; skip tests, build, migration and seed.
+Service URL: https://singslot-demo.example.test
+PASS rollback reuses image without touching migration job
+PASS image failure blocks service update
+PASS migration failure blocks service update
+Invalid image tag.
+PASS invalid tag rejected before GCP calls
+
+$ bash deploy/tests/test_teardown_stub.sh
+PASS confirmed teardown deletes all provisioned resources
+PASS mismatched confirmation aborts without executing deletion
+PASS dry run makes no gcloud calls
+```
+
+#### 4.1.2 CI Workflow & Deployment Tooling Contract Test Suite
+Automated regression test suite `server/tests/ci.test.ts` asserting workflow metadata, permissions, PostgreSQL 16 service container, environment variables, language runtimes, step sequencing, and Table 4 resource alignment:
+
+```bash
+$ npm --prefix server test -- server/tests/ci.test.ts
+
+> singslot-server@1.0.0 test
+> jest --runInBand --detectOpenHandles --forceExit server/tests/ci.test.ts
+
+PASS tests/ci.test.ts
+  Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R-07, C-01)
+    .github/workflows/ci-docker.yml Workflow Contract
+      ✔ declares the CI workflow file with correct metadata, permissions, and concurrency (4 ms)
+      ✔ configures PostgreSQL 16 Alpine service container with healthy readiness probe options (2 ms)
+      ✔ injects all required test environment variables into CI job env (1 ms)
+      ✔ declares exact language setup and ordered pipeline steps (1 ms)
+    Deployment Automation Tooling & Offline Verification Suites (deploy/)
+      ✔ verifies existence and structure of deploy/deploy.sh (1 ms)
+      ✔ verifies existence and structure of deploy/release.sh (1 ms)
+      ✔ verifies existence and structure of deploy/teardown.sh
+      ✔ verifies existence and structure of deploy/smoke_test.py (1 ms)
+      ✔ verifies existence and structure of deploy/tests/test_deploy_stub.sh
+      ✔ verifies existence and structure of deploy/tests/test_release_stub.sh
+      ✔ verifies existence and structure of deploy/tests/test_teardown_stub.sh (1 ms)
+      ✔ verifies existence and structure of deploy/tests/test_smoke.py
+      ✔ verifies deploy.sh conforms to SingSlot GCP resource specifications (Table 4) (2 ms)
+      ✔ verifies release.sh pins immutable image digest and gates migration (1 ms)
+      ✔ verifies teardown.sh requires confirmation and safely purges all resources (1 ms)
+      ✔ verifies smoke_test.py checks health, ready, static SPA HTML, and seeded rooms
+
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        1.183 s
+```
+
+#### 4.1.3 Monorepo Typecheck, Client Tests & Production Build
+```bash
+$ npm run typecheck
+✔ server: tsc --noEmit (0 diagnostics)
+✔ client: tsc --noEmit (0 diagnostics)
+
+$ npm run test:client
+✔ Client Layout & UI Component Structural Verification (AC-07) (12 passed)
+
+$ npm run build
+✔ server: tsc (dist/ compiled)
+✔ client: vite build (dist/ created, 1585 modules transformed)
+```
+
+### 4.2 GitHub Actions Live Verification (Bootstrap Sequence)
+- **Feature PR Target:** `sprint-1-staging` (PR #24)
+- **Release PR Target:** `main` (PR #25)
+- **Post-Bootstrap Verification PR (C-01):** [To be recorded upon GitHub PR creation]
+- **Workflow Run Link:** [To be recorded upon GitHub PR run]
+- **Execution Summary:** [To be recorded upon GitHub Actions green check] 
 
 ---
 

@@ -55,10 +55,11 @@ The application reads all configurations strictly from environment variables per
 | `DATABASE_URL` | PostgreSQL connection string | **Yes** | Secret Manager / `.env` | `postgresql://USER:PASS@localhost:5432/DB` | Active |
 | `JWT_SECRET` | 256-bit cryptographic secret for signing JWTs | **Yes** | Secret Manager / `.env` | Cryptographically random base64 string | Active |
 | `STAFF_PASSWORD` | Password used to seed the initial Staff demo account (mounted strictly to `singslot-migrate` job; omitted from runtime service) | **Yes** | Secret Manager / `.env` | Secure password supplied through environment variable | Active |
+| `CUSTOMER_PASSWORD` | Password used to seed the initial Customer demo accounts (mounted strictly to `singslot-migrate` job; omitted from runtime service) | **Yes** | Secret Manager / `.env` | Secure password supplied through environment variable | Active |
 | `CORS_ORIGIN` | Allowed web origin for decoupled API access | No | Cloud Run / Local env | `http://localhost:5173` (Optional: not required when served same-origin in production) | [PLANNED] |
 
 > [!CAUTION]
-> **Zero Secret Leaks (R-12):** Real credentials must never be written to this file, committed to Git, or exposed in build logs. In production, sensitive variables are mounted directly from GCP Secret Manager into the Cloud Run container runtime. `STAFF_PASSWORD` is scoped exclusively to the migration/seed job (`singslot-migrator` service account) and is not injected into the public runtime service (`singslot-runner`).
+> **Zero Secret Leaks (R-12):** Real credentials must never be written to this file, committed to Git, or exposed in build logs. In production, sensitive variables are mounted directly from GCP Secret Manager into the Cloud Run container runtime. `STAFF_PASSWORD` and `CUSTOMER_PASSWORD` are scoped exclusively to the migration/seed job (`singslot-migrator` service account) and are not injected into the public runtime service (`singslot-runner`).
 
 ---
 

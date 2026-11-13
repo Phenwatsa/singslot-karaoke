@@ -674,11 +674,11 @@ In-Scope:
   5. Enforce Principle of Least Privilege by creating two distinct Service Accounts:
      - `singslot-runner` (Cloud Run Service runtime SA):
        - Role `roles/cloudsql.client` on the project.
-       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-jwt-secret`. (Must NOT have Secret Accessor permission on `singslot-staff-password`).
+       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-jwt-secret`. (Must NOT have Secret Accessor permission on `singslot-staff-password` or `singslot-customer-password`).
      - `singslot-migrator` (Cloud Run Migration Job SA):
        - Role `roles/cloudsql.client` on the project.
-       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url` and `singslot-staff-password`.
-  6. Store 3 secrets in Secret Manager (zero secrets committed or logged):
+       - Role `roles/secretmanager.secretAccessor` granted at the individual secret resource level strictly for `singslot-database-url`, `singslot-staff-password`, and `singslot-customer-password`.
+  6. Store 4 secrets in Secret Manager (zero secrets committed or logged):
      - `singslot-database-url`: Prisma PostgreSQL Unix socket connection string:
        - Before storing `singslot-database-url` in Secret Manager:
          - Replace `$PROJECT_ID` and `$REGION` with the actual GCP Project ID and region to form the exact Cloud SQL connection name: `${PROJECT_ID}:${REGION}:singslot-pg`.
@@ -688,6 +688,7 @@ In-Scope:
          - Never print the complete DATABASE_URL or password in terminal output or logs.
      - `singslot-jwt-secret`: 256-bit cryptographic secret (`openssl rand -base64 32`) required by `server/src/config/jwt.ts` to sign/verify authentication tokens (prevents runtime boot crash).
      - `singslot-staff-password`: Seed application credentials for staff demo account (`staff@singslot.local`).
+     - `singslot-customer-password`: Seed application credentials for customer demo accounts (`customer1@singslot.local`, `customer2@singslot.local`).
   7. Build, push, and validate initial production container image in Artifact Registry:
      ```bash
      export IMAGE_TAG="$(git rev-parse HEAD)"
@@ -712,10 +713,10 @@ In-Scope:
        --region "$REGION" \
        --service-account "singslot-migrator@$PROJECT_ID.iam.gserviceaccount.com" \
        --set-cloudsql-instances "$PROJECT_ID:$REGION:singslot-pg" \
-       --set-secrets "DATABASE_URL=singslot-database-url:latest,STAFF_PASSWORD=singslot-staff-password:latest" \
+       --set-secrets "DATABASE_URL=singslot-database-url:latest,STAFF_PASSWORD=singslot-staff-password:latest,CUSTOMER_PASSWORD=singslot-customer-password:latest" \
        --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \
        --command "sh" \
-       --args "-c,cd /app/server && npx prisma migrate deploy && npm run prisma:seed" \
+       --args "-c,npx prisma migrate deploy && npm run prisma:seed" \
        --max-retries 1 \
        --task-timeout 300s
      ```
@@ -760,9 +761,9 @@ Acceptance Criteria:
 - [ ] Application database `singslot` and non-superuser created in Cloud SQL.
 - [ ] Distinct service accounts `singslot-runner` and `singslot-migrator` created with least-privilege secret access at resource level.
 - [ ] Initial production container image built, tagged with commit SHA, and pushed to Artifact Registry resolving to immutable digest.
-- [ ] Secrets `singslot-database-url`, `singslot-jwt-secret`, and `singslot-staff-password` created in Secret Manager.
+- [ ] Secrets `singslot-database-url`, `singslot-jwt-secret`, `singslot-staff-password`, and `singslot-customer-password` created in Secret Manager.
 - [ ] `singslot-database-url` contains the actual Cloud SQL connection name and a URL-encoded password, with no unresolved placeholders.
-- [ ] Cloud Run migration job mounts `DATABASE_URL` and `STAFF_PASSWORD`, running migrations and seed from `/app/server` with exit code 0.
+- [ ] Cloud Run migration job mounts `DATABASE_URL`, `STAFF_PASSWORD`, and `CUSTOMER_PASSWORD`, running migrations and seed from `/app/server` with exit code 0.
 - [ ] Cloud Run service configured with Cloud SQL unix socket, mounts `DATABASE_URL` and `JWT_SECRET`, runs with `NODE_ENV=production,TZ=Asia/Bangkok` under `singslot-runner`.
 - [ ] Cloud Run service allows unauthenticated invocation (`--allow-unauthenticated`) at infrastructure level, providing public URL access without Google login (C-04).
 - [ ] Public Cloud Run URL serves the production frontend successfully.

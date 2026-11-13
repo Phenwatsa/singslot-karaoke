@@ -63,7 +63,7 @@
   - [ ] Browser and API verification: Web UI loads properly and reservation API endpoints respond correctly
 - [ ] **Environment Configuration (R-02):**
   - [ ] Direct link to `server/.env.example` in repository
-  - [ ] Environment variable specification table in `docs/labs/lab-05/deployment.md` (covering `NODE_ENV`, `PORT`, `TZ`, `CLIENT_DIST_PATH`, `DATABASE_URL`, `JWT_SECRET`, and `STAFF_PASSWORD`)
+  - [ ] Environment variable specification table in `docs/labs/lab-05/deployment.md` (covering `NODE_ENV`, `PORT`, `TZ`, `CLIENT_DIST_PATH`, `DATABASE_URL`, `JWT_SECRET`, `STAFF_PASSWORD`, and `CUSTOMER_PASSWORD`)
   - [ ] Audit confirmation: Zero real secrets or connection strings committed in repository, image, logs, or PDF
 
 ---
@@ -80,7 +80,7 @@
   - [ ] Captioned screenshot: Cloud SQL PostgreSQL instance (`storage-auto-increase: OFF`)
   - [ ] Captioned screenshot: Secret Manager secret names (Zero secret values visible)
   - [ ] **Cloud Run Migration Job Execution (`singslot-migrate`):**
-    - [ ] Captioned screenshot: Cloud Run Job configuration showing Service Account `singslot-migrator`, Cloud SQL instance attached, and Secret Manager bindings (`DATABASE_URL`, `STAFF_PASSWORD`)
+    - [ ] Captioned screenshot: Cloud Run Job configuration showing Service Account `singslot-migrator`, Cloud SQL instance attached, and Secret Manager bindings (`DATABASE_URL`, `STAFF_PASSWORD`, `CUSTOMER_PASSWORD`)
     - [ ] Captioned screenshot / terminal log: Execution status displaying successful exit code 0 (`npx prisma migrate deploy && npm run prisma:seed`)
     - [ ] Evidence confirming migration job executes using the exact same immutable image digest (`@sha256:...`) as the service revision
 - [ ] **Data Persistence Verification (C-05 / R-04):**

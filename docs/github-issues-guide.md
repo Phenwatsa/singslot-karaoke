@@ -350,7 +350,7 @@ Refactor SingSlot application settings to adhere to Twelve-Factor configuration,
 In-Scope:
 - Enforce Student Guide Episode 2.2 Six-Point Cloud-Readiness Checklist:
   1. **Uploaded Files Isolation:** Ensure zero user-generated files are written to local container directories (SingSlot karaoke reservations and audit logs reside strictly in PostgreSQL).
-  2. **Production-Safe Seed & Demo Accounts:** Demo account credentials for staff (`staff@singslot.local`) and customers must come strictly from environment variables (`STAFF_PASSWORD`), never hardcoded in source code or committed to Git. For local development, credentials reside in `.env` (ignored by Git); in production, they are mounted via Secret Manager. The seed script must be idempotent and safe to rerun without duplicating records.
+  2. **Production-Safe Seed & Demo Accounts:** Demo account credentials for staff (`staff@singslot.local`) and customers (`customer1@singslot.local`, `customer2@singslot.local`) must come strictly from environment variables (`STAFF_PASSWORD` and `CUSTOMER_PASSWORD`), never hardcoded in source code or committed to Git. For local development, credentials reside in `.env` (ignored by Git); in production, they are mounted via Secret Manager. The seed script must be idempotent and safe to rerun without duplicating records.
   3. **No Development Shortcuts in Production:** Ensure no backdoor login selectors or hardcoded credentials appear on screen. The login modal quick-fill helper must not expose real passwords on screen or bypass authentication in production (`NODE_ENV=production`).
   4. **Stateless Session Management:** SingSlot utilizes cryptographically signed stateless JWT tokens; no session state is maintained in container memory, ensuring users remain logged in across container restarts, new revisions, and instance scaling.
   5. **Dynamic Port Binding:** Ensure `server/src/server.ts` reads `PORT` dynamically from `process.env.PORT` (defaulting to 8080 in production) and binds strictly to `0.0.0.0` (not localhost only).
@@ -361,7 +361,7 @@ In-Scope:
      - The readiness timeout implementation must avoid accumulating unresolved database queries or exhausting Prisma connection pool resources when repeated probes time out.
      - Do not rely on `Promise.race()` alone as database query cancellation unless the underlying query is actually cancelled.
      - Internal database errors, timeout exceptions, stack traces, and database credentials must be strictly masked from all HTTP responses.
-- Update `server/prisma/seed.ts` to require `STAFF_PASSWORD` from environment variables without hardcoded fallback passwords in source code. If missing in production, fail safely with a clean error message.
+- Update `server/prisma/seed.ts` to require `STAFF_PASSWORD` and `CUSTOMER_PASSWORD` from environment variables without hardcoded fallback passwords in source code. If missing in production, fail safely with a clean error message.
 - Update `server/.env.example` with comprehensive placeholder variables and documentation (zero real secrets).
 - Verify compilation and test suites:
   - Run `npm run typecheck` across workspaces (zero TypeScript diagnostic errors).
@@ -379,7 +379,7 @@ Acceptance Criteria:
 - [ ] `GET /api/ready` responds with HTTP 503 `{ status: "not_ready", error: "Database unreachable" }` when database query fails or exceeds bounded timeout (3–5s).
 - [ ] Readiness checks reuse the shared Prisma Client instance and do not expose internal database errors, timeouts, or credentials in HTTP responses.
 - [ ] Automated tests in `server/tests/ready.test.ts` verify 200 (connected), 503 (error), and 503 (timeout) scenarios cleanly.
-- [ ] Demo account passwords come strictly from environment variables (`STAFF_PASSWORD`) without hardcoded fallback passwords in source code.
+- [ ] Demo account passwords come strictly from environment variables (`STAFF_PASSWORD` and `CUSTOMER_PASSWORD`) without hardcoded fallback passwords in source code.
 - [ ] `server/src/server.ts` reads `PORT` from `process.env.PORT` and binds to `0.0.0.0`.
 - [ ] `server/.env.example` lists every required environment variable with placeholder values and zero committed secrets.
 - [ ] TypeScript compilation (`npm run typecheck`) passes with zero diagnostic errors across client and server.
@@ -544,7 +544,9 @@ In-Scope:
      env:
        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/singslot_test?schema=public
        STAFF_PASSWORD: ci-test-staff-pass-123!
+       CUSTOMER_PASSWORD: ci-test-cust-pass-123!
        JWT_SECRET: ci-test-jwt-secret-for-testing-only-not-production
+       PORT: 8080
      ```
   3. Checkout code and set up Node.js 20 with npm caching:
      ```yaml

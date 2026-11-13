@@ -268,3 +268,10 @@
   3. **Migration Job Command Alignment:** Synchronized `docs/labs/lab-05/deployment.md` with `deploy/deploy.sh` to uniformly reference `npx prisma migrate deploy && npm run prisma:seed` executed from container `WORKDIR /app/server`.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_deploy_stub.sh`, `bash deploy/tests/test_teardown_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`).
 - **Outcome:** Zero plaintext credentials in scripts, fully scoped Secret Accessor policies, and 100% documentation consistency.
+
+#### 31. Issue Guide & Submission Checklist Credential Specification Alignment
+- **Prompt Intent:** Resolve remaining documentation mentions of `STAFF_PASSWORD` without `CUSTOMER_PASSWORD` across guides and checklist:
+  1. **Issue Guide Task 2 & Task 4 Synchronization:** Updated `docs/github-issues-guide.md` Task 2 checklist to explicitly require both `STAFF_PASSWORD` and `CUSTOMER_PASSWORD` for demo accounts. Updated Task 4 workflow environment variables snippet to include `CUSTOMER_PASSWORD: ci-test-cust-pass-123!` and `PORT: 8080`.
+  2. **Submission Checklist Alignment:** Updated `docs/labs/lab-05/submission-checklist.md` to list `CUSTOMER_PASSWORD` alongside `STAFF_PASSWORD` in the environment variables table and Cloud Run migration job Secret Manager bindings.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `npm --prefix server test -- server/tests/ci.test.ts`).
+- **Outcome:** Complete cross-document consistency for credentials across all specification guides, checklists, and automated test contracts.

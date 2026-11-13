@@ -227,3 +227,10 @@
   - **Resolution:** Added `npx prisma generate` explicitly to `.github/workflows/ci-docker.yml` inside the `Apply database migrations and seed` step before migration and seeding, ensuring the Prisma Client is compiled and ready for seed, typecheck, and server tests.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `npm --prefix server test -- server/tests/ci.test.ts`).
 - **Outcome:** Prisma Client generates deterministically in clean CI environments.
+
+#### 26. CI Environment Seed Credentials Synchronization with Test Suite
+- **Prompt Intent:** Resolve 401 `INVALID_CREDENTIALS` authentication failures during CI execution of `npm run test:server` (`auth.test.ts`, `booking.test.ts`, `views.test.ts`, `conflict.test.ts`):
+  - **Root Cause Analysis:** Sprint 1 test suites hardcoded the expected seeded credentials to password `'Pass1234!'`. In `ci-docker.yml`, setting `STAFF_PASSWORD: ci-test-staff-pass-123!` and `CUSTOMER_PASSWORD: ci-test-cust-pass-123!` caused `seed.ts` to seed users with those passwords, causing all subsequent login requests with `'Pass1234!'` in automated tests to be rejected with HTTP 401.
+  - **Resolution:** Synchronized `STAFF_PASSWORD: Pass1234!` and `CUSTOMER_PASSWORD: Pass1234!` in `.github/workflows/ci-docker.yml` job environment and updated `server/tests/ci.test.ts` contract assertions.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `npm --prefix server test -- server/tests/ci.test.ts`).
+- **Outcome:** Seeded credentials in CI match existing test fixtures, ensuring 100% test pass rate across all server suites.

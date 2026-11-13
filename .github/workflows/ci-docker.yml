@@ -35,8 +35,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/singslot_test?schema=public
-      STAFF_PASSWORD: ci-test-staff-pass-123!
-      CUSTOMER_PASSWORD: ci-test-cust-pass-123!
+      STAFF_PASSWORD: Pass1234!
+      CUSTOMER_PASSWORD: Pass1234!
       JWT_SECRET: ci-test-jwt-secret-for-testing-only-not-production
       PORT: 8080
 

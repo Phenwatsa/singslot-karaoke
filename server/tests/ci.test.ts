@@ -46,8 +46,8 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       const content = fs.readFileSync(workflowPath, 'utf8');
 
       expect(content).toMatch(/DATABASE_URL:\s*postgresql:\/\/postgres:postgres@localhost:5432\/singslot_test\?schema=public/);
-      expect(content).toMatch(/STAFF_PASSWORD:\s*ci-test-staff-pass-123!/);
-      expect(content).toMatch(/CUSTOMER_PASSWORD:\s*ci-test-cust-pass-123!/);
+      expect(content).toMatch(/STAFF_PASSWORD:\s*Pass1234!/);
+      expect(content).toMatch(/CUSTOMER_PASSWORD:\s*Pass1234!/);
       expect(content).toMatch(/JWT_SECRET:\s*ci-test-jwt-secret-for-testing-only-not-production/);
       expect(content).toMatch(/PORT:\s*8080/);
     });

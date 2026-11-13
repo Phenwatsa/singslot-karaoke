@@ -150,6 +150,72 @@ Ran all test suites matching /tests\/docker.test.ts/i.
 
 ### 3.2 Production Container Build & Live Runtime Verification Evidence (C-03)
 
+#### 3.2.0 Clean Clone Lifecycle End-to-End Verification (C-03 / R-01)
+
+Verifies that a clean clone of the repository into an isolated directory builds and runs without any host-specific artifacts or committed secrets.
+
+##### Step 1: Fresh Clone into Isolated Directory
+```bash
+$ git clone https://github.com/Phenwatsa/singslot-karaoke.git fresh-clone
+$ cd fresh-clone
+```
+*Result:* Clean working tree cloned with 0 uncommitted files.
+
+##### Step 2: Install Dependencies from Committed Lockfile
+```bash
+$ npm ci
+```
+*Raw Output:*
+```
+added 558 packages in 3s
+74 packages are looking for funding
+  run `npm fund` for details
+✔ Exited with code 0
+```
+
+##### Step 3: Configure Environment from `.env.example` Templates (Zero Secrets)
+```bash
+$ cp server/.env.example server/.env
+$ cp client/.env.example client/.env
+```
+*Result:* Local environment populated strictly from templates with zero committed secrets.
+
+##### Step 4: Build Container Images and Start Multi-Container Composition
+```bash
+$ docker compose up --build -d
+```
+*Raw Output:*
+```
+[+] Building 67.6s (38/38) FINISHED
+ ✔ Image singslot-app:latest Built                                         67.6s
+ ✔ Network fresh-clone_default Created                                      0.1s
+ ✔ Volume fresh-clone_postgres_data Created                                 0.0s
+ ✔ Container singslot-db Healthy                                            6.1s
+ ✔ Container singslot-migrate Exited (0)                                    8.6s
+ ✔ Container singslot-app Started                                           8.8s
+✔ Exited with code 0
+```
+
+##### Step 5: Verify System Readiness Probe
+```bash
+$ curl -s -i http://localhost:8080/api/ready
+```
+*Raw Output:*
+```
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 35
+ETag: W/"23-D1kNMykUfue7IXX2BZJN51Pj3jg"
+Date: Fri, 13 Nov 2026 03:23:55 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ready","db":"connected"}
+✔ Exited with code 0
+```
+
 #### 3.2.1 Deterministic Container Image Build with Root Lockfile (`npm ci`)
 
 Command executed:

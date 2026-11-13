@@ -45,6 +45,8 @@ grep -q 'secrets delete singslot-database-url ' "$GCLOUD_LOG"
 grep -q 'secrets delete singslot-jwt-secret ' "$GCLOUD_LOG"
 grep -q 'secrets delete singslot-staff-password ' "$GCLOUD_LOG"
 grep -q 'iam service-accounts delete singslot-runner@stub-gcp-project.iam.gserviceaccount.com ' "$GCLOUD_LOG"
+grep -q 'iam service-accounts delete singslot-migrator@stub-gcp-project.iam.gserviceaccount.com ' "$GCLOUD_LOG"
+grep -q 'iam service-accounts delete singslot-deployer@stub-gcp-project.iam.gserviceaccount.com ' "$GCLOUD_LOG"
 echo 'PASS confirmed teardown deletes all provisioned resources'
 
 # 2. Aborted scenario (mismatch input)

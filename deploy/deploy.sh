@@ -72,6 +72,12 @@ SERVICE_NAME="singslot"
 MIGRATE_JOB_NAME="singslot-migrate"
 SA_NAME="singslot-runner"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+RUNNER_SA_NAME="singslot-runner"
+RUNNER_SA_EMAIL="${RUNNER_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+MIGRATOR_SA_NAME="singslot-migrator"
+MIGRATOR_SA_EMAIL="${MIGRATOR_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+DEPLOYER_SA_NAME="singslot-deployer"
+DEPLOYER_SA_EMAIL="${DEPLOYER_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 SQL_CONN_NAME="${PROJECT_ID}:${REGION}:${SQL_INSTANCE}"
 IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:latest"
 
@@ -148,24 +154,33 @@ else
 fi
 
 # ==============================================================================
-# 5. Create Dedicated Runtime Service Account & IAM bindings (idempotent)
+# 5. Create Dedicated Service Accounts & IAM bindings (idempotent, Table 4)
 # ==============================================================================
-if [ "$DRY_RUN" = "1" ]; then
-  run_cmd gcloud iam service-accounts describe "$SA_EMAIL" --project "$PROJECT_ID"
-  run_cmd gcloud iam service-accounts create "$SA_NAME" --display-name="SingSlot Cloud Run Service Account" --project "$PROJECT_ID"
-else
-  if ! gcloud iam service-accounts describe "$SA_EMAIL" --project "$PROJECT_ID" >/dev/null 2>&1; then
-    run_cmd gcloud iam service-accounts create "$SA_NAME" \
-      --display-name="SingSlot Cloud Run Service Account" \
-      --project "$PROJECT_ID"
+for sa_tuple in "${RUNNER_SA_NAME}:SingSlot Cloud Run Runtime Service Account" \
+                "${MIGRATOR_SA_NAME}:SingSlot Migration Job Service Account" \
+                "${DEPLOYER_SA_NAME}:SingSlot GitHub Actions Deployer Service Account"; do
+  sa_n="${sa_tuple%%:*}"
+  sa_d="${sa_tuple#*:}"
+  sa_e="${sa_n}@${PROJECT_ID}.iam.gserviceaccount.com"
+  if [ "$DRY_RUN" = "1" ]; then
+    run_cmd gcloud iam service-accounts describe "$sa_e" --project "$PROJECT_ID"
+    run_cmd gcloud iam service-accounts create "$sa_n" --display-name="$sa_d" --project "$PROJECT_ID"
+  else
+    if ! gcloud iam service-accounts describe "$sa_e" --project "$PROJECT_ID" >/dev/null 2>&1; then
+      run_cmd gcloud iam service-accounts create "$sa_n" \
+        --display-name="$sa_d" \
+        --project "$PROJECT_ID"
+    fi
   fi
-fi
+done
 
-run_cmd gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/cloudsql.client" \
-  --condition=None \
-  --quiet
+for sa_email in "$RUNNER_SA_EMAIL" "$MIGRATOR_SA_EMAIL"; do
+  run_cmd gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${sa_email}" \
+    --role="roles/cloudsql.client" \
+    --condition=None \
+    --quiet
+done
 
 # ==============================================================================
 # 6. Create DB User & Store DATABASE_URL in Secret Manager (idempotent)
@@ -221,12 +236,21 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# Secret access (scoped per secret, never project-wide)
+# Secret access (strictly scoped per secret per Table 4, never project-wide)
+# runner   -> singslot-database-url, singslot-jwt-secret (NO staff password)
+# migrator -> singslot-database-url, singslot-staff-password (NO jwt secret)
 # ------------------------------------------------------------------------------
-RUNTIME_SECRETS=("$SECRET_DB_URL" "$SECRET_JWT_KEY" "$SECRET_STAFF_PASS")
-for secret in "${RUNTIME_SECRETS[@]}"; do
+for secret in "$SECRET_DB_URL" "$SECRET_JWT_KEY"; do
   run_cmd gcloud secrets add-iam-policy-binding "$secret" \
-    --member="serviceAccount:${SA_EMAIL}" \
+    --member="serviceAccount:${RUNNER_SA_EMAIL}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project "$PROJECT_ID" \
+    --quiet
+done
+
+for secret in "$SECRET_DB_URL" "$SECRET_STAFF_PASS"; do
+  run_cmd gcloud secrets add-iam-policy-binding "$secret" \
+    --member="serviceAccount:${MIGRATOR_SA_EMAIL}" \
     --role="roles/secretmanager.secretAccessor" \
     --project "$PROJECT_ID" \
     --quiet
@@ -242,15 +266,15 @@ run_cmd gcloud builds submit \
 # ==============================================================================
 # 10. Create/Update & Execute Cloud Run Job for Migration + Seed
 # ==============================================================================
-JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,JWT_SECRET=${SECRET_JWT_KEY}:latest,STAFF_PASSWORD=${SECRET_STAFF_PASS}:latest"
+JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,STAFF_PASSWORD=${SECRET_STAFF_PASS}:latest"
 
 run_cmd gcloud run jobs deploy "$MIGRATE_JOB_NAME" \
   --image "$IMAGE_URI" \
   --region "$REGION" \
-  --service-account "$SA_EMAIL" \
+  --service-account "$MIGRATOR_SA_EMAIL" \
   --set-cloudsql-instances "$SQL_CONN_NAME" \
   --set-secrets "$JOB_SECRETS" \
-  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \
+  --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok,CUSTOMER_PASSWORD=Customer1234!" \
   --command "sh" \
   --args "-c,npx prisma migrate deploy && npm run prisma:seed" \
   --max-retries 1 \
@@ -277,7 +301,7 @@ run_cmd gcloud run deploy "$SERVICE_NAME" \
   --region "$REGION" \
   --platform managed \
   --allow-unauthenticated \
-  --service-account "$SA_EMAIL" \
+  --service-account "$RUNNER_SA_EMAIL" \
   --add-cloudsql-instances "$SQL_CONN_NAME" \
   --set-secrets "$SERVICE_SECRETS" \
   --set-env-vars "NODE_ENV=production,TZ=Asia/Bangkok" \

@@ -3,6 +3,9 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,6 +107,70 @@ test('Client Layout & UI Component Structural Verification (AC-07)', async (t) =
     assert.match(sessionContent, /\/api\/auth\/me/, 'validateAndRestoreSession must verify session with /api/auth/me');
     assert.match(sessionContent, /removeItem\(STORAGE_KEYS\.TOKEN\)/, 'clearClientSession must purge token from storage');
     assert.match(sessionContent, /removeItem\(STORAGE_KEYS\.USER\)/, 'clearClientSession must purge user from storage');
+
+    // True runtime unit execution via Node 20-safe in-memory transpilation
+    const ts = require('typescript');
+    const jsOutput = ts.transpileModule(sessionContent, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
+    }).outputText;
+    const dataUrl = 'data:text/javascript;base64,' + Buffer.from(jsOutput).toString('base64');
+    const { saveClientSession, clearClientSession, getStoredSession, validateAndRestoreSession, STORAGE_KEYS } = await import(dataUrl);
+
+    const store = new Map();
+    const mockStorage = {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, val) => store.set(key, String(val)),
+      removeItem: (key) => store.delete(key),
+      clear: () => store.clear()
+    };
+
+    const mockUser = {
+      id: 'usr-demo-01',
+      email: 'customer1@singslot.local',
+      fullName: 'Alice Customer',
+      role: 'CUSTOMER'
+    };
+
+    // 1. Runtime save verification
+    saveClientSession('valid-jwt-token', mockUser, mockStorage);
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), 'valid-jwt-token');
+    assert.deepStrictEqual(JSON.parse(mockStorage.getItem(STORAGE_KEYS.USER)), mockUser);
+
+    // 2. Runtime getStoredSession verification
+    const stored = getStoredSession(mockStorage);
+    assert.strictEqual(stored.token, 'valid-jwt-token');
+    assert.deepStrictEqual(stored.user, mockUser);
+
+    // 3. Runtime clearClientSession verification (Logout test)
+    clearClientSession(mockStorage);
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), null, 'singslot_token must be cleared from storage');
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.USER), null, 'singslot_user must be cleared from storage');
+    const afterClear = getStoredSession(mockStorage);
+    assert.strictEqual(afterClear.token, null);
+    assert.strictEqual(afterClear.user, null);
+
+    // 4. Runtime validateAndRestoreSession: Purges expired session on HTTP 401
+    saveClientSession('expired-token', mockUser, mockStorage);
+    const mockFetch401 = async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({ success: false, error: { code: 'UNAUTHENTICATED' } })
+    });
+    const purged = await validateAndRestoreSession(mockStorage, mockFetch401);
+    assert.strictEqual(purged.token, null, 'Expired token must return null');
+    assert.strictEqual(purged.user, null, 'Expired user must return null');
+    assert.strictEqual(mockStorage.getItem(STORAGE_KEYS.TOKEN), null, 'Expired token must be purged from storage');
+
+    // 5. Runtime validateAndRestoreSession: Restores valid session on HTTP 200
+    saveClientSession('active-token', mockUser, mockStorage);
+    const mockFetch200 = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, user: mockUser })
+    });
+    const restored = await validateAndRestoreSession(mockStorage, mockFetch200);
+    assert.strictEqual(restored.token, 'active-token');
+    assert.deepStrictEqual(restored.user, mockUser);
   });
 
   await t.test('RoomCatalog and AvailabilityMatrix conform to Issue #3 contracts (F-02, F-03)', () => {

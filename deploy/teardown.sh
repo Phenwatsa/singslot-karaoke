@@ -52,6 +52,9 @@ SERVICE_NAME="singslot"
 MIGRATE_JOB_NAME="singslot-migrate"
 SA_NAME="singslot-runner"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+RUNNER_SA_EMAIL="singslot-runner@${PROJECT_ID}.iam.gserviceaccount.com"
+MIGRATOR_SA_EMAIL="singslot-migrator@${PROJECT_ID}.iam.gserviceaccount.com"
+DEPLOYER_SA_EMAIL="singslot-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
 
 SECRET_DB_URL="singslot-database-url"
 SECRET_JWT_KEY="singslot-jwt-secret"
@@ -67,7 +70,7 @@ echo "  - Cloud Run Job     : ${MIGRATE_JOB_NAME}"
 echo "  - Cloud SQL Instance: ${SQL_INSTANCE} (ALL DATABASE DATA WILL BE LOST)"
 echo "  - Artifact Registry : ${REPO_NAME}"
 echo "  - Secrets           : ${SECRET_DB_URL}, ${SECRET_JWT_KEY}, ${SECRET_STAFF_PASS}"
-echo "  - Service Account   : ${SA_EMAIL}"
+echo "  - Service Accounts  : ${RUNNER_SA_EMAIL}, ${MIGRATOR_SA_EMAIL}, ${DEPLOYER_SA_EMAIL}"
 echo "=================================================================="
 
 # ------------------------------------------------------------------------------
@@ -91,7 +94,9 @@ run_cmd gcloud artifacts repositories delete "$REPO_NAME" --location "$REGION" -
 run_cmd gcloud secrets delete "$SECRET_DB_URL" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud secrets delete "$SECRET_JWT_KEY" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud secrets delete "$SECRET_STAFF_PASS" --project "$PROJECT_ID" --quiet || true
-run_cmd gcloud iam service-accounts delete "$SA_EMAIL" --project "$PROJECT_ID" --quiet || true
+run_cmd gcloud iam service-accounts delete "$RUNNER_SA_EMAIL" --project "$PROJECT_ID" --quiet || true
+run_cmd gcloud iam service-accounts delete "$MIGRATOR_SA_EMAIL" --project "$PROJECT_ID" --quiet || true
+run_cmd gcloud iam service-accounts delete "$DEPLOYER_SA_EMAIL" --project "$PROJECT_ID" --quiet || true
 
 echo "Teardown completed."
 

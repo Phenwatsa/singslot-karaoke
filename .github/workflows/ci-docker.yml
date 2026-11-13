@@ -28,15 +28,15 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
+          --health-cmd "pg_isready -U postgres -d singslot_test"
+          --health-interval 10s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 5
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/singslot_test?schema=public
-      STAFF_PASSWORD: Pass1234!
-      CUSTOMER_PASSWORD: Pass1234!
+      STAFF_PASSWORD: ci-test-staff-pass-123!
+      CUSTOMER_PASSWORD: ci-test-cust-pass-123!
       JWT_SECRET: ci-test-jwt-secret-for-testing-only-not-production
       PORT: 8080
 

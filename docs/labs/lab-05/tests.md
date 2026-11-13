@@ -453,8 +453,8 @@ PASS mismatched confirmation aborts without executing deletion
 PASS dry run makes no gcloud calls
 
 $ python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
-Ran 5 tests in 0.005s
-OK (All 5 offline smoke test scenarios passed with 100% mocked network calls)
+Ran 11 tests in 0.043s
+OK (All 11 offline smoke test scenarios passed with 100% mocked urllib.request.urlopen calls covering HTTP 200, 404, 500, timeouts, connection errors, and auth flows)
 ```
 
 #### 4.1.2 CI Workflow & Deployment Tooling Contract Test Suite
@@ -493,14 +493,56 @@ Snapshots:   0 total
 Time:        1.183 s
 ```
 
-#### 4.1.3 Monorepo Typecheck, Client Tests & Production Build
+#### 4.1.3 Local Database Migration, Idempotent Seed & Full Server Regression Suite
+Explicit local test execution against local PostgreSQL instance verifying migration apply, seed idempotency, and 100% passing server test suite:
+
+```bash
+$ cd server && npx prisma migrate deploy && npm run prisma:seed && cd .. && npm run test:server
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "singslot_dev", schema "public" at "localhost:5432"
+
+1 migration found in prisma/migrations
+No pending migrations to apply.
+
+> singslot-server@1.0.0 prisma:seed
+> ts-node --transpile-only prisma/seed.ts
+
+🌱 Starting SingSlot database seeding (Idempotent)...
+✅ Seeded/Verified 3 demo users (1 Staff, 2 Customers).
+✅ Seeded/Verified 9 karaoke rooms (3 Small, 3 Medium, 3 Large).
+🎉 Idempotent seeding completed successfully!
+
+> singslot-karaoke@1.0.0 test:server
+> npm --prefix server test
+
+> singslot-server@1.0.0 test
+> jest --runInBand --detectOpenHandles --forceExit
+
+PASS tests/booking.test.ts
+PASS tests/views.test.ts
+PASS tests/auth.test.ts
+PASS tests/conflict.test.ts
+PASS tests/baseline.test.ts
+PASS tests/ready.test.ts
+PASS tests/docker.test.ts
+PASS tests/ci.test.ts
+
+Test Suites: 9 passed, 9 total
+Tests:       100 passed, 100 total
+Snapshots:   0 total
+Time:        19.76 s
+Ran all test suites.
+```
+
+#### 4.1.4 Monorepo Typecheck, Client Tests & Production Build
 ```bash
 $ npm run typecheck
 ✔ server: tsc --noEmit (0 diagnostics)
 ✔ client: tsc --noEmit (0 diagnostics)
 
 $ npm run test:client
-✔ Client Layout & UI Component Structural Verification (AC-07) (12 passed)
+✔ Client Layout & UI Component Structural Verification (AC-07) (12 passed, 0 failed, 100% runtime assertions on Node 20)
 
 $ npm run build
 ✔ server: tsc (dist/ compiled)

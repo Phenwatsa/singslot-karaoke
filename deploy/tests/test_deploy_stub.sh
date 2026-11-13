@@ -111,9 +111,20 @@ for MODE in first_run rerun partial job-fail; do
   if grep -q '^projects add-iam-policy-binding .*roles/secretmanager.secretAccessor' "$GCLOUD_LOG"; then
     echo 'FAIL: runtime has project-wide secret access'; exit 1
   fi
-  for secret in singslot-database-url singslot-jwt-secret singslot-staff-password; do
-    grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
-  done
+  grep -q "^secrets add-iam-policy-binding singslot-database-url .*singslot-runner@stub-gcp-project" "$GCLOUD_LOG"
+  grep -q "^secrets add-iam-policy-binding singslot-jwt-secret .*singslot-runner@stub-gcp-project" "$GCLOUD_LOG"
+  if grep -q "^secrets add-iam-policy-binding singslot-staff-password .*singslot-runner@stub-gcp-project" "$GCLOUD_LOG"; then
+    echo 'FAIL: singslot-runner leaked access to staff password'; exit 1
+  fi
+  grep -q "^secrets add-iam-policy-binding singslot-database-url .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"
+  grep -q "^secrets add-iam-policy-binding singslot-staff-password .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"
+  if grep -q "^secrets add-iam-policy-binding singslot-jwt-secret .*singslot-migrator@stub-gcp-project" "$GCLOUD_LOG"; then
+    echo 'FAIL: singslot-migrator leaked access to jwt secret'; exit 1
+  fi
+  grep -q '^run jobs deploy .*--service-account singslot-migrator@stub-gcp-project' "$GCLOUD_LOG"
+  if [ "$MODE" != job-fail ]; then
+    grep -q '^run deploy .*--service-account singslot-runner@stub-gcp-project' "$GCLOUD_LOG"
+  fi
   case "$MODE" in
     first_run)
       grep -q -- '--edition=enterprise' "$GCLOUD_LOG"

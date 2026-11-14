@@ -283,3 +283,42 @@
   3. Validated monorepo integrity (offline stubs, unit tests, contract tests, build).
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
 - **Outcome:** Peer review audit trail fully synchronized and ready for PR merge into `sprint-1-staging`.
+
+#### 33. Task 5 Peer Review Sign-off & Audit Trail Documentation
+- **Prompt Intent:** Record Peer Reviewer @lephirada's official approval of Task 5 (Issue #18: First GCP Deployment) submitted by @Phenwatsa in `docs/labs/lab-05/reviewer.md`:
+  1. Updated Section 2 summary table marking Task 5 as `Approved` and verdict `Verified`.
+  2. Recorded full live deployment verification notes under Section 3 (Task 5), including public Cloud Run URL (`https://singslot-4o7kwmd5ma-as.a.run.app`), health/readiness/rooms API checks, Cloud SQL PostgreSQL configuration (`storageAutoResize: False`), Cloud Run configuration (`singslot-runner`), Secret Manager 4 secrets, migration job success (`singslot-migrate-rnkzb`), end-to-end booking flow (`BK-20261113-IA4Q`), business rule conflict rejection, and 9 verification screenshots.
+  3. Formulated and recorded official sign-off response by @lephirada.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
+- **Outcome:** Task 5 peer review successfully verified and closed; unlocked prerequisites for Task 6 Workload Identity Federation and branch protection verification.
+
+#### 34. Task 6 Workload Identity Federation & Branch Protection Gate Verification (C-02, R-06)
+- **Prompt Intent:** Execute and document Task 6 (Issue #19: WIF Setup & Branch Protection Verification) on GCP and GitHub:
+  1. Resolved and validated GCP Project ID `cpe334-singslot-en-038-p1` and Project Number `103485327421`. Enabled required API `sts.googleapis.com` alongside existing IAM APIs.
+  2. Created Workload Identity Pool `github-actions` and Provider `github-main` with OIDC issuer `https://token.actions.githubusercontent.com` and repository/branch/workflow attribute conditions.
+  3. Bound IAM roles `roles/run.developer`, `roles/artifactregistry.writer`, and `roles/iam.workloadIdentityUser` to `singslot-deployer`. Bound Phase 6B `roles/iam.serviceAccountUser` delegation to `singslot-runner` and `singslot-migrator`. Verified zero user-managed private keys (keyless security).
+  4. Configured GitHub Environment `demo` with 4 required variables restricted to `main`. Configured GitHub Ruleset `protect-main` enforcing 1 approval, required status check `test-and-docker`, and up-to-date branch with empty bypass list.
+  5. Proved quality gate enforcement (Requirement C-02): Created temporary branch `test/prove-gate` from `main` with intentional assertion failure in `server/tests/ready.test.ts`. Opened PR #26 targeting `main`. Verified required status check `CI & Docker Build / test-and-docker` failed (red ❌). Reviewer @Phenwatsa approved with exact comment `C-02 verification: PASS.`. Confirmed merge button was visibly blocked by ruleset. Closed PR #26 and deleted branch with zero impact on released code on `main`.
+  6. Updated `docs/labs/lab-05/reviewer.md` and `docs/labs/lab-05/tests.md` audit trail.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
+- **Outcome:** Keyless GitHub-to-GCP authentication established, branch protection gate verified with live blocked PR evidence (C-02, R-06), and Task 6 successfully signed off.
+
+#### 35. Task 7 Automatic Deployment Pipeline Implementation (R-07, R-08, C-06)
+- **Prompt Intent:** Implement and verify Task 7 (Issue #20: Automatic Deployment Pipeline) for automated continuous deployment to Google Cloud Run upon merge to `main`:
+  1. Created GitHub Actions workflow `.github/workflows/deploy.yml` with exact workflow name `Deploy demo`, concurrency `deploy-demo`, and environment `demo`.
+  2. Implemented keyless WIF authentication via `google-github-actions/auth@v2` using repository/environment variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, and `WIF_SERVICE_ACCOUNT`.
+  3. Integrated CI quality gate re-use (`./.github/workflows/ci-docker.yml`), commit SHA validation, Docker image build & push to Artifact Registry, immutable digest resolution, Prisma migration gate (`singslot-migrate`), Cloud Run service revision deployment (`singslot`) with 100% traffic shift, automated smoke test, and step summary generation.
+  4. Enhanced `deploy/smoke_test.py` to seamlessly validate SingSlot API responses (`/api/health` status UP and `/api/rooms` count) across both local unit mock tests and live Cloud Run deployments.
+  5. Author contract unit tests in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
+- **Tools Used:** `write_file`, `edit_file`, `run_command` (`jest`, `npm run typecheck`, `bash deploy/tests/...`).
+- **Outcome:** Production CD workflow authored and validated with 100% test pass rate across all suites. Ready for Feature PR into `sprint-1-staging`.
+
+#### 36. PR #27 Peer Review Quality Audit Resolution (Rollback Safety, Smoke Test & Digest Validation)
+- **Prompt Intent:** Resolve Peer Reviewer @lephirada's findings on PR #27 (`feat/lab5-auto-deploy` -> `sprint-1-staging`):
+  1. **[P1] Manual Rollback Triggering Migration:** In `.github/workflows/deploy.yml`, step `Execute rollback or roll-forward` called `deploy/release.sh` without `ROLLBACK='true'`. Because `release.sh` defaulted `ROLLBACK` to `false`, it would execute the migration job during rollback, violating the rule that historical images must not touch database migrations. **Resolution:** Explicitly injected `ROLLBACK: 'true'` into the step environment.
+  2. **[P2] Release Summary Smoke Test Claim:** In `.github/workflows/deploy.yml`, `Execute Automated Smoke Tests` was conditional on `if: inputs.image_tag == ''`, but `Generate Release Summary` unconditionally reported `Smoke Tests: Passed`. **Resolution:** Removed the conditional filter so that both automated releases and manual rollbacks execute live smoke tests (`python3 deploy/smoke_test.py "$SERVICE_URL"`) before declaring success.
+  3. **[P2] Strict SHA-256 Digest Validation in Release Script:** In `deploy/release.sh`, digest validation previously used a loose prefix match `...singslot@sha256:*`. **Resolution:** Enforced strict regex pattern `if [[ ! "$DIGEST_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]` requiring exactly 64 hexadecimal characters.
+  4. **Release Summary Commit SHA Accuracy:** Exported `DEPLOYED_COMMIT_SHA="$IMAGE_TAG"` in both `deploy/release.sh` and `deploy.yml`, consuming `${DEPLOYED_COMMIT_SHA:-${{ inputs.image_tag || github.sha }}}` in `Generate Release Summary`.
+  5. **Regression Verification:** Updated `deploy/tests/test_release_stub.sh` with 64-char digest stub and malformed digest rejection test. Updated `server/tests/ci.test.ts` asserting `ROLLBACK: 'true'`, strict digest regex, and smoke test integration (17/17 passing). Monorepo typecheck passed cleanly with 0 errors.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_release_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`).
+- **Outcome:** 100% test pass rate, database safety on rollback guaranteed, live verification across all release paths, and full audit trail compliance. Ready for peer review re-review and approval.

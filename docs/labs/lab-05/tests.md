@@ -23,10 +23,10 @@
 | **R-02 / Task 2** | Checklist 6: Single-Flight Coalescing | `server/src/app.ts` | Concurrent probe deduplication test (shared in-flight driver query) | **PASS** |
 | **R-02 / Task 2** | Checklist 6: Zero Query Accumulation | `server/src/app.ts` | Repeated probe timeouts while database is pending guarantee exactly 1 query launched | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
-| **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | *Pending Task 3* |
+| **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | **PASS** |
 | **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR (PR #24 bootstrap & PR targeting `main`) | **Bootstrap CI: PASS; Post-Bootstrap C-01: Pending** |
-| **C-02 / R-06 (Task 6)** | Blocked Merge on Failed Check | Branch ruleset `protect-main` | Temporary failing PR `test/prove-gate` showing blocked merge | *Pending Task 6* |
-| **C-04 / R-03 (Task 5, 6)** | End-to-End Cloud Run Workflow | Public Cloud Run URL | Login, room selection, slot booking, business rule rejection | *Pending Task 5/6* |
+| **C-02 / R-06 (Task 6)** | Blocked Merge on Failed Check | Branch ruleset `protect-main` | Temporary failing PR `test/prove-gate` showing blocked merge | **PASS** |
+| **C-04 / R-03 (Task 5, 6)** | End-to-End Cloud Run Workflow | Public Cloud Run URL | Login, room selection, slot booking, business rule rejection | **PASS** |
 | **C-05 / R-04 (Task 8)** | Data Persistence on Restart | Cloud Run & Cloud SQL | Scale-to-zero restart & redeploy with booking intact | *Pending Task 8* |
 | **C-06 / R-07 (Task 7)** | Repeatable Automated Release | `.github/workflows/deploy.yml` | UI string update PR to `main` auto-deploys revision 2 | *Pending Task 7* |
 
@@ -559,23 +559,29 @@ $ npm run build
 ---
 
 ## 5. Task 6 Verification Evidence: Blocked Merge Proof (C-02 / R-06)
-<!-- To be populated during Task 6 execution -->
 
-- **Branch:** `test/prove-gate`
-- **PR Link:** 
-- **Failed Status Check:** `test-and-docker`
-- **Merge Button State:** Blocked (Screenshot referenced in Submission Checklist)
+- **Branch:** `test/prove-gate` (branched from `main` at `e598e21`)
+- **PR Link:** [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`test/prove-gate` → `main`)
+- **Failed Status Check:** `CI & Docker Build / test-and-docker` (Status: ❌ Failed)
+- **Peer Review Approval:** @Phenwatsa approved with comment: `C-02 verification: PASS.`
+- **Merge Button State:** Visibly BLOCKED by GitHub Ruleset `protect-main` (Button disabled in grey with explicit message: *Required checks failing* / *Merging is blocked*)
+- **Evidence Screenshot:** `C02-gate-blocked.png` (capturing failed check, approved review status, and disabled merge button)
+- **Teardown:** PR #26 closed without merge, and branch `test/prove-gate` deleted with zero impact on `main`.
+- **Verdict:** **PASS (Requirement C-02 / R-06 satisfied)**
 
 ---
 
 ## 6. Task 5/6 Verification Evidence: Live Cloud Run Workflow (C-04 / R-03)
-<!-- To be populated during Task 5/6 execution -->
 
-- **Public URL:** 
-- **Active Commit SHA:** 
-- **Login Verification:**
-- **Booking Creation Verification:**
-- **Business Rule Rejection Verification:**
+- **Public URL:** `https://singslot-4o7kwmd5ma-as.a.run.app`
+- **Active Commit SHA:** `e598e21` (Release PR #25)
+- **Cloud Run Revision:** `singslot-00001-r8c` (100% traffic, Service Account: `singslot-runner`)
+- **Cloud SQL Instance:** `singslot-pg` (`db-f1-micro`, 10 GB SSD, `storageAutoResize: False`)
+- **Migration Job:** `singslot-migrate-rnkzb` (exit code 0, Service Account: `singslot-migrator`)
+- **Login Verification:** Verified with demo customer `customer1@singslot.local` (Alice Customer) via stateless signed JWT.
+- **Booking Creation Verification:** Verified Suite L01 reservation for `2026-11-13` `21:00 - 24:00` (Booking code: `BK-20261113-IA4Q`).
+- **Business Rule Rejection Verification:** Verified duplicate booking attempt rejected with error: *"One or more requested slots are already occupied."*
+- **Verdict:** **PASS (Requirement C-04 / R-03 satisfied)**
 
 ---
 

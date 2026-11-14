@@ -25,9 +25,9 @@
 | **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22)                      | Approved | Verified |
 | **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23)                      | Approved | Verified |
 | **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | [PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24) (`sprint-1-staging`) | Approved | Verified |
-| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue)                                                               | Backlog  | Pending  |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                                               | Backlog  | Pending  |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                                          | Backlog  | Pending  |
+| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue #18)                                           | Approved | Verified |
+| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`) | Approved | Verified |
+| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`sprint-1-staging`) | Approved | Verified |
 | **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                                               | Backlog  | Pending  |
 | **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                                                    | Backlog  | Pending  |
 
@@ -216,47 +216,147 @@
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
 - **Verification Channel:** Cloud Shell / GCP Console
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Developer (@Phenwatsa):**
+
+  ## 🚀 Task 5 Handover & Live Verification Evidence (C-04, R-03, R-04)
+
+  **Assignee:** @Phenwatsa  
+  **Reviewer:** @lephirada  
+  **Execution Environment:** Google Cloud Shell cloning `main` (`e598e21`)  
+  **Deployment Date:** 2026-11-13  
+
+  ---
+
+  ### 🌐 Live Service & Endpoint Verification
+  - **Public Service URL (R-03):** https://singslot-4o7kwmd5ma-as.a.run.app
+  - **Readiness Check (`/api/ready`):** `HTTP 200 OK` `{"status":"ready","db":"connected"}` (Unix socket connection verified)
+  - **Health Check (`/api/health`):** `HTTP 200 OK` `{"success":true,"data":{"status":"UP","service":"SingSlot API"}}`
+  - **Room Fleet (`/api/rooms`):** `HTTP 200 OK` (9 seeded suites active: S01–S03, M01–M03, L01–L03)
+  - **Frontend SPA:** Live React Vite bundle serving with 100% functionality.
+
+  ---
+
+  ### ☁️ Infrastructure & Security Architecture
+  1. **Cloud SQL PostgreSQL 16 (`singslot-pg`):**
+     - Tier: `db-f1-micro` (cost governance compliant)
+     - Storage: 10 GB SSD with `--no-storage-auto-increase` (`storageAutoResize: False`)
+     - Region: `asia-southeast1-c`
+     - Connection Name: `cpe334-singslot-en-038-p1:asia-southeast1:singslot-pg`
+  2. **Cloud Run Service (`singslot`):**
+     - Revision: `singslot-00001-r8c` (100% traffic)
+     - Configuration: Min instances = 0, Max instances = 3, Memory = 512 MiB, Port = 8080
+     - Runtime Service Account: `singslot-runner` (Secret Accessor strictly on `database-url` and `jwt-secret`)
+  3. **Secret Manager (Zero Secrets Leaked):**
+     - Managed Secrets: `singslot-database-url`, `singslot-jwt-secret`, `singslot-staff-password`, `singslot-customer-password`
+  4. **Prisma Migration Job (`singslot-migrate`):**
+     - Execution `singslot-migrate-rnkzb` successfully completed with exit code 0.
+     - Migration `20261105000000_init` applied and demo database seeded.
+
+  ---
+
+  ### 🧪 End-to-End User Flow & Business Rule Verification (C-04)
+  1. **User Authentication:** Logged in as demo customer `customer1@singslot.local` (Alice Customer) via stateless signed JWT.
+  2. **Booking Creation:** Reserved Suite **L01 (LARGE)** on `2026-11-13` for `21:00 - 24:00` (3 hours). Confirmed with reference code **`BK-20261113-IA4Q`**.
+  3. **Business Rule Rejection:** Attempted duplicate booking on room L01 for same time slot; server rejected with error: *"One or more requested slots are already occupied."*
+
+  ---
+
+  ### 📸 Verification Screenshots
+  <img width="1294" height="903" alt="Cloud SQL Configuration" src="https://github.com/user-attachments/assets/7cddd10b-8679-42d2-826f-0292ca9b1360" />
+  <img width="1294" height="903" alt="Cloud Run Service settings" src="https://github.com/user-attachments/assets/dc0a6f78-ac8e-4de9-8982-4a9469688d87" />
+  <img width="1294" height="903" alt="Secret Manager secrets list" src="https://github.com/user-attachments/assets/824dd6c0-5179-48b0-ba90-087db63658f6" />
+  <img width="1294" height="903" alt="Public catalog on live URL" src="https://github.com/user-attachments/assets/98888184-c4ea-4abf-a16b-acd120e74e1b" />
+  <img width="1294" height="903" alt="Login modal on live URL" src="https://github.com/user-attachments/assets/7a67ed6d-0fd5-4001-af3e-69305a881c42" />
+  <img width="1294" height="903" alt="Authenticated customer banner" src="https://github.com/user-attachments/assets/32c1c5af-4df1-499f-8719-4b23867016ef" />
+  <img width="1294" height="903" alt="Confirmed booking modal" src="https://github.com/user-attachments/assets/5c97a737-d126-4662-913b-daad5ac78749" />
+  <img width="1294" height="903" alt="Reservation detail modal" src="https://github.com/user-attachments/assets/f5ce71eb-9a0f-41f0-a83a-5377fea29c8f" />
+  <img width="1294" height="903" alt="Business rule rejection error alert" src="https://github.com/user-attachments/assets/0217d885-1d91-4f59-9fcb-815c031fa098" />
+
+  Ready for review and sign-off by @lephirada.
+
+- **Reviewer (@lephirada):**
+  Reviewed the deployment evidence for Task 5.
+
+  All 9 evidence screenshots are provided, covering Secret Manager, Cloud Run, Cloud SQL, successful deployment and migration, and the end-to-end booking flows.
+
+  The evidence is complete, including successful booking confirmation and rejection of overlapping bookings.
+
+  Approved. No further changes required.
+
+- **Outcome:** Issue #18 signed off and approved. Ready to proceed with Task 6 WIF setup and branch protection verification.
 
 ---
 
 ### 📌 Task 6: WIF Setup & Branch Protection Verification
 
 - **GitHub Issue:** [Issue #19](https://github.com/Phenwatsa/singslot-karaoke/issues/19)
-- **PR Link (`test/prove-gate` - Blocked Merge Proof):**
+- **PR Link (`test/prove-gate` - Blocked Merge Proof):** [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26)
 - **Source Branch:** `test/prove-gate`
 - **Target Branch:** `main`
 - **Primary Owner:** @lephirada
 - **Reviewer:** @Phenwatsa
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Verification Evidence (PR #26):**
+  - Temporary PR [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) was opened from `test/prove-gate` targeting `main` with an intentional test failure in `server/tests/ready.test.ts` to prove branch protection gate enforcement.
+  - Required status check `CI & Docker Build / test-and-docker` failed.
+  - Reviewer @Phenwatsa submitted review approval with comment:
+    > `C-02 verification: PASS.`
+  - The merge button was visibly blocked by GitHub Ruleset `protect-main` due to the failed required status check, satisfying Requirement C-02.
+  - PR #26 was closed without merging, and branch `test/prove-gate` was deleted.
+
+- **Outcome:** Task 6 verified and approved. Requirement C-02 satisfied. Ruleset `protect-main` and WIF setup verified. Ready to proceed to Task 7.
 
 ---
 
 ### 📌 Task 7: Automatic Deployment Pipeline
 
 - **GitHub Issue:** [Issue #20](https://github.com/Phenwatsa/singslot-karaoke/issues/20)
-- **PR Link (Pipeline):**
-- **PR Link (Repeatable Release Proof - Task 7b):**
+- **PR Link (Pipeline):** [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27)
+- **PR Link (Repeatable Release Proof - Task 7b):** Pending Release PR into `main`
 - **Source Branch:** `feat/lab5-auto-deploy`
 - **Target Branch:** `sprint-1-staging` → `main`
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Developer Submission Summary (@Phenwatsa):**
+  - Created `.github/workflows/deploy.yml` with exact workflow name `Deploy demo` to automate CD to Google Cloud Run upon merge to `main`.
+  - Configured keyless WIF authentication via `google-github-actions/auth@v2` consuming GitHub repository/environment variables (`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) under environment `demo`.
+  - Configured pipeline order:
+    1. Reusable CI test gate via `./.github/workflows/ci-docker.yml` (`test-and-docker`).
+    2. Commit SHA validation (40-char lowercase hex).
+    3. Docker image build & push to Artifact Registry tagged with commit SHA.
+    4. Immutable image digest resolution (`@sha256:...`) and strict digest validation (`@sha256:[0-9a-f]{64}`).
+    5. Database migration gate: updates `singslot-migrate` job image and executes with `--wait`. If migration fails, deployment terminates immediately before Cloud Run service update.
+    6. Cloud Run service update: updates `singslot` revision directly with immutable digest and shifts 100% traffic.
+    7. Automated read-only smoke tests: queries live service URL and executes `python3 deploy/smoke_test.py "$SERVICE_URL"` across both automated deployments and manual rollbacks.
+    8. GitHub Step Summary outputting target commit SHA, immutable digest, revision name, and public URL.
+  - Enhanced `deploy/smoke_test.py` to seamlessly validate SingSlot API responses (`/api/health` status UP and `/api/rooms` count) across both local unit mock tests and live Cloud Run deployments.
+  - Added test contract in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
+  - Rollback safety: Ensured `ROLLBACK: 'true'` is injected during manual rollback to prevent execution of database migration and seeding from historical images.
+  - All tests passing: 17/17 server CI tests, 11/11 offline smoke tests, 5/5 deploy stubs, 5/5 release stubs, 3/3 teardown stubs, and TypeScript typecheck (0 errors).
+  - Ready for Peer Review from @lephirada on PR #27.
+
+- **Reviewer (@lephirada):**
+  Reviewed the latest updates. All raised issues have been addressed, and the latest CI check passed. The deployment workflow now meets the Task 7 requirements. No further blocking concerns. Approved!
+
+- **Developer Response (@Phenwatsa):**
+  Thank you for the review and approval! I have recorded the peer review audit notes in `docs/labs/lab-05/reviewer.md`. Merging PR #27 into `sprint-1-staging` now! 🚀
+
+- **Status:** Approved
+- **Outcome:** PR #27 approved and ready for merge into `sprint-1-staging`. Unlocks creation of Release PR into `main` for automated continuous deployment and repeatability verification (Task 7b / C-06).
 
 ---
 

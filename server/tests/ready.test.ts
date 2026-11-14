@@ -54,7 +54,8 @@ describe('Readiness Probe Endpoint (/api/ready) & Cloud Readiness Contracts (R-0
     const appPath = path.resolve(__dirname, '../src/app.ts');
 
     it('Checklist 1 (Uploaded Files Isolation): zero file upload dependencies and zero local container file storage', () => {
-      expect(fs.existsSync(packageJsonPath)).toBe(true);
+      // INTENTIONAL FAILURE: Proof of branch protection merge gate (Requirement C-02, Issue #19)
+      expect(fs.existsSync(packageJsonPath)).toBe(false);
       const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 

@@ -27,7 +27,7 @@
 | **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | [PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24) (`sprint-1-staging`) | Approved | Verified |
 | **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue #18)                                           | Approved | Verified |
 | **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`) | Approved | Verified |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                                          | Backlog  | Pending  |
+| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`sprint-1-staging`) | Approved | Verified |
 | **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                                               | Backlog  | Pending  |
 | **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                                                    | Backlog  | Pending  |
 
@@ -320,18 +320,43 @@
 ### 📌 Task 7: Automatic Deployment Pipeline
 
 - **GitHub Issue:** [Issue #20](https://github.com/Phenwatsa/singslot-karaoke/issues/20)
-- **PR Link (Pipeline):**
-- **PR Link (Repeatable Release Proof - Task 7b):**
+- **PR Link (Pipeline):** [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27)
+- **PR Link (Repeatable Release Proof - Task 7b):** Pending Release PR into `main`
 - **Source Branch:** `feat/lab5-auto-deploy`
 - **Target Branch:** `sprint-1-staging` → `main`
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Developer Submission Summary (@Phenwatsa):**
+  - Created `.github/workflows/deploy.yml` with exact workflow name `Deploy demo` to automate CD to Google Cloud Run upon merge to `main`.
+  - Configured keyless WIF authentication via `google-github-actions/auth@v2` consuming GitHub repository/environment variables (`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`) under environment `demo`.
+  - Configured pipeline order:
+    1. Reusable CI test gate via `./.github/workflows/ci-docker.yml` (`test-and-docker`).
+    2. Commit SHA validation (40-char lowercase hex).
+    3. Docker image build & push to Artifact Registry tagged with commit SHA.
+    4. Immutable image digest resolution (`@sha256:...`) and strict digest validation (`@sha256:[0-9a-f]{64}`).
+    5. Database migration gate: updates `singslot-migrate` job image and executes with `--wait`. If migration fails, deployment terminates immediately before Cloud Run service update.
+    6. Cloud Run service update: updates `singslot` revision directly with immutable digest and shifts 100% traffic.
+    7. Automated read-only smoke tests: queries live service URL and executes `python3 deploy/smoke_test.py "$SERVICE_URL"` across both automated deployments and manual rollbacks.
+    8. GitHub Step Summary outputting target commit SHA, immutable digest, revision name, and public URL.
+  - Enhanced `deploy/smoke_test.py` to seamlessly validate SingSlot API responses (`/api/health` status UP and `/api/rooms` count) across both local unit mock tests and live Cloud Run deployments.
+  - Added test contract in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
+  - Rollback safety: Ensured `ROLLBACK: 'true'` is injected during manual rollback to prevent execution of database migration and seeding from historical images.
+  - All tests passing: 17/17 server CI tests, 11/11 offline smoke tests, 5/5 deploy stubs, 5/5 release stubs, 3/3 teardown stubs, and TypeScript typecheck (0 errors).
+  - Ready for Peer Review from @lephirada on PR #27.
+
+- **Reviewer (@lephirada):**
+  Reviewed the latest updates. All raised issues have been addressed, and the latest CI check passed. The deployment workflow now meets the Task 7 requirements. No further blocking concerns. Approved!
+
+- **Developer Response (@Phenwatsa):**
+  Thank you for the review and approval! I have recorded the peer review audit notes in `docs/labs/lab-05/reviewer.md`. Merging PR #27 into `sprint-1-staging` now! 🚀
+
+- **Status:** Approved
+- **Outcome:** PR #27 approved and ready for merge into `sprint-1-staging`. Unlocks creation of Release PR into `main` for automated continuous deployment and repeatability verification (Task 7b / C-06).
 
 ---
 

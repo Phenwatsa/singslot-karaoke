@@ -302,3 +302,23 @@
   6. Updated `docs/labs/lab-05/reviewer.md` and `docs/labs/lab-05/tests.md` audit trail.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
 - **Outcome:** Keyless GitHub-to-GCP authentication established, branch protection gate verified with live blocked PR evidence (C-02, R-06), and Task 6 successfully signed off.
+
+#### 35. Task 7 Automatic Deployment Pipeline Implementation (R-07, R-08, C-06)
+- **Prompt Intent:** Implement and verify Task 7 (Issue #20: Automatic Deployment Pipeline) for automated continuous deployment to Google Cloud Run upon merge to `main`:
+  1. Created GitHub Actions workflow `.github/workflows/deploy.yml` with exact workflow name `Deploy demo`, concurrency `deploy-demo`, and environment `demo`.
+  2. Implemented keyless WIF authentication via `google-github-actions/auth@v2` using repository/environment variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, and `WIF_SERVICE_ACCOUNT`.
+  3. Integrated CI quality gate re-use (`./.github/workflows/ci-docker.yml`), commit SHA validation, Docker image build & push to Artifact Registry, immutable digest resolution, Prisma migration gate (`singslot-migrate`), Cloud Run service revision deployment (`singslot`) with 100% traffic shift, automated smoke test, and step summary generation.
+  4. Enhanced `deploy/smoke_test.py` to seamlessly validate SingSlot API responses (`/api/health` status UP and `/api/rooms` count) across both local unit mock tests and live Cloud Run deployments.
+  5. Author contract unit tests in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
+- **Tools Used:** `write_file`, `edit_file`, `run_command` (`jest`, `npm run typecheck`, `bash deploy/tests/...`).
+- **Outcome:** Production CD workflow authored and validated with 100% test pass rate across all suites. Ready for Feature PR into `sprint-1-staging`.
+
+#### 36. PR #27 Peer Review Quality Audit Resolution (Rollback Safety, Smoke Test & Digest Validation)
+- **Prompt Intent:** Resolve Peer Reviewer @lephirada's findings on PR #27 (`feat/lab5-auto-deploy` -> `sprint-1-staging`):
+  1. **[P1] Manual Rollback Triggering Migration:** In `.github/workflows/deploy.yml`, step `Execute rollback or roll-forward` called `deploy/release.sh` without `ROLLBACK='true'`. Because `release.sh` defaulted `ROLLBACK` to `false`, it would execute the migration job during rollback, violating the rule that historical images must not touch database migrations. **Resolution:** Explicitly injected `ROLLBACK: 'true'` into the step environment.
+  2. **[P2] Release Summary Smoke Test Claim:** In `.github/workflows/deploy.yml`, `Execute Automated Smoke Tests` was conditional on `if: inputs.image_tag == ''`, but `Generate Release Summary` unconditionally reported `Smoke Tests: Passed`. **Resolution:** Removed the conditional filter so that both automated releases and manual rollbacks execute live smoke tests (`python3 deploy/smoke_test.py "$SERVICE_URL"`) before declaring success.
+  3. **[P2] Strict SHA-256 Digest Validation in Release Script:** In `deploy/release.sh`, digest validation previously used a loose prefix match `...singslot@sha256:*`. **Resolution:** Enforced strict regex pattern `if [[ ! "$DIGEST_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]` requiring exactly 64 hexadecimal characters.
+  4. **Release Summary Commit SHA Accuracy:** Exported `DEPLOYED_COMMIT_SHA="$IMAGE_TAG"` in both `deploy/release.sh` and `deploy.yml`, consuming `${DEPLOYED_COMMIT_SHA:-${{ inputs.image_tag || github.sha }}}` in `Generate Release Summary`.
+  5. **Regression Verification:** Updated `deploy/tests/test_release_stub.sh` with 64-char digest stub and malformed digest rejection test. Updated `server/tests/ci.test.ts` asserting `ROLLBACK: 'true'`, strict digest regex, and smoke test integration (17/17 passing). Monorepo typecheck passed cleanly with 0 errors.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_release_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`).
+- **Outcome:** 100% test pass rate, database safety on rollback guaranteed, live verification across all release paths, and full audit trail compliance. Ready for peer review re-review and approval.

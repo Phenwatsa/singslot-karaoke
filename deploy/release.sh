@@ -36,7 +36,10 @@ ROLLBACK="${ROLLBACK:-false}"
 # ------------------------------------------------------------------------------
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/singslot/singslot:$IMAGE_TAG"
 DIGEST_IMAGE="$(gcloud artifacts docker images describe "$IMAGE" --project="$PROJECT_ID" --format='value(image_summary.fully_qualified_digest)')"
-[[ "$DIGEST_IMAGE" == "$REGION-docker.pkg.dev/$PROJECT_ID/singslot/singslot@sha256:"* ]] || { echo 'Image digest not found.' >&2; exit 1; }
+if [[ ! "$DIGEST_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]; then
+  echo "ERROR: Invalid or missing image digest: $DIGEST_IMAGE" >&2
+  exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # 3. Database migration (normal release only; --wait blocks until completion)
@@ -60,6 +63,6 @@ gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project="$PROJE
 SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')"
 echo "Service URL: $SERVICE_URL"
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\n' "$SERVICE_URL" "$DIGEST_IMAGE" >> "$GITHUB_ENV"
+  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\nDEPLOYED_COMMIT_SHA=%s\n' "$SERVICE_URL" "$DIGEST_IMAGE" "$IMAGE_TAG" >> "$GITHUB_ENV"
 fi
 

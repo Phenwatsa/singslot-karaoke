@@ -6,6 +6,8 @@ node_modules/
 # Testing & Coverage
 coverage/
 *.lcov
+__pycache__/
+*.pyc
 
 # Production Builds
 dist/

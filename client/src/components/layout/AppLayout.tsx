@@ -154,9 +154,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 </span>
                 <Sparkles className="h-3.5 w-3.5 text-pink-400" />
               </div>
-              <span className="hidden text-[10px] font-bold uppercase tracking-widest text-slate-400 sm:inline">
-                Karaoke System
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-[10px] font-bold uppercase tracking-widest text-slate-400 sm:inline">
+                  Karaoke System
+                </span>
+                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 border border-emerald-200/80 shadow-xs">
+                  v1.0.1 - Cloud Verified
+                </span>
+              </div>
             </div>
           </div>
 
@@ -306,7 +311,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <footer className="relative z-10 border-t border-purple-100/80 bg-white/70 backdrop-blur-md py-6 text-center text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-4">
           <p>© 2026 SingSlot — Karaoke Room Reservation & Management System | CPE 334 Project</p>
-          <p className="mt-1 text-slate-400">Pastel Cosmic Light Theme • React, Vite, Tailwind CSS & Express</p>
+          <p className="mt-1 text-slate-400">
+            Pastel Cosmic Light Theme • React, Vite, Tailwind CSS & Express • <span className="font-semibold text-purple-600">v1.0.1 - Cloud Verified</span>
+          </p>
         </div>
       </footer>
     </div>

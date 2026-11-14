@@ -48,13 +48,22 @@ def request(base, path, data=None, token=None):
 def check(base):
     # --- Public checks (SingSlot endpoints) -----------------------------------
     for path, predicate in (
-        ('/api/health', lambda b: json.loads(b).get('status') == 'ok'),
-        ('/api/ready', lambda b: json.loads(b).get('status') == 'ready' and json.loads(b).get('db') == 'connected'),
+        (
+            '/api/health',
+            lambda b: (
+                json.loads(b).get('status') == 'ok'
+                or (json.loads(b).get('success') is True and json.loads(b).get('data', {}).get('status') == 'UP')
+            )
+        ),
+        (
+            '/api/ready',
+            lambda b: json.loads(b).get('status') == 'ready' and json.loads(b).get('db') == 'connected'
+        ),
         ('/', lambda b: b'<html' in b.lower()),
         (
             '/api/rooms',
             lambda b: json.loads(b).get('success') is True
-            and len(json.loads(b).get('data', {}).get('rooms', [])) == 9
+            and len(json.loads(b).get('rooms') if 'rooms' in json.loads(b) else json.loads(b).get('data', {}).get('rooms', [])) == 9
         ),
     ):
         # Retry: a cold Cloud Run instance may need a few seconds to start.

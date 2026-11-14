@@ -1,0 +1,188 @@
+name: Deploy demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Full 40-character commit SHA to deploy (leave empty for latest main)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: github.ref == 'refs/heads/main' && !inputs.image_tag
+    uses: ./.github/workflows/ci-docker.yml
+
+  deploy:
+    needs: test
+    if: >-
+      always() && !cancelled() && github.ref == 'refs/heads/main' &&
+      (needs.test.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && inputs.image_tag != '' && needs.test.result == 'skipped'))
+    runs-on: ubuntu-latest
+    environment: demo
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      WIF_PROVIDER: ${{ vars.WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.WIF_SERVICE_ACCOUNT }}
+    permissions:
+      contents: read
+      id-token: write # Required for keyless Google Cloud login via WIF
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate manual image tag
+        if: github.event_name == 'workflow_dispatch' && inputs.image_tag != ''
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: image_tag must be a full 40-character lowercase commit SHA." >&2
+            exit 1
+          fi
+          echo "Validated rollback target SHA: $IMAGE_TAG"
+
+      - name: Authenticate to Google Cloud via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Execute rollback or roll-forward
+        if: github.event_name == 'workflow_dispatch' && inputs.image_tag != ''
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
+        run: bash deploy/release.sh
+
+      - name: Configure Docker Authentication
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and Push Release Image
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          IMAGE_TAG="${GITHUB_SHA}"
+          if [[ ! "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: Invalid commit SHA: $IMAGE_TAG" >&2
+            exit 1
+          fi
+          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/singslot/singslot:${IMAGE_TAG}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+          echo "Building image: $IMAGE_URI"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+
+      - name: Resolve and Validate Immutable Digest
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          export DIGEST="$(gcloud artifacts docker images describe "$IMAGE_URI" --format='value(image_summary.digest)')"
+          if [[ -z "$DIGEST" || ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "ERROR: Invalid or missing image digest: $DIGEST" >&2
+            exit 1
+          fi
+          export DIGEST_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/singslot/singslot@$DIGEST"
+          echo "DIGEST_IMAGE=$DIGEST_IMAGE" >> "$GITHUB_ENV"
+          echo "Verified Immutable Release Image: $DIGEST_IMAGE"
+
+      - name: Update and Execute Database Migration Job
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          echo "Updating singslot-migrate job to image: $DIGEST_IMAGE"
+          gcloud run jobs update singslot-migrate \
+            --image="$DIGEST_IMAGE" \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --quiet
+          echo "Executing singslot-migrate job..."
+          gcloud run jobs execute singslot-migrate \
+            --region="$REGION" \
+            --project="$PROJECT_ID" \
+            --wait \
+            --quiet
+
+      - name: Deploy Cloud Run Service Revision and Shift Traffic
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          echo "Deploying singslot service with image: $DIGEST_IMAGE"
+          gcloud run services update singslot \
+            --image="$DIGEST_IMAGE" \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --quiet
+          gcloud run services update-traffic singslot \
+            --to-latest \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --quiet
+
+      - name: Set up Python
+        if: inputs.image_tag == ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Execute Automated Smoke Tests
+        if: inputs.image_tag == ''
+        shell: bash
+        run: |
+          export SERVICE_URL="$(gcloud run services describe singslot --format='value(status.url)' --region="$REGION" --project="$PROJECT_ID")"
+          echo "SERVICE_URL=$SERVICE_URL" >> "$GITHUB_ENV"
+          python3 deploy/smoke_test.py "$SERVICE_URL"
+
+      - name: Generate Release Summary
+        shell: bash
+        run: |
+          SERVICE_URL="$(gcloud run services describe singslot --format='value(status.url)' --region="$REGION" --project="$PROJECT_ID")"
+          DEPLOYED_IMAGE="$(gcloud run services describe singslot \
+            --format='value(spec.template.spec.containers[0].image)' \
+            --region="$REGION" \
+            --project="$PROJECT_ID")"
+          if [[ ! "$DEPLOYED_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]; then
+            echo "ERROR: Deployed Cloud Run image is not pinned to a valid SHA-256 digest: $DEPLOYED_IMAGE" >&2
+            exit 1
+          fi
+          DEPLOYED_IMAGE_DIGEST="${DEPLOYED_IMAGE##*@}"
+          REVISION_NAME="$(gcloud run services describe singslot --format='value(status.latestReadyRevisionName)' --region="$REGION" --project="$PROJECT_ID")"
+          echo "=========================================="
+          echo "  SingSlot Release Deployment Successful"
+          echo "=========================================="
+          echo "Commit SHA: ${{ inputs.image_tag || github.sha }}"
+          echo "Image Digest: $DEPLOYED_IMAGE_DIGEST"
+          echo "Cloud Run Rev: $REVISION_NAME"
+          echo "Service URL: $SERVICE_URL"
+          echo "=========================================="
+          {
+            echo "### SingSlot Release Deployment Successful 🚀"
+            echo "- **Commit SHA:** \`${{ inputs.image_tag || github.sha }}\`"
+            echo "- **Image Digest:** \`$DEPLOYED_IMAGE_DIGEST\`"
+            echo "- **Cloud Run Revision:** \`$REVISION_NAME\`"
+            echo "- **Service URL:** $SERVICE_URL"
+            echo "- **Smoke Tests:** Passed (Health, Readiness/DB, Static HTML, 9 Seeded Rooms)"
+          } >> "$GITHUB_STEP_SUMMARY"

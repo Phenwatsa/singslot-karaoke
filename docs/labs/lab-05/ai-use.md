@@ -302,3 +302,13 @@
   6. Updated `docs/labs/lab-05/reviewer.md` and `docs/labs/lab-05/tests.md` audit trail.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
 - **Outcome:** Keyless GitHub-to-GCP authentication established, branch protection gate verified with live blocked PR evidence (C-02, R-06), and Task 6 successfully signed off.
+
+#### 35. Task 7 Automatic Deployment Pipeline Implementation (R-07, R-08, C-06)
+- **Prompt Intent:** Implement and verify Task 7 (Issue #20: Automatic Deployment Pipeline) for automated continuous deployment to Google Cloud Run upon merge to `main`:
+  1. Created GitHub Actions workflow `.github/workflows/deploy.yml` with exact workflow name `Deploy demo`, concurrency `deploy-demo`, and environment `demo`.
+  2. Implemented keyless WIF authentication via `google-github-actions/auth@v2` using repository/environment variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, and `WIF_SERVICE_ACCOUNT`.
+  3. Integrated CI quality gate re-use (`./.github/workflows/ci-docker.yml`), commit SHA validation, Docker image build & push to Artifact Registry, immutable digest resolution, Prisma migration gate (`singslot-migrate`), Cloud Run service revision deployment (`singslot`) with 100% traffic shift, automated smoke test, and step summary generation.
+  4. Enhanced `deploy/smoke_test.py` to seamlessly validate SingSlot API responses (`/api/health` status UP and `/api/rooms` count) across both local unit mock tests and live Cloud Run deployments.
+  5. Author contract unit tests in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
+- **Tools Used:** `write_file`, `edit_file`, `run_command` (`jest`, `npm run typecheck`, `bash deploy/tests/...`).
+- **Outcome:** Production CD workflow authored and validated with 100% test pass rate across all suites. Ready for Feature PR into `sprint-1-staging`.

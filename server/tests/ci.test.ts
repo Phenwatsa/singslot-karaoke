@@ -169,5 +169,52 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/\/api\/auth\/logout/);
     });
   });
+
+  describe('Task 7: Automated Deployment Pipeline Contract (.github/workflows/deploy.yml)', () => {
+    const deployWorkflowPath = path.join(rootDir, '.github/workflows/deploy.yml');
+
+    it('verifies deploy.yml exists and conforms to SingSlot CD specification', () => {
+      expect(fs.existsSync(deployWorkflowPath)).toBe(true);
+      const content = fs.readFileSync(deployWorkflowPath, 'utf8');
+
+      // Exact workflow name
+      expect(content).toMatch(/name:\s*Deploy demo/);
+
+      // Triggers: main branch and workflow_dispatch rollback
+      expect(content).toMatch(/branches:\s*\[main\]/);
+      expect(content).toMatch(/workflow_dispatch:/);
+      expect(content).toMatch(/image_tag:/);
+
+      // Concurrency and permissions
+      expect(content).toMatch(/group:\s*deploy-demo/);
+      expect(content).toMatch(/cancel-in-progress:\s*false/);
+      expect(content).toMatch(/id-token:\s*write/);
+
+      // Environment and environment variables from GitHub demo environment
+      expect(content).toMatch(/environment:\s*demo/);
+      expect(content).toMatch(/PROJECT_ID:\s*\$\{\{\s*vars\.GCP_PROJECT_ID\s*\}\}/);
+      expect(content).toMatch(/REGION:\s*\$\{\{\s*vars\.GCP_REGION\s*\}\}/);
+      expect(content).toMatch(/WIF_PROVIDER:\s*\$\{\{\s*vars\.WIF_PROVIDER\s*\}\}/);
+      expect(content).toMatch(/WIF_SERVICE_ACCOUNT:\s*\$\{\{\s*vars\.WIF_SERVICE_ACCOUNT\s*\}\}/);
+
+      // Quality gate: reuses ci-docker.yml
+      expect(content).toMatch(/uses:\s*\.\/\.github\/workflows\/ci-docker\.yml/);
+
+      // Keyless WIF authentication
+      expect(content).toMatch(/uses:\s*google-github-actions\/auth@v2/);
+      expect(content).toMatch(/uses:\s*google-github-actions\/setup-gcloud@v2/);
+
+      // Deployment pipeline sequence: Build -> Digest -> Migrate -> Service -> Smoke test
+      expect(content).toMatch(/docker build/);
+      expect(content).toMatch(/docker push/);
+      expect(content).toMatch(/gcloud artifacts docker images describe/);
+      expect(content).toMatch(/gcloud run jobs update singslot-migrate/);
+      expect(content).toMatch(/gcloud run jobs execute singslot-migrate/);
+      expect(content).toMatch(/gcloud run services update singslot/);
+      expect(content).toMatch(/gcloud run services update-traffic singslot/);
+      expect(content).toMatch(/python3 deploy\/smoke_test\.py/);
+      expect(content).toMatch(/GITHUB_STEP_SUMMARY/);
+    });
+  });
 });
 

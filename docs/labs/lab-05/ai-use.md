@@ -312,3 +312,14 @@
   5. Author contract unit tests in `server/tests/ci.test.ts` verifying all structural, trigger, and security constraints of `deploy.yml`.
 - **Tools Used:** `write_file`, `edit_file`, `run_command` (`jest`, `npm run typecheck`, `bash deploy/tests/...`).
 - **Outcome:** Production CD workflow authored and validated with 100% test pass rate across all suites. Ready for Feature PR into `sprint-1-staging`.
+
+#### 36. PR #27 Peer Review Feedback Resolution: Deployed Commit SHA Reporting in Release Summary
+- **Prompt Intent:** Resolve Peer Reviewer @lephirada's [P1] Request Changes finding on PR #27 (`feat/lab5-auto-deploy` -> `sprint-1-staging`):
+  1. **Root Cause Analysis:** In `.github/workflows/deploy.yml`, the `Generate Release Summary` step was writing `echo "Commit SHA: ${{ inputs.image_tag || github.sha }}"`. In workflow dispatch rollback scenarios, `${{ github.sha }}` represents the commit running the workflow rather than the target image's commit SHA.
+  2. **Resolution:**
+     - Updated `deploy/release.sh` to export `DEPLOYED_COMMIT_SHA="$IMAGE_TAG"` to `$GITHUB_ENV`.
+     - Updated step `Build and Push Release Image` in `.github/workflows/deploy.yml` to export `DEPLOYED_COMMIT_SHA="$IMAGE_TAG"` to `$GITHUB_ENV`.
+     - Updated step `Generate Release Summary` in `.github/workflows/deploy.yml` to read `DEPLOY_SHA="${DEPLOYED_COMMIT_SHA:-${{ inputs.image_tag || github.sha }}}"`, guaranteeing that both automated releases and manual rollbacks accurately report the exact deployed commit SHA.
+     - Updated offline stub test `deploy/tests/test_release_stub.sh` and Jest contract test in `server/tests/ci.test.ts` to assert `DEPLOYED_COMMIT_SHA`.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_release_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`).
+- **Outcome:** 100% test pass rate, accurate audit trail in Release Summary for both normal deployments and rollbacks, ready for peer review re-review and approval.

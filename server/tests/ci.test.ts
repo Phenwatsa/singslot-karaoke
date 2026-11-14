@@ -139,6 +139,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/gcloud run jobs execute "\$MIGRATE_JOB_NAME" --wait/);
       expect(content).toMatch(/gcloud run services update "\$SERVICE_NAME"/);
       expect(content).toMatch(/gcloud run services update-traffic "\$SERVICE_NAME" --to-latest/);
+      expect(content).toMatch(/DEPLOYED_COMMIT_SHA=/);
     });
 
     it('verifies teardown.sh requires confirmation and safely purges all resources', () => {
@@ -213,6 +214,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/gcloud run services update singslot/);
       expect(content).toMatch(/gcloud run services update-traffic singslot/);
       expect(content).toMatch(/python3 deploy\/smoke_test\.py/);
+      expect(content).toMatch(/DEPLOYED_COMMIT_SHA/);
       expect(content).toMatch(/GITHUB_STEP_SUMMARY/);
     });
   });

@@ -91,6 +91,7 @@ jobs:
           fi
           IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/singslot/singslot:${IMAGE_TAG}"
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "DEPLOYED_COMMIT_SHA=$IMAGE_TAG" >> "$GITHUB_ENV"
           echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
           echo "Building image: $IMAGE_URI"
           docker build -t "$IMAGE_URI" .
@@ -170,17 +171,18 @@ jobs:
           fi
           DEPLOYED_IMAGE_DIGEST="${DEPLOYED_IMAGE##*@}"
           REVISION_NAME="$(gcloud run services describe singslot --format='value(status.latestReadyRevisionName)' --region="$REGION" --project="$PROJECT_ID")"
+          DEPLOY_SHA="${DEPLOYED_COMMIT_SHA:-${{ inputs.image_tag || github.sha }}}"
           echo "=========================================="
           echo "  SingSlot Release Deployment Successful"
           echo "=========================================="
-          echo "Commit SHA: ${{ inputs.image_tag || github.sha }}"
+          echo "Commit SHA: $DEPLOY_SHA"
           echo "Image Digest: $DEPLOYED_IMAGE_DIGEST"
           echo "Cloud Run Rev: $REVISION_NAME"
           echo "Service URL: $SERVICE_URL"
           echo "=========================================="
           {
             echo "### SingSlot Release Deployment Successful 🚀"
-            echo "- **Commit SHA:** \`${{ inputs.image_tag || github.sha }}\`"
+            echo "- **Commit SHA:** \`$DEPLOY_SHA\`"
             echo "- **Image Digest:** \`$DEPLOYED_IMAGE_DIGEST\`"
             echo "- **Cloud Run Revision:** \`$REVISION_NAME\`"
             echo "- **Service URL:** $SERVICE_URL"

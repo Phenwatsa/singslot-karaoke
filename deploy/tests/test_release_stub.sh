@@ -36,6 +36,7 @@ bash "$ROOT/deploy/release.sh"
 grep -q 'run jobs execute .*--wait' "$CALL_LOG"
 grep -q 'run services update .*@sha256:abcdef' "$CALL_LOG"
 grep -q 'SERVICE_URL=https://singslot-demo.example.test' "$GITHUB_ENV"
+grep -q 'DEPLOYED_COMMIT_SHA=1111111111111111111111111111111111111111' "$GITHUB_ENV"
 echo 'PASS normal release uses digest and waits for migration'
 
 : > "$CALL_LOG"

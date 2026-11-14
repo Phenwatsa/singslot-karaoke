@@ -60,6 +60,6 @@ gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project="$PROJE
 SERVICE_URL="$(gcloud run services describe "$SERVICE_NAME" --project="$PROJECT_ID" --region="$REGION" --format='value(status.url)')"
 echo "Service URL: $SERVICE_URL"
 if [[ -n "${GITHUB_ENV:-}" ]]; then
-  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\n' "$SERVICE_URL" "$DIGEST_IMAGE" >> "$GITHUB_ENV"
+  printf 'SERVICE_URL=%s\nDEPLOYED_IMAGE=%s\nDEPLOYED_COMMIT_SHA=%s\n' "$SERVICE_URL" "$DIGEST_IMAGE" "$IMAGE_TAG" >> "$GITHUB_ENV"
 fi
 

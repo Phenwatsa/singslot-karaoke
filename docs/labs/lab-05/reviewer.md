@@ -26,7 +26,7 @@
 | **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23)                      | Approved | Verified |
 | **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | [PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24) (`sprint-1-staging`) | Approved | Verified |
 | **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue #18)                                           | Approved | Verified |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | `main`                                                                               | Backlog  | Pending  |
+| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`) | Approved | Verified |
 | **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | `sprint-1-staging` → `main`                                                          | Backlog  | Pending  |
 | **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                                               | Backlog  | Pending  |
 | **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                                                    | Backlog  | Pending  |
@@ -295,17 +295,25 @@
 ### 📌 Task 6: WIF Setup & Branch Protection Verification
 
 - **GitHub Issue:** [Issue #19](https://github.com/Phenwatsa/singslot-karaoke/issues/19)
-- **PR Link (`test/prove-gate` - Blocked Merge Proof):**
+- **PR Link (`test/prove-gate` - Blocked Merge Proof):** [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26)
 - **Source Branch:** `test/prove-gate`
 - **Target Branch:** `main`
 - **Primary Owner:** @lephirada
 - **Reviewer:** @Phenwatsa
-- **Status:** Backlog
-- **Verdict:**
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Verification Evidence (PR #26):**
+  - Temporary PR [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) was opened from `test/prove-gate` targeting `main` with an intentional test failure in `server/tests/ready.test.ts` to prove branch protection gate enforcement.
+  - Required status check `CI & Docker Build / test-and-docker` failed.
+  - Reviewer @Phenwatsa submitted review approval with comment:
+    > `C-02 verification: PASS.`
+  - The merge button was visibly blocked by GitHub Ruleset `protect-main` due to the failed required status check, satisfying Requirement C-02.
+  - PR #26 was closed without merging, and branch `test/prove-gate` was deleted.
+
+- **Outcome:** Task 6 verified and approved. Requirement C-02 satisfied. Ruleset `protect-main` and WIF setup verified. Ready to proceed to Task 7.
 
 ---
 

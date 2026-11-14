@@ -291,3 +291,14 @@
   3. Formulated and recorded official sign-off response by @lephirada.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
 - **Outcome:** Task 5 peer review successfully verified and closed; unlocked prerequisites for Task 6 Workload Identity Federation and branch protection verification.
+
+#### 34. Task 6 Workload Identity Federation & Branch Protection Gate Verification (C-02, R-06)
+- **Prompt Intent:** Execute and document Task 6 (Issue #19: WIF Setup & Branch Protection Verification) on GCP and GitHub:
+  1. Resolved and validated GCP Project ID `cpe334-singslot-en-038-p1` and Project Number `103485327421`. Enabled required API `sts.googleapis.com` alongside existing IAM APIs.
+  2. Created Workload Identity Pool `github-actions` and Provider `github-main` with OIDC issuer `https://token.actions.githubusercontent.com` and repository/branch/workflow attribute conditions.
+  3. Bound IAM roles `roles/run.developer`, `roles/artifactregistry.writer`, and `roles/iam.workloadIdentityUser` to `singslot-deployer`. Bound Phase 6B `roles/iam.serviceAccountUser` delegation to `singslot-runner` and `singslot-migrator`. Verified zero user-managed private keys (keyless security).
+  4. Configured GitHub Environment `demo` with 4 required variables restricted to `main`. Configured GitHub Ruleset `protect-main` enforcing 1 approval, required status check `test-and-docker`, and up-to-date branch with empty bypass list.
+  5. Proved quality gate enforcement (Requirement C-02): Created temporary branch `test/prove-gate` from `main` with intentional assertion failure in `server/tests/ready.test.ts`. Opened PR #26 targeting `main`. Verified required status check `CI & Docker Build / test-and-docker` failed (red ❌). Reviewer @Phenwatsa approved with exact comment `C-02 verification: PASS.`. Confirmed merge button was visibly blocked by ruleset. Closed PR #26 and deleted branch with zero impact on released code on `main`.
+  6. Updated `docs/labs/lab-05/reviewer.md` and `docs/labs/lab-05/tests.md` audit trail.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`).
+- **Outcome:** Keyless GitHub-to-GCP authentication established, branch protection gate verified with live blocked PR evidence (C-02, R-06), and Task 6 successfully signed off.

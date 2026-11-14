@@ -28,6 +28,7 @@
 | **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue #18)                                           | Approved | Verified |
 | **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`) | Approved | Verified |
 | **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`sprint-1-staging`) | Approved | Verified |
+| **Task 7b** | `[Lab 5 - Task 7b] Repeatable Release Proof (UI Update)`      |  @Phenwatsa   | @lephirada  | `feat/lab5-deploy-proof` | Feature PR into `sprint-1-staging` | In Review | Pending  |
 | **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                                               | Backlog  | Pending  |
 | **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                                                    | Backlog  | Pending  |
 
@@ -357,6 +358,24 @@
 
 - **Status:** Approved
 - **Outcome:** PR #27 approved and ready for merge into `sprint-1-staging`. Unlocks creation of Release PR into `main` for automated continuous deployment and repeatability verification (Task 7b / C-06).
+
+#### 🔍 Task 7b: Prove Repeatable Release via UI Update (Requirement C-06)
+
+- **GitHub Issue:** [Issue #29](https://github.com/Phenwatsa/singslot-karaoke/issues/29)
+- **Source Branch:** `feat/lab5-deploy-proof`
+- **Target Branch:** `sprint-1-staging` → `main`
+- **Primary Owner:** @Phenwatsa
+- **Reviewer:** @lephirada
+- **Status:** In Review
+- **Verdict:** Pending
+
+##### 🔍 Review Discussion & Verification Notes
+- **Developer Submission Summary (@Phenwatsa):**
+  - Updated `client/src/components/layout/AppLayout.tsx` adding release badge in top navigation and version string in footer: `v1.0.1 - Cloud Verified`.
+  - Verified local client unit tests pass (12/12 passed).
+  - Verified monorepo typecheck (`npm run typecheck`) passed with 0 errors.
+  - Verified production build (`npm run build`) succeeded.
+  - Ready for Peer Review from @lephirada on Feature PR into `sprint-1-staging` before promoting to `main` for Revision 2 automated continuous deployment.
 
 ---
 

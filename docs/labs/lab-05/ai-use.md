@@ -322,3 +322,12 @@
   5. **Regression Verification:** Updated `deploy/tests/test_release_stub.sh` with 64-char digest stub and malformed digest rejection test. Updated `server/tests/ci.test.ts` asserting `ROLLBACK: 'true'`, strict digest regex, and smoke test integration (17/17 passing). Monorepo typecheck passed cleanly with 0 errors.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`bash deploy/tests/test_release_stub.sh`, `npm --prefix server test -- server/tests/ci.test.ts`, `npm run typecheck`).
 - **Outcome:** 100% test pass rate, database safety on rollback guaranteed, live verification across all release paths, and full audit trail compliance. Ready for peer review re-review and approval.
+
+#### 37. Task 7b Implementation: Repeatable Release UI Verification (Requirement C-06, Issue #29)
+- **Prompt Intent:** Implement visible UI string update on branch `feat/lab5-deploy-proof` to prove continuous deployment repeatability (Requirement C-06 / R-07, R-08):
+  1. Updated `client/src/components/layout/AppLayout.tsx` adding release badge in top navigation header: `<span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 border border-emerald-200/80 shadow-xs">v1.0.1 - Cloud Verified</span>`.
+  2. Updated footer in `client/src/components/layout/AppLayout.tsx` to include `v1.0.1 - Cloud Verified`.
+  3. Verified all client layout tests (`layout.test.mjs`, 12/12 passed), typecheck (0 errors), and production build succeeded.
+  4. Updated `docs/labs/lab-05/reviewer.md` with Task 7b submission details for Issue #29.
+- **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm run test:client`, `npm run typecheck`, `npm run build`).
+- **Outcome:** Visible UI change ready for Feature PR into `sprint-1-staging` to initiate the second automated continuous deployment lifecycle.

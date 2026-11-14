@@ -36,7 +36,10 @@ ROLLBACK="${ROLLBACK:-false}"
 # ------------------------------------------------------------------------------
 IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/singslot/singslot:$IMAGE_TAG"
 DIGEST_IMAGE="$(gcloud artifacts docker images describe "$IMAGE" --project="$PROJECT_ID" --format='value(image_summary.fully_qualified_digest)')"
-[[ "$DIGEST_IMAGE" == "$REGION-docker.pkg.dev/$PROJECT_ID/singslot/singslot@sha256:"* ]] || { echo 'Image digest not found.' >&2; exit 1; }
+if [[ ! "$DIGEST_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]; then
+  echo "ERROR: Invalid or missing image digest: $DIGEST_IMAGE" >&2
+  exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # 3. Database migration (normal release only; --wait blocks until completion)

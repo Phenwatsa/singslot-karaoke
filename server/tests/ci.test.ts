@@ -136,6 +136,7 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       expect(content).toMatch(/singslot\/singslot/);
       expect(content).toMatch(/gcloud artifacts docker images describe/);
       expect(content).toMatch(/@sha256:/);
+      expect(content).toMatch(/sha256:\[0-9a-f\]\{64\}/);
       expect(content).toMatch(/gcloud run jobs execute "\$MIGRATE_JOB_NAME" --wait/);
       expect(content).toMatch(/gcloud run services update "\$SERVICE_NAME"/);
       expect(content).toMatch(/gcloud run services update-traffic "\$SERVICE_NAME" --to-latest/);
@@ -204,6 +205,10 @@ describe('Task 4: CI Quality Gate on Pull Requests & Deployment Tooling (R-05, R
       // Keyless WIF authentication
       expect(content).toMatch(/uses:\s*google-github-actions\/auth@v2/);
       expect(content).toMatch(/uses:\s*google-github-actions\/setup-gcloud@v2/);
+
+      // Rollback execution contract
+      expect(content).toMatch(/ROLLBACK:\s*['"]true['"]/);
+      expect(content).toMatch(/bash deploy\/release\.sh/);
 
       // Deployment pipeline sequence: Build -> Digest -> Migrate -> Service -> Smoke test
       expect(content).toMatch(/docker build/);

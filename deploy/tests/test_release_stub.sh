@@ -24,7 +24,8 @@ echo "$*" >> "$CALL_LOG"
 case "$*" in
   'artifacts docker images describe '*)
     [[ "${FAIL_AT:-}" != image ]] || exit 1
-    echo 'asia-southeast1-docker.pkg.dev/release-test/singslot/singslot@sha256:abcdef' ;;
+    [[ "${FAIL_AT:-}" != malformed_digest ]] || { echo 'asia-southeast1-docker.pkg.dev/release-test/singslot/singslot@sha256:bad'; exit 0; }
+    echo 'asia-southeast1-docker.pkg.dev/release-test/singslot/singslot@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' ;;
   'run jobs execute '*) [[ "${FAIL_AT:-}" != migration ]] || exit 1 ;;
   'run services describe '*) echo 'https://singslot-demo.example.test' ;;
 esac
@@ -34,7 +35,7 @@ chmod +x "$TASK_TMP/gcloud"
 export ROLLBACK=false
 bash "$ROOT/deploy/release.sh"
 grep -q 'run jobs execute .*--wait' "$CALL_LOG"
-grep -q 'run services update .*@sha256:abcdef' "$CALL_LOG"
+grep -q 'run services update .*@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' "$CALL_LOG"
 grep -q 'SERVICE_URL=https://singslot-demo.example.test' "$GITHUB_ENV"
 grep -q 'DEPLOYED_COMMIT_SHA=1111111111111111111111111111111111111111' "$GITHUB_ENV"
 echo 'PASS normal release uses digest and waits for migration'
@@ -46,7 +47,7 @@ if grep -q 'run jobs' "$CALL_LOG"; then echo 'Rollback ran migration' >&2; exit 
 grep -q 'run services update ' "$CALL_LOG"
 echo 'PASS rollback reuses image without touching migration job'
 
-for failure in image migration; do
+for failure in image migration malformed_digest; do
   : > "$CALL_LOG"
   if ROLLBACK=false FAIL_AT="$failure" bash "$ROOT/deploy/release.sh"; then
     echo "Expected $failure failure" >&2; exit 1

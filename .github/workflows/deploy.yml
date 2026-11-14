@@ -72,6 +72,7 @@ jobs:
           IMAGE_TAG: ${{ inputs.image_tag }}
           PROJECT_ID: ${{ env.PROJECT_ID }}
           REGION: ${{ env.REGION }}
+          ROLLBACK: 'true'
         run: bash deploy/release.sh
 
       - name: Configure Docker Authentication
@@ -144,13 +145,11 @@ jobs:
             --quiet
 
       - name: Set up Python
-        if: inputs.image_tag == ''
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Execute Automated Smoke Tests
-        if: inputs.image_tag == ''
         shell: bash
         run: |
           export SERVICE_URL="$(gcloud run services describe singslot --format='value(status.url)' --region="$REGION" --project="$PROJECT_ID")"

@@ -19,18 +19,18 @@
 
 ## 2. Summary of Lab 5 Tasks & Pull Requests
 
-|    Task    | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                  | PR Target                                                                            |  Status  | Verdict  |
-| :--------: | :------------------------------------------------------------ | :-----------: | :---------: | :---------------------- | :----------------------------------------------------------------------------------- | :------: | :------: |
-| **Task 1** | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console             | None (Issue comment)                                                                 |   Done   | Verified |
-| **Task 2** | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready` | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22)                      | Approved | Verified |
-| **Task 3** | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`      | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23)                      | Approved | Verified |
-| **Task 4** | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`          | [PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24) (`sprint-1-staging`) | Approved | Verified |
-| **Task 5** | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell             | None (Console / Issue #18)                                           | Approved | Verified |
-| **Task 6** | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`       | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`) | Approved | Verified |
-| **Task 7** | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy` | [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`sprint-1-staging`) | Approved | Verified |
-| **Task 7b** | `[Lab 5 - Task 7b] Repeatable Release Proof (UI Update)`      |  @Phenwatsa   | @lephirada  | `feat/lab5-deploy-proof` | Feature PR into `sprint-1-staging` | In Review | Pending  |
-| **Task 8** | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console       | None (Console / Issue)                                                               | Backlog  | Pending  |
-| **Step 9** | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF      | None (Submission)                                                                    | Backlog  | Pending  |
+|    Task     | Title / Scope                                                 | Primary Owner |  Reviewer   | Branch                   | PR Target                                                                                                                         |  Status  | Verdict  |
+| :---------: | :------------------------------------------------------------ | :-----------: | :---------: | :----------------------- | :-------------------------------------------------------------------------------------------------------------------------------- | :------: | :------: |
+| **Task 1**  | `[Lab 5 - Task 1] GCP Account & Cost Control`                 |  @Phenwatsa   | @lephirada  | GCP Console              | None (Issue comment)                                                                                                              |   Done   | Verified |
+| **Task 2**  | `[Lab 5 - Task 2] Prepare SingSlot for Cloud Deployment`      |  @lephirada   | @Phenwatsa  | `feat/lab5-cloud-ready`  | [PR #22](https://github.com/Phenwatsa/singslot-karaoke/pull/22)                                                                   | Approved | Verified |
+| **Task 3**  | `[Lab 5 - Task 3] Docker Containerization`                    |  @Phenwatsa   | @lephirada  | `feat/lab5-docker`       | [PR #23](https://github.com/Phenwatsa/singslot-karaoke/pull/23)                                                                   | Approved | Verified |
+| **Task 4**  | `[Lab 5 - Task 4] CI Quality Gate on Pull Requests`           |  @lephirada   | @Phenwatsa  | `feat/lab5-ci`           | [PR #24](https://github.com/Phenwatsa/singslot-karaoke/pull/24) (`sprint-1-staging`)                                              | Approved | Verified |
+| **Task 5**  | `[Lab 5 - Task 5] First GCP Deployment`                       |  @Phenwatsa   | @lephirada  | Cloud Shell              | None (Console / Issue #18)                                                                                                        | Approved | Verified |
+| **Task 6**  | `[Lab 5 - Task 6] WIF Setup & Branch Protection Verification` |  @lephirada   | @Phenwatsa  | `test/prove-gate`        | [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) (`main`)                                                          | Approved | Verified |
+| **Task 7**  | `[Lab 5 - Task 7] Automatic Deployment Pipeline`              |  @Phenwatsa   | @lephirada  | `feat/lab5-auto-deploy`  | [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`sprint-1-staging`)                                              | Approved | Verified |
+| **Task 7b** | `[Lab 5 - Task 7b] Repeatable Release Proof (UI Update)`      |  @Phenwatsa   | @lephirada  | `feat/lab5-deploy-proof` | [PR #30](https://github.com/Phenwatsa/singslot-karaoke/pull/30) & [PR #31](https://github.com/Phenwatsa/singslot-karaoke/pull/31) | Approved | Verified |
+| **Task 8**  | `[Lab 5 - Task 8] Persistence & Rollback Verification`        |  @lephirada   | @Phenwatsa  | Actions & Console        | None (Console / Issue #21)                                                                                                        | Approved | Verified |
+| **Step 9**  | `[Lab 5 - Step 9] Final Documentation & PDF Evidence Index`   | Both Members  | Peer Review | `docs/` & LEB2 PDF       | None (Submission)                                                                                                                 | Pending  | Pending  |
 
 ---
 
@@ -229,9 +229,9 @@
   **Assignee:** @Phenwatsa  
   **Reviewer:** @lephirada  
   **Execution Environment:** Google Cloud Shell cloning `main` (`e598e21`)  
-  **Deployment Date:** 2026-11-13  
+  **Deployment Date:** 2026-11-13
 
-  ---
+  ***
 
   ### 🌐 Live Service & Endpoint Verification
   - **Public Service URL (R-03):** https://singslot-4o7kwmd5ma-as.a.run.app
@@ -240,7 +240,7 @@
   - **Room Fleet (`/api/rooms`):** `HTTP 200 OK` (9 seeded suites active: S01–S03, M01–M03, L01–L03)
   - **Frontend SPA:** Live React Vite bundle serving with 100% functionality.
 
-  ---
+  ***
 
   ### ☁️ Infrastructure & Security Architecture
   1. **Cloud SQL PostgreSQL 16 (`singslot-pg`):**
@@ -258,16 +258,17 @@
      - Execution `singslot-migrate-rnkzb` successfully completed with exit code 0.
      - Migration `20261105000000_init` applied and demo database seeded.
 
-  ---
+  ***
 
   ### 🧪 End-to-End User Flow & Business Rule Verification (C-04)
   1. **User Authentication:** Logged in as demo customer `customer1@singslot.local` (Alice Customer) via stateless signed JWT.
   2. **Booking Creation:** Reserved Suite **L01 (LARGE)** on `2026-11-13` for `21:00 - 24:00` (3 hours). Confirmed with reference code **`BK-20261113-IA4Q`**.
-  3. **Business Rule Rejection:** Attempted duplicate booking on room L01 for same time slot; server rejected with error: *"One or more requested slots are already occupied."*
+  3. **Business Rule Rejection:** Attempted duplicate booking on room L01 for same time slot; server rejected with error: _"One or more requested slots are already occupied."_
 
-  ---
+  ***
 
   ### 📸 Verification Screenshots
+
   <img width="1294" height="903" alt="Cloud SQL Configuration" src="https://github.com/user-attachments/assets/7cddd10b-8679-42d2-826f-0292ca9b1360" />
   <img width="1294" height="903" alt="Cloud Run Service settings" src="https://github.com/user-attachments/assets/dc0a6f78-ac8e-4de9-8982-4a9469688d87" />
   <img width="1294" height="903" alt="Secret Manager secrets list" src="https://github.com/user-attachments/assets/824dd6c0-5179-48b0-ba90-087db63658f6" />
@@ -362,32 +363,113 @@
 #### 🔍 Task 7b: Prove Repeatable Release via UI Update (Requirement C-06)
 
 - **GitHub Issue:** [Issue #29](https://github.com/Phenwatsa/singslot-karaoke/issues/29)
+- **PR Links:**
+  - Feature PR into Staging: [PR #30](https://github.com/Phenwatsa/singslot-karaoke/pull/30) (`feat/lab5-deploy-proof` → `sprint-1-staging`)
+  - Release PR into Main: [PR #31](https://github.com/Phenwatsa/singslot-karaoke/pull/31) (`sprint-1-staging` → `main`)
 - **Source Branch:** `feat/lab5-deploy-proof`
 - **Target Branch:** `sprint-1-staging` → `main`
 - **Primary Owner:** @Phenwatsa
 - **Reviewer:** @lephirada
-- **Status:** In Review
-- **Verdict:** Pending
+- **Status:** Approved
+- **Verdict:** Verified
 
 ##### 🔍 Review Discussion & Verification Notes
-- **Developer Submission Summary (@Phenwatsa):**
+
+- **Developer Submission Summary (@Phenwatsa) — PR #30 Handover:**
   - Updated `client/src/components/layout/AppLayout.tsx` adding release badge in top navigation and version string in footer: `v1.0.1 - Cloud Verified`.
   - Verified local client unit tests pass (12/12 passed).
   - Verified monorepo typecheck (`npm run typecheck`) passed with 0 errors.
   - Verified production build (`npm run build`) succeeded.
-  - Ready for Peer Review from @lephirada on Feature PR into `sprint-1-staging` before promoting to `main` for Revision 2 automated continuous deployment.
+  - Ready for Peer Review from @lephirada on Feature PR #30 into `sprint-1-staging` before promoting to `main` for Revision 2 automated continuous deployment.
+
+- **Reviewer (@lephirada) — PR #30 Approval:**
+  Reviewed Feature PR #30. The release badge in `AppLayout.tsx` provides clear visual verification for the repeatable release requirement (C-06). All client tests and typechecks pass cleanly. Approved to merge into `sprint-1-staging`.
+
+- **Developer (@Phenwatsa) — PR #31 Handover:**
+
+  ## 🚀 Release 2: Repeatable Continuous Deployment Proof (Requirement C-06)
+
+  ### 🎯 Purpose & Issue Reference
+  - **GitHub Issue:** [Issue #29](https://github.com/Phenwatsa/singslot-karaoke/issues/29)
+  - **Requirement:** Requirement C-06 (R-07, R-08) — Proves automated repeatable release pipeline by deploying a second production release to Google Cloud Run upon merge to main with visible UI verification.
+
+  ### 📦 Changes Included in Release 2
+  - **Visible UI Release String:** Added `v1.0.1 - Cloud Verified` badge in top navigation and footer in `client/src/components/layout/AppLayout.tsx`.
+  - **Full Quality Gate:** Passed all client tests, monorepo typecheck, and production asset build.
+
+  ### 👥 Instructions for Peer Reviewer (@lephirada)
+
+  This is the formal Release PR for Release 2.
+  Branch ruleset `protect-main` requires:
+  1. Required status check `test-and-docker` to pass (green ✅).
+  2. Exactly 1 approval from @lephirada.
+     Once merged, the `Deploy demo` workflow will automatically trigger, build the new image, update Cloud Run to Revision 2, and verify via live smoke tests!
+
+- **Reviewer (@lephirada) — PR #31 Approval:**
+  Reviewed and verified Release 2 deployment promotion (Requirement C-06 / Issue #29):
+  1. **Release Scope:** Promotes the verified `v1.0.1 - Cloud Verified` UI badge in `client/src/components/layout/AppLayout.tsx` from `sprint-1-staging` into `main`.
+  2. **Verification Evidence:**
+     - All client unit tests pass (12/12).
+     - Monorepo TypeScript typecheck passes with 0 errors across server and client.
+     - Production bundle assets compiled cleanly.
+  3. **Execution Gating:** Ruleset `protect-main` required status check `test-and-docker` verified green.
+
+  **Approved.** Ready to merge into `main` to trigger the automated Cloud Run Revision 2 deployment.
+
+- **Outcome:** Release PR #31 approved and merged into `main`. GitHub Actions workflow `Deploy demo` triggered automatically, deploying commit `aa5f109b97c157a143a7a9a94cd58dc02998467e` with immutable digest `sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3` to revision `singslot-00003-2fg` with 100% traffic. Live website displayed `v1.0.1 - Cloud Verified`. Continuous Deployment repeatability verified (C-06, R-07, R-08 satisfied).
 
 ---
 
-### 📌 Task 8: Persistence & Rollback Verification
+### 📌 Task 8: Persistence & Rollback Verification (C-05)
 
 - **GitHub Issue:** [Issue #21](https://github.com/Phenwatsa/singslot-karaoke/issues/21)
 - **Primary Owner:** @lephirada
 - **Reviewer:** @Phenwatsa
-- **Verification Channel:** GitHub Actions & GCP Console
-- **Status:** Backlog
-- **Verdict:**
+- **Verification Channel:** Google Cloud Run Metrics, Logs Explorer & Google Cloud Shell
+- **Status:** Approved
+- **Verdict:** Verified
 
 #### 🔍 Review Discussion & Verification Notes
 
-<!-- Team members add discussion and verification notes here -->
+- **Developer (@lephirada) — Issue #21 Handover:**
+
+  ## 🧪 Task 8 Persistence & Reliability Verification Evidence (C-05, R-04)
+
+  **Assignee:** @lephirada  
+  **Reviewer:** @Phenwatsa  
+  **Environment:** Google Cloud Run (`singslot`) & Cloud SQL PostgreSQL 16 (`singslot-pg`)  
+  **Service URL:** `https://singslot-4o7kwmd5ma-as.a.run.app`
+
+  ***
+
+  ### 1. Baseline Room Reservation (Pre-Test)
+  - Logged into live application as `customer1@singslot.local` (Alice Customer).
+  - Reserved Suite **L01** (Large) for `2026-11-15` `13:00 - 17:00` (4 hours, 5 Guests).
+  - Reference Code: **`BK-20261115-MQRX`** (Status: `CONFIRMED`).
+
+  ### 2. Scale-to-Zero & Cold Start Proof (Container Recycling)
+  - **Scale-to-Zero:** Monitored Cloud Run Metrics Explorer (`Metric Query: Instance Count`); active and idle instance counts dropped to 0 (`active: 0, idle: 0`).
+  - **Cold Start:** Dispatched HTTP request to trigger fresh container instance. Cloud Run Logs Explorer recorded startup log:
+    - `Starting new instance. Reason: AUTOSCALING`
+    - `SingSlot Server listening on http://0.0.0.0:8080` (at `2026-11-14 22:59:42 ICT`).
+  - **Data Persistence:** Navigated to `My Reservations`; booking **`BK-20261115-MQRX`** and historical booking **`BK-20261113-IA4Q`** retrieved intact from Cloud SQL with status `CONFIRMED`.
+
+  ### 3. Cloud Run Redeployment Persistence Proof (New Revision)
+  - Executed automated persistence verification script in Google Cloud Shell against project `cpe334-singslot-en-038-p1`.
+  - Created new revision **`singslot-00004-6mv`** using identical immutable image digest `sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3`.
+  - Shifted 100% traffic to `singslot-00004-6mv`; verified status `Ready=True`.
+  - Refreshed live application; booking **`BK-20261115-MQRX`** remained completely intact, proving reservation data resides safely in Cloud SQL rather than ephemeral container memory (C-05).
+
+  Ready for review and sign-off by @Phenwatsa.
+
+- **Reviewer (@Phenwatsa) — Issue #21 Sign-off:**
+  Reviewed the persistence and redeployment verification evidence for Task 8.
+  Confirmed that all acceptance criteria for Requirement C-05 are satisfied:
+  1. Scale-to-zero instance recycling verified with Cloud Run Metrics and cold start logs.
+  2. Baseline reservation `BK-20261115-MQRX` survives container process termination and cold start.
+  3. Revision redeployment (`singslot-00003-2fg` -> `singslot-00004-6mv`) shifts 100% traffic with identical immutable image digest.
+  4. Reservation record remains intact in Cloud SQL and confirmed on live UI.
+
+  Approved. Ready to close Issue #21.
+
+- **Outcome:** Requirement C-05 fully proven and verified. Issue #21 completed and closed.

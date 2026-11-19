@@ -1343,6 +1343,9 @@ Optional Evidence (Part 4 Recommended Practice - Student Guide Episode 8):
 - **Target Branching Strategy:**
   - Base: `sprint-1-staging`
   - Release: `main` (auto-deploys via Cloud Run CI/CD upon merge)
+- **Agreed Documentation & Screenshot Directory Architecture (`AC-01`):**
+  - Lab 6 specifications and logs reside under `docs/labs/lab-06/` (`uat-cases.md`, `handoff.md`, `reviewer.md`, `ai-use.md`).
+  - All screenshot assets across sprints and labs are centralized under `docs/screenshots/` (`docs/screenshots/sprint-1/` and `docs/screenshots/lab-06/`), replacing legacy per-folder `docs/labs/lab-06/screenshots/` subdirectories.
 
 ### 5.1 Master Work Allocation & Dependency Matrix
 

@@ -90,57 +90,81 @@ To satisfy security and course governance rules (**R-12**), secret passwords are
 * **Immediate Self-Service Re-run (Zero Wait Time):**
   - Because slot occupancy is uniquely scoped to `(roomId, bookingDate, slotIndex)` across 9 rooms (`S01–S03`, `M01–M03`, `L01–L03`) and any future calendar date, the UAT Team can re-run `UAT-01` through `UAT-05` at any time on a completely clean 14-slot matrix simply by selecting an unused future date (e.g., `Today + 2 days`, `Today + 3 days`) or another Medium room (`M02`, `M03`).
 
-### 4.3 Scoped UAT Database Cleanup & Reset Procedure (Preserving Baseline & Prior Lab Evidence)
+### 4.3 Scoped UAT Database Cleanup & Reset Procedure (Exact Target Date & Test Account Scope)
 > ⚠️ **Important Note on Environment & `singslot-migrate`:**
 > 1. **Dedicated Assessment & UAT Database:** The Cloud SQL database (`singslot-pg`) is a dedicated course evaluation environment containing **zero real production customer data**. Its baseline seeded state (`server/prisma/seed.ts`) consists strictly of **3 demo users (`users`)** and **9 rooms (`rooms`)** with **0 pre-seeded bookings**.
-> 2. **Protected Historical Lab 5 Grading Records:** Two historical bookings from Lab 5 deployment verification (`BK-20261113-IA4Q` on `2026-11-13` and `BK-20261115-MQRX` on `2026-11-15`) reside in the database for Lab 5 grading corroboration and must be preserved.
+> 2. **Protected Historical & Unrelated Records:** Historical bookings from Lab 5 deployment verification (`BK-20261113-IA4Q` on `2026-11-13` and `BK-20261115-MQRX` on `2026-11-15`) and any bookings on other dates are strictly preserved.
 > 3. **Why `singslot-migrate` Alone Is Insufficient:** The Cloud Run job `singslot-migrate` runs `prisma migrate deploy` and `server/prisma/seed.ts` (which performs an idempotent upsert of the 3 users and 9 rooms) and does not delete UAT-generated bookings.
 
-When the UAT Team requests a database reset to clear UAT-generated reservations while strictly preserving the 3 seeded accounts, 9 rooms, and historical Lab 5 evidence records:
-1. Notify the SingSlot Product Team (@Phenwatsa / @lephirada) via the private handoff channel with the target UAT date(s) to clear.
-2. The Product Team executes the following **scoped transactional cleanup** against Cloud SQL (`singslot-pg`), restricting deletion strictly to UAT test dates (`"bookingDate" >= '2026-11-18'`) and explicitly protecting the Lab 5 baseline booking codes:
+When the UAT Team requests a database reset for a specific UAT test date (or specific UAT booking codes) while preserving all other dates, baseline accounts, rooms, and historical Lab 5 records:
+1. Notify the SingSlot Product Team (@Phenwatsa / @lephirada) via the private handoff channel specifying the **exact target UAT date (`UAT_TARGET_DATE`, e.g., `2026-11-20`)** to clear.
+2. The Product Team sets `UAT_TARGET_DATE` to that exact date ( guarding against empty or wildcard values and prohibiting `2026-11-13` / `2026-11-15` Lab 5 dates) and executes the following **strictly date-scoped and account-scoped transactional cleanup** against Cloud SQL (`singslot-pg`):
    ```bash
-   # Step 1: Transactionally delete ONLY UAT-generated slot claims and bookings
-   # (Scoped strictly to the Lab 6 UAT window >= 2026-11-18 and excluding Lab 5 evidence codes)
+   # Step 1: Set the exact single UAT target date requested by the UAT Team (YYYY-MM-DD)
+   export UAT_TARGET_DATE="2026-11-20"
+
+   if [[ ! "$UAT_TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [[ "$UAT_TARGET_DATE" == "2026-11-13" ]] || [[ "$UAT_TARGET_DATE" == "2026-11-15" ]]; then
+     echo "ERROR: UAT_TARGET_DATE must be a single valid YYYY-MM-DD UAT date and cannot target Lab 5 evidence dates."
+     exit 1
+   fi
+
+   # Step 2: Transactionally delete ONLY UAT bookings created by the designated UAT test accounts
+   # on the exact UAT_TARGET_DATE (never deleting other dates or non-UAT records)
    gcloud sql connect singslot-pg \
      --project=cpe334-singslot-en-038-p1 \
      --user=postgres \
      --database=singslot \
-     --quiet << 'EOF'
+     --quiet << EOF
    BEGIN;
 
    DELETE FROM "booking_slots"
-   WHERE "bookingDate" >= '2026-11-18'
+   WHERE "bookingDate" = '${UAT_TARGET_DATE}'
      AND "bookingId" IN (
-       SELECT "id" FROM "bookings"
-       WHERE "bookingDate" >= '2026-11-18'
-         AND "bookingCode" NOT IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX')
+       SELECT b."id"
+       FROM "bookings" b
+       JOIN "users" u ON u."id" = b."userId"
+       WHERE b."bookingDate" = '${UAT_TARGET_DATE}'
+         AND u."email" IN ('customer1@singslot.local', 'customer2@singslot.local')
+         AND b."bookingCode" NOT IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX')
      );
 
    DELETE FROM "bookings"
-   WHERE "bookingDate" >= '2026-11-18'
+   WHERE "bookingDate" = '${UAT_TARGET_DATE}'
+     AND "userId" IN (
+       SELECT "id" FROM "users"
+       WHERE "email" IN ('customer1@singslot.local', 'customer2@singslot.local')
+     )
      AND "bookingCode" NOT IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX');
-
-   DELETE FROM "room_blocks"
-   WHERE "blockDate" >= '2026-11-18';
 
    COMMIT;
 
-   -- Verify UAT window is clean while baseline users, rooms, and Lab 5 records remain intact
-   SELECT COUNT(*) AS remaining_uat_bookings FROM "bookings" WHERE "bookingDate" >= '2026-11-18';
+   -- Verify only the target UAT date is cleared while all other dates, Lab 5 records, users, and rooms remain intact
+   SELECT COUNT(*) AS remaining_on_target_date FROM "bookings" WHERE "bookingDate" = '${UAT_TARGET_DATE}';
    SELECT COUNT(*) AS preserved_lab5_bookings FROM "bookings" WHERE "bookingCode" IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX');
    SELECT COUNT(*) AS seeded_users FROM "users";
    SELECT COUNT(*) AS seeded_rooms FROM "rooms";
    EOF
 
-   # Step 2: Re-run idempotent seed job to verify the 3 demo accounts and 9 rooms
+   # Step 3: Re-run idempotent seed job to verify the 3 demo accounts and 9 rooms
    gcloud run jobs execute singslot-migrate --region asia-southeast1 --wait
    ```
-3. **Post-Reset Verification:** The Product Team verifies that `remaining_uat_bookings = 0`, `preserved_lab5_bookings = 2`, `seeded_users = 3`, `seeded_rooms = 9`, and `GET /api/availability?date=<TOMORROW>` returns all 14 slots (`0..13`) as `isAvailable: true` across all 9 rooms before notifying the UAT Team.
+3. **Post-Reset Verification:** The Product Team verifies that `remaining_on_target_date = 0` for `${UAT_TARGET_DATE}`, `preserved_lab5_bookings = 2`, `seeded_users = 3`, `seeded_rooms = 9`, and `GET /api/availability?date=${UAT_TARGET_DATE}` returns all 14 slots (`0..13`) as `isAvailable: true` across all 9 rooms before notifying the UAT Team.
 
 ---
 
-## 5. Defect Reporting Protocol (Part C)
+## 5. Agreed Documentation & Screenshot Directory Architecture (`AC-01`)
+
+Per the team's standardized repository layout established in Issue #1 (`PR #36`), documentation and visual evidence across all sprints and labs are organized under a unified top-level `docs/` structure:
+* `docs/system-specifications/` — Canonical system specifications (`srs.md`, `system-sds.md`, `features.md`, `traceability.md`).
+* `docs/sprints/` — Sprint-level engineering contracts and logs (`docs/sprints/sprint-1/`).
+* `docs/labs/lab-06/` — Lab 6 Markdown specifications and logs (`uat-cases.md`, `handoff.md`, `reviewer.md`, `ai-use.md`).
+* `docs/screenshots/` — **Agreed Centralized Screenshot Directory** replacing legacy nested `screenshots/` subfolders:
+  - `docs/screenshots/sprint-1/` — Sprint 1 UI verification screenshots and architecture diagrams.
+  - `docs/screenshots/lab-06/` — Dedicated Lab 6 UAT screenshot evidence directory (tracked in Git via `docs/screenshots/lab-06/.gitkeep`).
+
+---
+
+## 6. Defect Reporting Protocol (Part C)
 
 If you observe behavior that deviates from the executable test specifications or the Sprint 1 contract, please report the finding using the following template:
 

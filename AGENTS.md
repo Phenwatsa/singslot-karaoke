@@ -69,7 +69,7 @@ To guarantee that screens built by both developers (Customer vs. Staff) share a 
 ## 📐 4. SPEC-FIRST & ENGINEERING DISCIPLINE
 
 1. **ALWAYS SPEC-FIRST & ZERO INVENTED RULES:**
-   - Before writing any code, the AI must strictly consult the documentation in `docs/` (`srs.md`, `system-sds.md`, `contracts.md`, `features.md`, `traceability.md`).
+   - Before writing any code, the AI must strictly consult the documentation in `docs/system-specifications/` (`srs.md`, `system-sds.md`, `features.md`, `traceability.md`) and `docs/sprints/sprint-1/contracts.md`.
    - **Never invent business rules or assume behaviors.** If any ambiguity arises, ask the developer for clarification before proceeding.
 2. **STRICT FEATURE DISCIPLINE (NO OVER-ENGINEERING):**
    - Work strictly within the agreed feature scope. **Never add extra or unrequested features.**

@@ -24,99 +24,123 @@
 
 ## 2. Agreed Sprint 1 Accepted-for-Test Scope
 
-The UAT Team is requested to independently test the delivered **Sprint 1 functionality**. Sprint 2 and Sprint 3 features are not part of this evaluation.
+The UAT Team is requested to independently test the delivered **Sprint 1 functionality** against [`docs/system-specifications/srs.md`](../../system-specifications/srs.md) and [`docs/sprints/sprint-1/contracts.md`](../../sprints/sprint-1/contracts.md). Sprint 2 and Sprint 3 features are not part of this evaluation.
 
 ### ✅ In-Scope (Delivered Sprint 1 Functionality)
-1. **User Authentication & RBAC (FR-01, FR-02):**
-   - Seeded account login via JWT tokens (Customer and Staff roles).
-   - Route protection: Staff-only views guarded against customer access.
-2. **Room Fleet Catalog (FR-03):**
-   - 9 seeded rooms across 3 tiers:
-     - **Small (S01, S02, S03):** Max capacity 4 guests.
-     - **Medium (M01, M02, M03):** Max capacity 8 guests.
-     - **Large (L01, L02, L03):** Max capacity 12 guests.
-3. **Availability Matrix (FR-04):**
-   - 14 hourly slots per operating day (indexed 0..13, from 10:00 to 24:00).
-   - Server-calculated real-time availability by date.
-4. **Online Booking Engine (FR-05, BR-01 to BR-05):**
-   - 1 to 5 contiguous hours per booking in a single room.
-   - Real-time conflict prevention (cannot book across occupied slots).
-   - Past time-slot rejection based on `Asia/Bangkok` server time.
-   - Party size validation against room capacity limits.
-5. **Customer Booking Management (FR-06, FR-07):**
-   - Customer "My Bookings" list view showing personal reservations.
-   - Booking detail view with unique Booking Code (`BK-YYYYMMDD-XXXX`).
-   - Customer-to-customer data isolation (Customer A cannot see Customer B's records).
-6. **Staff Master Schedule (FR-08):**
-   - Daily master schedule view for staff displaying reservations across all 9 rooms.
+1. **User Authentication & RBAC (`FR-01`, `BR-08`, `NFR-01`, `NFR-02`, `AC-01`..`AC-01e`):**
+   - Seeded account login (`POST /api/auth/login`), session verification (`GET /api/auth/me`), and logout (`POST /api/auth/logout`) via stateless JWT tokens (`CUSTOMER` and `STAFF` roles).
+   - Route and endpoint protection: Staff-only endpoint (`GET /api/bookings/master`) rejects `CUSTOMER` tokens with `HTTP 403 FORBIDDEN`.
+2. **Room Fleet Catalog (`FR-02`, `AC-02`):**
+   - 9 seeded rooms (`GET /api/rooms`) across 3 capacity tiers:
+     - **Small (`S01`, `S02`, `S03`):** Max capacity 4 guests.
+     - **Medium (`M01`, `M02`, `M03`):** Max capacity 8 guests.
+     - **Large (`L01`, `L02`, `L03`):** Max capacity 12 guests.
+3. **Server-Calculated Availability Matrix (`FR-03`, `BR-03`, `AC-03`):**
+   - 14 discrete 1-hour slots per operating day (`GET /api/availability?date=YYYY-MM-DD`, indexed `0..13` from `10:00` to `24:00` ICT).
+   - Real-time availability computed dynamically from active `CONFIRMED` bookings (`booking_slots`) and active maintenance blocks (`room_blocks`).
+4. **Online Booking Engine (`FR-04`, `BR-01` to `BR-06`, `NFR-03`, `AC-04a`..`AC-04f`):**
+   - Online reservation (`POST /api/bookings/online`) for 1 to 5 contiguous hours in a single room (`BR-01`).
+   - Real-time conflict prevention (`BR-01`, `BR-02`, `BR-06`): Overlapping booking attempts are rejected with `HTTP 409 SLOT_CONFLICT`.
+   - Operating hours boundary (`BR-03`): End slot (`startSlot + durationHours - 1`) cannot exceed `Slot 13` (`24:00`).
+   - Past time-slot rejection (`BR-04`): Past dates or elapsed slots relative to `Asia/Bangkok` server time are rejected with `HTTP 400 CANNOT_BOOK_PAST_SLOT`.
+   - Party size validation (`BR-05`): Party size exceeding room capacity is rejected with `HTTP 400 EXCEEDS_CAPACITY`.
+5. **Customer Booking Management & Data Isolation (`FR-05`, `BR-07`, `AC-05`, `AC-05b`):**
+   - Customer **"My Bookings"** list view (`GET /api/bookings/my`) scoped strictly to the authenticated customer's `userId`.
+   - Booking Detail inspection (`GET /api/bookings/:id`) displaying unique Booking Code (`BK-YYYYMMDD-XXXX`) and reserved hourly slots.
+   - Cross-customer ownership guard (`BR-07`, `AC-05b`): A customer requesting another customer's booking ID via `GET /api/bookings/:id` is rejected with `HTTP 403 FORBIDDEN`.
+6. **Staff Master Schedule (`FR-06`, `BR-07`, `BR-08`, `AC-06`):**
+   - Venue-wide daily master schedule (`GET /api/bookings/master?date=YYYY-MM-DD`) restricted to `STAFF`, displaying reservations across all 9 rooms with full customer attribution.
 
 ### ❌ Out-of-Scope (Deferred to Sprint 2 / Sprint 3)
-* Public self-registration (Deferred to Sprint 3)
-* Walk-in cashier booking (Deferred to Sprint 2)
-* Room management CRUD (Deferred to Sprint 3)
-* Booking cancellation and rescheduling (Deferred to Sprint 2)
-* Payment gateway integrations & F&B ordering (Out of course scope)
+* On-premise walk-in cashier booking (`FR-07` — Deferred to Sprint 2)
+* Staff maintenance blockout creation/removal UI & endpoints (`FR-08` — Deferred to Sprint 2)
+* Booking cancellation and rescheduling (`FR-09`, `FR-10` — Deferred to Sprint 2)
+* Multi-criteria booking search and filtering (`FR-11` — Deferred to Sprint 2)
+* Public customer self-registration (`FR-12` — Deferred to Sprint 3; note that clicking "Register" in the navbar opens the Sign In modal in Sprint 1)
+* Room management CRUD and operational summary reports (`FR-13`, `FR-14` — Deferred to Sprint 3)
+* Payment gateway integrations & F&B ordering (Explicitly excluded from course scope)
 
 ---
 
 ## 3. Test Accounts & Role Directory
 
-To satisfy security and course governance rules (**R-12**), secret passwords are NOT published in public repositories. Passwords have been securely provided to your team via the private course channel.
+To satisfy security and course governance rules (**R-12**), secret passwords are NOT published in public repositories or PDF reports. Passwords for the accounts below have been provided to the UAT Team privately via the course handoff channel.
 
 | Account Label | Login Email | Assigned Role | Primary Permissions & Capabilities |
 | :--- | :--- | :---: | :--- |
-| **Customer 1 (Alice)** | `customer1@singslot.local` | `CUSTOMER` | Browse catalog, check availability, book 1–5 contiguous hours, view personal bookings in "My Bookings". |
-| **Customer 2 (Bob)** | `customer2@singslot.local` | `CUSTOMER` | Independent customer account used to verify slot conflicts and test customer data isolation. |
-| **Staff (Cashier)** | `staff@singslot.local` | `STAFF` | Access Staff Master Schedule, inspect room occupancy, view customer contact details for reservations. |
+| **Customer 1 (Alice)** | `customer1@singslot.local` | `CUSTOMER` | Browse room catalog, query availability, book 1–5 contiguous hours, view personal reservations in "My Bookings". |
+| **Customer 2 (Bob)** | `customer2@singslot.local` | `CUSTOMER` | Independent customer account used to verify slot conflict prevention (`UAT-02`) and cross-customer ownership denial (`UAT-04`). |
+| **Staff (Cashier)** | `staff@singslot.local` | `STAFF` | Access Staff "Master Schedule", inspect venue-wide room occupancy across all 9 rooms, view any reservation's customer contact details. |
 
-> 💡 **Tip:** On the Sign In page (`/login`), quick-fill buttons are provided for both Customer and Staff accounts to accelerate testing without manual typing.
+> 💡 **Sign-In Note:** On the production Cloud Run deployment (`import.meta.env.DEV === false`), development quick-fill buttons are disabled for production hygiene. Please enter the email above and the privately provided password in the **"Sign In to SingSlot"** modal.
 
 ---
 
-## 4. Test Data Guidelines, Timezone & Reset Instructions
+## 4. Test Data Guidelines, Timezone & Environment Reset / Cleanup Procedure
 
-1. **Operating Timezone:**
-   - The application evaluates slot availability based on **Bangkok local time (`Asia/Bangkok` / UTC+7)**.
-   - For all booking tests, please select **Tomorrow's date** or a future date in the date picker to ensure that slots are not flagged as past-time slots (`BR-04`).
+### 4.1 Operating Timezone & Recommended Test Dates
+* The backend evaluates all date and slot boundaries against **Bangkok local time (`Asia/Bangkok` / UTC+7)**.
+* For normal booking flows (`UAT-01`, `UAT-02`, `UAT-05`), select **Tomorrow's date** (or any future date) in the date picker so that all 14 slots (`Slot #0` 10:00 through `Slot #13` 23:00–24:00) are in the future (`BR-04`).
 
-2. **Test Independence & Room Allocation:**
-   - There are 9 separate rooms across 3 tiers (`S01–S03`, `M01–M03`, `L01–L03`).
-   - If a specific slot is occupied from an earlier test, testers may either:
-     - Use a different room in the same tier (e.g., test on `M02` if `M01` has occupied slots).
-     - Select a different test date (e.g., 2 days from today).
-     - Test the conflict rule intentionally using the occupied slot (as prescribed in `UAT-02`).
+### 4.2 Case Execution Sequence & Self-Service Clean State
+* **Declared Case Sequence:**
+  - `UAT-01` creates a confirmed 2-hour reservation on **Room `M01` (`Slot #4` and `Slot #5`, 14:00–16:00)** for Tomorrow's date as `customer1@singslot.local`.
+  - `UAT-02`, `UAT-04`, and `UAT-05` intentionally build upon the reservation created in `UAT-01` to test slot overlap rejection, cross-customer ownership denial (`GET /api/bookings/:id`), and Staff Master Schedule persistence.
+  - `UAT-03` tests boundary validations on Room `S01` and does not mutate future slots on Room `M01`.
+* **Immediate Self-Service Re-run (Zero Wait Time):**
+  - Because slot occupancy is uniquely scoped to `(roomId, bookingDate, slotIndex)` across 9 rooms (`S01–S03`, `M01–M03`, `L01–L03`) and any future calendar date, the UAT Team can re-run `UAT-01` through `UAT-05` at any time on a completely clean 14-slot matrix simply by selecting an unused future date (e.g., `Today + 2 days`, `Today + 3 days`) or another Medium room (`M02`, `M03`).
 
-3. **Data Reset / Cleanup Request:**
-   - In the event that the UAT Team requires a completely fresh database reset, notify the SingSlot Product Team via the shared contact channel.
-   - The Product Team can re-run the idempotent database migration & seeding job on GCP within 2 minutes:
-     ```bash
-     gcloud run jobs execute singslot-migrate --region asia-southeast1
-     ```
+### 4.3 Full Database Cleanup & Reset Procedure (Removing UAT-Generated Bookings)
+> ⚠️ **Important Note on `singslot-migrate`:** The Cloud Run job `singslot-migrate` runs `prisma migrate deploy` and `server/prisma/seed.ts`. Because `seed.ts` is strictly an **idempotent upsert** of the 3 demo users (`users`) and 9 rooms (`rooms`), running `singslot-migrate` alone **does NOT delete** existing `bookings` or `booking_slots` records.
+
+When the UAT Team requests a full database reset to purge all UAT-generated reservations while preserving the 3 seeded accounts and 9 rooms:
+1. Notify the SingSlot Product Team (@Phenwatsa / @lephirada) via the private handoff channel.
+2. The Product Team executes the following **transactional cleanup and seed verification** against Cloud SQL (`singslot-pg`), completing within 1–2 minutes:
+   ```bash
+   # Step 1: Transactionally purge all UAT-generated slot claims, bookings, and room blocks
+   # while keeping the seeded 'users' and 'rooms' tables intact
+   gcloud sql connect singslot-pg \
+     --project=cpe334-singslot-en-038-p1 \
+     --user=postgres \
+     --database=singslot \
+     --quiet << 'EOF'
+   BEGIN;
+   DELETE FROM "booking_slots";
+   DELETE FROM "bookings";
+   DELETE FROM "room_blocks";
+   COMMIT;
+   SELECT COUNT(*) AS remaining_bookings FROM "bookings";
+   SELECT COUNT(*) AS seeded_users FROM "users";
+   SELECT COUNT(*) AS seeded_rooms FROM "rooms";
+   EOF
+
+   # Step 2: Re-run idempotent seed job to verify the 3 demo accounts and 9 rooms
+   gcloud run jobs execute singslot-migrate --region asia-southeast1 --wait
+   ```
+3. **Post-Reset Verification:** The Product Team confirms that `remaining_bookings = 0`, `seeded_users = 3`, `seeded_rooms = 9`, and `GET /api/availability?date=<TOMORROW>` returns all 14 slots (`0..13`) as `isAvailable: true` across all 9 rooms before notifying the UAT Team.
 
 ---
 
 ## 5. Defect Reporting Protocol (Part C)
 
-If you observe behavior that deviates from the executable test specifications or the Sprint 1 scope, please report the finding using the following format:
+If you observe behavior that deviates from the executable test specifications or the Sprint 1 contract, please report the finding using the following template:
 
 ```markdown
 ### 🐞 Defect Report: [Short Title]
 - **Issue ID:** DEFECT-XX
-- **Tested Version/URL:** https://singslot-4o7kwmd5ma-as.a.run.app (Commit e598e21)
-- **Reporter:** [Partner Tester Name]
-- **Linked UAT Case / Requirement:** UAT-XX / [FR-XX, BR-XX]
+- **Tested Version/URL:** https://singslot-4o7kwmd5ma-as.a.run.app (Commit e598e21 / v1.0.1 - Cloud Verified)
+- **Reporter:** [Partner Tester Name & Team]
+- **Linked UAT Case / Requirement:** UAT-XX / [FR-XX, BR-XX, AC-XX]
 - **Role Used:** Customer / Staff
-- **Preconditions & Inputs:** [Date, Room, Slot Index, Duration]
+- **Preconditions & Inputs:** [Date, Room, Slot Index, Duration, Party Size]
 - **Steps to Reproduce:**
   1. ...
   2. ...
-- **Expected Result:** [Expected behavior per specification]
-- **Actual Result:** [Observed behavior or error message]
+- **Expected Result:** [Expected behavior per Sprint 1 specification]
+- **Actual Result:** [Observed behavior, HTTP status, or error message]
 - **Severity Assessment:**
-  - [ ] Critical (System crash / Complete block of booking flow)
-  - [ ] Major (Business rule violation, e.g. double-booking permitted, privacy leak)
+  - [ ] Critical (System crash / Complete block of core booking flow)
+  - [ ] Major (Business rule or security violation, e.g., double-booking permitted, cross-customer data leak)
   - [ ] Minor (UI discrepancy, minor styling, non-blocking label typo)
-- **Evidence / Screenshot:** [Attach screenshot or network log]
+- **Evidence / Screenshot:** [Attach screenshot or network/console log]
 ```
-
-We are committed to rapid triage and resolution per Lab 6 engineering guidelines!

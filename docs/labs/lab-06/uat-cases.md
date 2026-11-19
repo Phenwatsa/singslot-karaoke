@@ -1,11 +1,14 @@
 # Sprint 1 User Acceptance Testing (UAT) Test Specifications
 
 ## Project: SingSlot — Karaoke Room Reservation & Management System
-**Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents (Semester 1/2026)  
-**Deliverable:** Lab 6 — Independent User Acceptance Testing & Defect Management  
-**Scope:** Sprint 1 "The Golden Online Booking Slice"  
-**Target Release:** `v1.0.1 - Cloud Verified` (Commit `e598e21`)  
-**Deployment URL:** [https://singslot-4o7kwmd5ma-as.a.run.app](https://singslot-4o7kwmd5ma-as.a.run.app)  
+- **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents (Semester 1/2026)
+- **Deliverable:** Lab 6 — Independent User Acceptance Testing & Defect Management
+- **Scope:** Sprint 1 "The Golden Online Booking Slice"
+- **Sprint 1 Baseline Git Tag:** `v0.1.0-sprint1`
+- **UI Release Name / Badge:** `v1.0.1 - Cloud Verified`
+- **Deployed Commit SHA (`main`):** `aa5f109b97c157a143a7a9a94cd58dc02998467e` (Initial Lab 5 `main` baseline merge: `e598e2122af080978d2b2fb588df41125ffb0496`)
+- **Deployed Cloud Run Revision:** `singslot-00004-6mv` (`singslot` in `asia-southeast1`)
+- **Deployment URL:** [https://singslot-4o7kwmd5ma-as.a.run.app](https://singslot-4o7kwmd5ma-as.a.run.app)
 
 ---
 
@@ -104,9 +107,9 @@ All UAT test cases correspond strictly to the agreed Sprint 1 specifications def
   1. Logged in as an authenticated Customer.
   2. Server evaluates timestamps in `Asia/Bangkok` (UTC+7).
 * **Synthetic Inputs:**
-  - **Boundary Input A (Operating Window & Duration):** Tomorrow's date, Room `S01` (Small, capacity 4), `Start Time Slot = Slot #12 (22:00 – 23:00)`, inspect `3 Hours` (`22:00 – 25:00`, end slot 14 > 13).
-  - **Boundary Input B (Capacity Limit):** Room `S01` (`SMALL • max 4 pax`), attempt to increment Party Size above `4` in UI, and submit `partySize: 6` via API (`TEST-04d`).
-  - **Boundary Input C (Past Date Rejection):** Past date `2026-01-01`, Room `S01`, `startSlot: 0`, `durationHours: 1`, `partySize: 2` (`TEST-04c`).
+  - **Boundary Input A (Operating Window & Max Duration):** Tomorrow's date (`YYYY-MM-DD`), Room `S01` (Small, capacity 4), `Start Time Slot = Slot #12 (22:00 – 23:00)`, inspect `3 Hours` (`22:00 – 25:00`, end slot 14 > 13), and submit `durationHours: 6` via API (`BR-01`, `BR-03`).
+  - **Boundary Input B (Capacity Limit):** Tomorrow's date (`YYYY-MM-DD`), Room `S01` (`SMALL • max 4 pax`), attempt to increment Party Size above `4` in UI, and submit `partySize: 6` via API (`BR-05`, `TEST-04d`).
+  - **Boundary Input C (Past Date Rejection):** Yesterday's date (`YYYY-MM-DD` relative to current `Asia/Bangkok` date), Room `S01`, `startSlot: 0`, `durationHours: 1`, `partySize: 2` (`BR-04`, `TEST-04c`).
 
 * **Numbered User Actions:**
   1. In the **"Browse Rooms"** view, click **"Book This Suite"** on Room **`S01` (Small • max 4 pax)** to open the booking modal.
@@ -119,27 +122,43 @@ All UAT test cases correspond strictly to the agreed Sprint 1 specifications def
      - With Room `S01` (`max 4 pax`) selected, click the `+` button on **"Party Size (Guests)"** until it reaches **`4 Guests`**. Observe the state of the `+` button.
   4. **Check Past Date Picker Guard (`BR-04`):**
      - Click the **"Booking Date"** calendar popover inside the booking modal and attempt to click any date prior to today's `Asia/Bangkok` date.
-  5. **Direct API Boundary Verification (`AC-04c` & `AC-04d`):**
-     - Open Browser DevTools Console (`F12` / `Cmd + Option + I` → **Console**) and run the following snippet to verify backend rejection of a past-date booking (`CANNOT_BOOK_PAST_SLOT`) and an over-capacity booking (`EXCEEDS_CAPACITY`) directly against `POST /api/bookings/online`:
+  5. **Direct API Boundary Verification (`BR-01`, `BR-03`, `BR-04`, `BR-05`, `AC-04c`, `AC-04d`):**
+     - Open Browser DevTools Console (`F12` / `Cmd + Option + I` → **Console**) and run the following snippet (which dynamically computes Yesterday's and Tomorrow's `Asia/Bangkok` dates) to verify backend rejection of a past-date booking (`CANNOT_BOOK_PAST_SLOT`), an over-capacity booking (`EXCEEDS_CAPACITY`), and a >5-hour booking (`INVALID_DURATION`) directly against `POST /api/bookings/online`:
        ```javascript
        (async () => {
+         const fmtBangkok = (offsetDays) => {
+           const d = new Date(Date.now() + offsetDays * 86400000);
+           return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(d);
+         };
+         const yesterdayStr = fmtBangkok(-1);
+         const tomorrowStr = fmtBangkok(1);
          const token = localStorage.getItem('singslot_token');
          const roomsRes = await fetch('/api/rooms').then(r => r.json());
          const s01 = roomsRes.rooms.find(r => r.roomNumber === 'S01');
+
          // 1. Past Date Test (BR-04 / AC-04c / TEST-04c)
          const pastRes = await fetch('/api/bookings/online', {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-           body: JSON.stringify({ roomId: s01.id, bookingDate: '2026-01-01', startSlot: 0, durationHours: 1, partySize: 2 })
+           body: JSON.stringify({ roomId: s01.id, bookingDate: yesterdayStr, startSlot: 0, durationHours: 1, partySize: 2 })
          });
-         console.log('Past Date Status:', pastRes.status, await pastRes.json());
+         console.log('1. Past Date Status:', pastRes.status, await pastRes.json());
+
          // 2. Over-Capacity Test (BR-05 / AC-04d / TEST-04d)
          const capRes = await fetch('/api/bookings/online', {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-           body: JSON.stringify({ roomId: s01.id, bookingDate: '2099-12-31', startSlot: 0, durationHours: 1, partySize: 6 })
+           body: JSON.stringify({ roomId: s01.id, bookingDate: tomorrowStr, startSlot: 0, durationHours: 1, partySize: 6 })
          });
-         console.log('Over-Capacity Status:', capRes.status, await capRes.json());
+         console.log('2. Over-Capacity Status:', capRes.status, await capRes.json());
+
+         // 3. Exceed Max Duration >5 Hours Test (BR-01 / BR-03)
+         const durationRes = await fetch('/api/bookings/online', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+           body: JSON.stringify({ roomId: s01.id, bookingDate: tomorrowStr, startSlot: 0, durationHours: 6, partySize: 2 })
+         });
+         console.log('3. Exceed Max Duration (6 hrs) Status:', durationRes.status, await durationRes.json());
        })();
        ```
 
@@ -147,9 +166,10 @@ All UAT test cases correspond strictly to the agreed Sprint 1 specifications def
   - **Operating Window (`BR-01`, `BR-03`):** When `Slot #12 (22:00 – 23:00)` is selected, durations `1 Hour` and `2 Hours` are selectable, while `3 Hours (Exceeds 24:00)`, `4 Hours (Exceeds 24:00)`, and `5 Hours (Exceeds 24:00)` are disabled.
   - **Capacity Stepper (`BR-05`):** On Small Room `S01`, the `+` button disables at **`4 Guests`** (`Room capacity: up to 4 guests`).
   - **Past Date Picker (`BR-04`):** Dates earlier than today in `Asia/Bangkok` are disabled in the booking modal calendar popover.
-  - **Backend API Enforcement (`AC-04c`, `AC-04d`):**
-    - The past-date request (`2026-01-01`) returns **HTTP 400 Bad Request** with `{ "success": false, "error": { "code": "CANNOT_BOOK_PAST_SLOT", ... } }` (`TEST-04c`).
+  - **Backend API Enforcement (`BR-01`, `BR-04`, `BR-05`, `AC-04c`, `AC-04d`):**
+    - The past-date request (`yesterdayStr`) returns **HTTP 400 Bad Request** with `{ "success": false, "error": { "code": "CANNOT_BOOK_PAST_SLOT", ... } }` (`TEST-04c`).
     - The over-capacity request (`partySize: 6` on `S01`) returns **HTTP 400 Bad Request** with `{ "success": false, "error": { "code": "EXCEEDS_CAPACITY", ... } }` (`TEST-04d`).
+    - The >5-hour duration request (`durationHours: 6` on `S01`) returns **HTTP 400 Bad Request** with `{ "success": false, "error": { "code": "INVALID_DURATION", ... } }` (`BR-01`), creating zero `Booking` or `BookingSlot` records.
 
 ---
 
@@ -201,8 +221,10 @@ All UAT test cases correspond strictly to the agreed Sprint 1 specifications def
      - While still logged in as **Customer 2**, run the following snippet in Browser DevTools Console to attempt direct access to `/api/bookings/master`:
        ```javascript
        (async () => {
+         const tomorrowStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' })
+           .format(new Date(Date.now() + 86400000));
          const token = localStorage.getItem('singslot_token');
-         const res = await fetch('/api/bookings/master?date=2026-11-20', {
+         const res = await fetch(`/api/bookings/master?date=${tomorrowStr}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          console.log('Customer GET /api/bookings/master Status:', res.status, await res.json());
@@ -222,7 +244,7 @@ All UAT test cases correspond strictly to the agreed Sprint 1 specifications def
     }
     ```
     No booking details, customer name, phone number, or booking code are disclosed.
-  - **Staff Endpoint Rejection (`FR-06`, `BR-08`, `AC-01c`, `TEST-01c`):** Calling `GET /api/bookings/master?date=2026-11-20` with Customer 2's Bearer token returns **HTTP 403 Forbidden** with JSON payload:
+  - **Staff Endpoint Rejection (`FR-06`, `BR-08`, `AC-01c`, `TEST-01c`):** Calling `GET /api/bookings/master?date=${tomorrowStr}` with Customer 2's Bearer token returns **HTTP 403 Forbidden** with JSON payload:
     ```json
     {
       "success": false,

@@ -14,10 +14,14 @@
 | :--- | :--- |
 | **System Name** | SingSlot — Karaoke Room Reservation & Management System |
 | **Live Deployed URL** | [https://singslot-4o7kwmd5ma-as.a.run.app](https://singslot-4o7kwmd5ma-as.a.run.app) |
-| **Baseline Release Tag** | `v1.0.1 - Cloud Verified` |
-| **Baseline Commit SHA** | `e598e21` |
+| **GCP Project & Region** | `cpe334-singslot-en-038-p1` (`asia-southeast1`) |
+| **Cloud Run Service** | `singslot` (Cloud SQL PostgreSQL 16 instance: `singslot-pg`) |
+| **Deployed Cloud Run Revision** | `singslot-00004-6mv` (`100%` traffic; promoted from `singslot-00003-2fg`, initial Task 5 revision `singslot-00001-r8c`) |
+| **Immutable Container Image Digest** | `asia-southeast1-docker.pkg.dev/cpe334-singslot-en-038-p1/singslot/singslot@sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3` |
+| **Deployed Release Commit SHA (`main`)** | `aa5f109b97c157a143a7a9a94cd58dc02998467e` (Lab 5 Release 2 via PR #31; initial Lab 5 `main` merge commit `e598e2122af080978d2b2fb588df41125ffb0496`) |
+| **Sprint 1 Baseline Git Tag** | `v0.1.0-sprint1` |
+| **UI Release Name / Badge** | `v1.0.1 - Cloud Verified` |
 | **GitHub Repository** | [https://github.com/Phenwatsa/singslot-karaoke](https://github.com/Phenwatsa/singslot-karaoke) |
-| **Cloud Infrastructure** | Google Cloud Platform (Cloud Run + Cloud SQL PostgreSQL 16) |
 | **Server Timezone** | `Asia/Bangkok` (UTC+7) |
 
 ---
@@ -171,7 +175,7 @@ If you observe behavior that deviates from the executable test specifications or
 ```markdown
 ### 🐞 Defect Report: [Short Title]
 - **Issue ID:** DEFECT-XX
-- **Tested Version/URL:** https://singslot-4o7kwmd5ma-as.a.run.app (Commit e598e21 / v1.0.1 - Cloud Verified)
+- **Tested Version/URL:** https://singslot-4o7kwmd5ma-as.a.run.app (Revision: singslot-00004-6mv | Commit: aa5f109b97c157a143a7a9a94cd58dc02998467e | Git Tag: v0.1.0-sprint1 | Release: v1.0.1 - Cloud Verified)
 - **Reporter:** [Partner Tester Name & Team]
 - **Linked UAT Case / Requirement:** UAT-XX / [FR-XX, BR-XX, AC-XX]
 - **Role Used:** Customer / Staff

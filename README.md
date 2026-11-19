@@ -17,10 +17,10 @@ SingSlot is a full-stack web reservation platform tailored for a single-venue pr
 
 All formal software engineering specifications required for CPE 334 Deliverable 1 are maintained under the [`docs/`](./docs/) directory:
 
-- [**Software Requirements Specification (SRS)**](./docs/srs.md): Product scope, actors, FR-01–FR-14, BR-01–BR-10, and NFR-01–NFR-05.
-- [**Feature Catalog**](./docs/features.md): Baseline features F-01 through F-14 mapped across 3 sprints.
-- [**Requirements Traceability Matrix**](./docs/traceability.md): 100% bidirectional traceability mapping requirements to 17 automated test IDs.
-- [**System-Level Design Specification (SDS)**](./docs/system-sds.md): Decoupled architecture, ERD, database constraints, pessimistic room-locking concurrency strategy, and API conventions.
+- [**Software Requirements Specification (SRS)**](./docs/system-specifications/srs.md): Product scope, actors, FR-01–FR-14, BR-01–BR-10, and NFR-01–NFR-05.
+- [**Feature Catalog**](./docs/system-specifications/features.md): Baseline features F-01 through F-14 mapped across 3 sprints.
+- [**Requirements Traceability Matrix**](./docs/system-specifications/traceability.md): 100% bidirectional traceability mapping requirements to 17 automated test IDs.
+- [**System-Level Design Specification (SDS)**](./docs/system-specifications/system-sds.md): Decoupled architecture, ERD, database constraints, pessimistic room-locking concurrency strategy, and API conventions.
 - [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap, video milestones, and Sprint 1 feasibility justification.
 - [**Sprint 1 Engineering Contracts**](./docs/sprints/sprint-1/contracts.md): API specifications, Acceptance Criteria (`AC-01`–`AC-06`), and Software Test Specifications (`TEST-01`–`TEST-06`).
 - [**Team & Agent Working Rules**](./AGENTS.md): Hardware memory guards (M1 8GB RAM), Git protocols, TDD rules, and UI layout conventions.

@@ -192,20 +192,26 @@
 #### 🔍 Review Discussion & Verification Notes
 
 - **Reviewer (@Phenwatsa):**
-  The CI workflow and deployment tooling have been reviewed.  
-  Workflow triggers, PostgreSQL service configuration, and environment variables are correctly configured.  
-  Prisma migration/seed, typecheck, server/client tests, offline deployment tests, and Docker build are included.  
-  Deployment scripts and their offline stub tests are provided.  
-  GitHub Actions Run [feat(booking): implement conflict prevention and concurrency protection [Issue #5] #11](https://github.com/Phenwatsa/singslot-karaoke/pull/11) completed successfully with all 13 steps passing.  
-  No blocking issues found.  
-  Approved.  
-  Note: Post-bootstrap C-01 verification on main remains a follow-up step after the Release PR is merged, as specified in the bootstrap sequence.
+
+  > The CI workflow and deployment tooling have been reviewed.
+  >
+  > - Workflow triggers, PostgreSQL service configuration, and environment variables are correctly configured.
+  > - Prisma migration/seed, typecheck, server/client tests, offline deployment tests, and Docker build are included.
+  > - Deployment scripts and their offline stub tests are provided.
+  > - GitHub Actions Run #11 completed successfully with all 13 steps passing.
+  >
+  > No blocking issues found.
+  >
+  > **Approved.**
+  >
+  > Note: Post-bootstrap C-01 verification on `main` remains a follow-up step after the Release PR is merged, as specified in the bootstrap sequence.
 
 - **Developer Response (@lephirada):**
-  Thank you for the thorough review and approval!
-  - All feedback items, including the addition of `singslot-customer-password` in Secret Manager, `--no-storage-auto-increase` on Cloud SQL, exact health check parameters, and in-memory client test transpilation have been fully verified and committed.
-  - Acknowledged regarding C-01 post-bootstrap verification: Once PR #24 is merged into `sprint-1-staging`, we will open the Release PR targeting `main` and execute the C-01 verification on `main` as defined in the bootstrap sequence.
-  - Ready to merge PR #24 into `sprint-1-staging`.
+
+  > Thank you for the thorough review and approval!
+  > All feedback items, including the addition of `singslot-customer-password` in Secret Manager, `--no-storage-auto-increase` on Cloud SQL, exact health check parameters, and in-memory client test transpilation have been fully verified and committed.
+  > Acknowledged regarding C-01 post-bootstrap verification: Once PR #24 is merged into `sprint-1-staging`, we will open the Release PR targeting `main` and execute the C-01 verification on `main` as defined in the bootstrap sequence.
+  > Ready to merge PR #24 into `sprint-1-staging`.
 
 - **Outcome:** PR #24 approved by @Phenwatsa. Merging into `sprint-1-staging` unlocked.
 
@@ -307,11 +313,13 @@
 
 #### 🔍 Review Discussion & Verification Notes
 
-- **Verification Evidence (PR #26):**
+- **Reviewer (@Phenwatsa):**
+
+  > `C-02 verification: PASS.`
+
+- **Verification Evidence (PR #26 - Blocked Merge Proof):**
   - Temporary PR [PR #26](https://github.com/Phenwatsa/singslot-karaoke/pull/26) was opened from `test/prove-gate` targeting `main` with an intentional test failure in `server/tests/ready.test.ts` to prove branch protection gate enforcement.
   - Required status check `CI & Docker Build / test-and-docker` failed.
-  - Reviewer @Phenwatsa submitted review approval with comment:
-    > `C-02 verification: PASS.`
   - The merge button was visibly blocked by GitHub Ruleset `protect-main` due to the failed required status check, satisfying Requirement C-02.
   - PR #26 was closed without merging, and branch `test/prove-gate` was deleted.
 

@@ -1332,3 +1332,27 @@ Optional Evidence (Part 4 Recommended Practice - Student Guide Episode 8):
 - Captioned screenshot of live website UI successfully reverting to Release 1 while booking data remains intact.
 - Captioned screenshot of restored application state after roll-forward to Release 2.
 ````
+
+---
+
+## 5. Lab 6 Independent UAT & Defect Management (Issues 1 to 4)
+
+- **Target:** Lab 6 (Independent User Acceptance Testing, Defect Triage, TDD Resolution & Partner Sign-off)
+- **Label:** `lab6` (Mandatory on all Issues and Pull Requests)
+- **Work Balance (50/50):** Alternating primary ownership and substantive peer review between `@Phenwatsa` and `@lephirada`.
+- **Target Branching Strategy:**
+  - Base: `sprint-1-staging`
+  - Release: `main` (auto-deploys via Cloud Run CI/CD upon merge)
+- **Agreed Documentation & Screenshot Directory Architecture (`AC-01`):**
+  - Lab 6 specifications and logs reside under `docs/labs/lab-06/` (`uat-cases.md`, `handoff.md`, `reviewer.md`, `ai-use.md`).
+  - All screenshot assets across sprints and labs are centralized under `docs/screenshots/` (`docs/screenshots/sprint-1/` and `docs/screenshots/lab-06/`), replacing legacy per-folder `docs/labs/lab-06/screenshots/` subdirectories.
+
+### 5.1 Master Work Allocation & Dependency Matrix
+
+| Issue | Title on GitHub | Primary Owner | Reviewer | Branch Name | PR Target | Rubric Deliverable |
+| :---: | :--- | :---: | :---: | :--- | :--- | :--- |
+| **1** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package` | `@Phenwatsa` | `@lephirada` | `docs/lab6-issue-1-uat-plan-prep` | `sprint-1-staging` | Part A (20 pts) + Scaffolding |
+| **2** | `[Lab 6 - Issue 2] Independent UAT Execution on Partner App & Outgoing Defect Reporting` | `@lephirada` | `@Phenwatsa` | `docs/lab6-issue-2-partner-uat-execution` | `sprint-1-staging` | Part B (25 pts) + Outgoing Defect |
+| **3** | `[Lab 6 - Issue 3] Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment` | `@Phenwatsa` | `@lephirada` | `fix/lab6-issue-3-defect-resolution` | `sprint-1-staging` → `main` | Part D (35 pts) — TDD Fix & CI/CD |
+| **4** | `[Lab 6 - Issue 4] Defect Triage, Partner Retest Verification & UAT Acceptance Decision` | `@lephirada` | `@Phenwatsa` | `docs/lab6-issue-4-triage-retest-signoff` | `sprint-1-staging` | Part C (20 pts) & Part D Sign-off |
+

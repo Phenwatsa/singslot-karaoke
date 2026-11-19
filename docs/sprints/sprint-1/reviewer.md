@@ -102,16 +102,19 @@
 
 - **Reviewer (@lephirada) — Initial Review:**
 
-  > _"Request Changes_
+  > **Request Changes**
   >
-  > _The core Room Catalog and Server-Calculated Availability implementations are in place. However, a few items need to be addressed before approval:_
-  > _1. Align the Availability Matrix status colors with the specified Green (Available), Red/Gray (Occupied/Closed) visual requirements while preserving the pastel theme._
-  > _2. Clear stale availability data when the selected date changes and handle failed API requests with an appropriate error state._
-  > _3. Extend TEST-03 to verify that all 9 rooms contain exactly 14 slots (indices 0–13)._
-  > _4. Add test coverage for RoomBlock occupancy and ensure CANCELLED bookings are not treated as occupied._
-  > _5. Synchronize the reported test counts between the PR description and docs/sprints/sprint-1/ai-use.md._
-  > _6. Clarify that TEST-03 creates its booking fixture in beforeAll() rather than relying on a pre-seeded booking._
-  > _Please address these items and update the verification results before requesting another review."_
+  > The core Room Catalog and Server-Calculated Availability implementations are in place. However, a few items need to be addressed before approval:
+  >
+  > 1. Align the Availability Matrix status colors with the specified Green (Available), Red/Gray (Occupied/Closed) visual requirements while preserving the pastel theme.
+  > 2. Clear stale availability data when the selected date changes and handle failed API requests with an appropriate error state.
+  > 3. Extend TEST-03 to verify that all 9 rooms contain exactly 14 slots (indices 0–13).
+  > 4. Add test coverage for RoomBlock occupancy and ensure CANCELLED bookings are not treated as occupied.
+  > 5. Synchronize the reported test counts between the PR description and docs/sprints/sprint-1/ai-use.md.
+  > 6. Clarify that TEST-03 creates its booking fixture in beforeAll() rather than relying on a pre-seeded booking.
+  >
+  > Please address these items and update the verification results before requesting another review.
+
   - **Status:** **Request Changes**
 
 - **Developer Response (@Phenwatsa):**
@@ -168,10 +171,12 @@
 
 - **Developer Response (@lephirada):**
 
-  > _"Thank you @Phenwatsa for the thorough review, constructive recommendations, and approval! Both non-blocking items have been fully addressed and verified:_
-  > _1. **RoomBlock Conflict Test (BR-02):** Added a dedicated integration test in `server/tests/booking.test.ts` confirming that booking attempts overlapping an active `RoomBlock` are rejected with HTTP 409 `SLOT_CONFLICT` with zero database modifications._
-  > _2. **Frontend Same-Day Elapsed Slot Guard:** Added `isPastBangkokSlot` in `client/src/utils/date.ts` and integrated it into `BookingModal.tsx` to automatically disable elapsed slots on the current Bangkok date with `(Elapsed)` indicators and prevent invalid form submissions._
-  > _All 54 tests (43 server + 11 client) pass cleanly in ~2.3s with `--runInBand`, and typecheck and build pass with 0 errors. PR #10 is ready for merge into `sprint-1-staging`."_
+  > Thank you @Phenwatsa for the thorough review, constructive recommendations, and approval! Both non-blocking items have been fully addressed and verified:
+  >
+  > 1. **RoomBlock Conflict Test (BR-02):** Added a dedicated integration test in `server/tests/booking.test.ts` confirming that booking attempts overlapping an active `RoomBlock` are rejected with HTTP 409 `SLOT_CONFLICT` with zero database modifications.
+  > 2. **Frontend Same-Day Elapsed Slot Guard:** Added `isPastBangkokSlot` in `client/src/utils/date.ts` and integrated it into `BookingModal.tsx` to automatically disable elapsed slots on the current Bangkok date with `(Elapsed)` indicators and prevent invalid form submissions.
+  >
+  > All 54 tests (43 server + 11 client) pass cleanly in ~2.3s with `--runInBand`, and typecheck and build pass with 0 errors. PR #10 is ready for merge into `sprint-1-staging`.
 
 - **Outcome:** PR #10 approved for integration into `sprint-1-staging`.
 
@@ -190,18 +195,20 @@
 
 - **Reviewer (@Phenwatsa):**
 
-  > _"The implementation satisfies the required conflict prevention and concurrency protection criteria._
+  > The implementation satisfies the required conflict prevention and concurrency protection criteria.
   >
-  > _TEST-04b verifies that booking across a pre-seeded occupied slot returns HTTP 409 SLOT_CONFLICT without creating additional bookings or booking slots._
-  > _The Red–Green commits demonstrate the behavior before and after restoring application-level interval validation. The Red-phase failure confirms that disabling this validation causes the request to reach the database-level conflict handler instead._
-  > _TEST-04e uses Promise.all to simulate competing requests and verifies exactly one HTTP 201 response and one HTTP 409 response, along with the persisted booking and slot ownership._
-  > _The PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex]) is present and directly verified through a duplicate insertion test._
-  > _Test cleanup is appropriately scoped to records created by this test suite._
-  > _The attached test evidence reports 57/57 passing tests, with typecheck and production build also reported as successful._
+  > - `TEST-04b` verifies that booking across a pre-seeded occupied slot returns HTTP 409 `SLOT_CONFLICT` without creating additional bookings or booking slots.
+  > - The Red–Green commits demonstrate the behavior before and after restoring application-level interval validation. The Red-phase failure confirms that disabling this validation causes the request to reach the database-level conflict handler instead.
+  > - `TEST-04e` uses `Promise.all` to simulate competing requests and verifies exactly one HTTP 201 response and one HTTP 409 response, along with the persisted booking and slot ownership.
+  > - The PostgreSQL composite unique constraint `@@unique([roomId, bookingDate, slotIndex])` is present and directly verified through a duplicate insertion test.
+  > - Test cleanup is appropriately scoped to records created by this test suite.
   >
-  > _No blocking issues were found within the scope of this PR._
+  > The attached test evidence reports 57/57 passing tests, with typecheck and production build also reported as successful.
   >
-  > _Recommendation: Approve."_
+  > No blocking issues were found within the scope of this PR.
+  >
+  > **Recommendation: Approve.**
+
   - **Status:** **Approved**
 
 - **Developer Response (@lephirada):**
@@ -225,20 +232,22 @@
 
 - **Reviewer (@Phenwatsa):**
 
-  > _"Approved._
+  > **Approved.**
   >
-  > _The implementation satisfies the acceptance criteria for Customer My Bookings, Booking Detail access control, and Staff Master Schedule._
+  > The implementation satisfies the acceptance criteria for Customer My Bookings, Booking Detail access control, and Staff Master Schedule.
   >
-  > _AC-05: GET /api/bookings/my strictly scopes results using the authenticated user's req.user.id._
-  > _AC-05b: GET /api/bookings/:id correctly grants access to the booking owner or STAFF and returns HTTP 403 FORBIDDEN for unauthorized customers._
-  > _AC-06: GET /api/bookings/master is protected by STAFF role authorization and returns confirmed reservations for the selected date across all nine rooms._
-  > _The customer and staff interfaces are integrated into AppLayout, with booking detail inspection connected to the corresponding API._
-  > _Automated tests cover customer data isolation, booking ownership, staff access, all-nine-room schedule coverage, date filtering, and unauthorized access._
-  > _The PR reports 69/69 tests passing, with TypeScript typecheck and client production build also reported as successful. These results are author-provided evidence; no workflow run was available for independent CI verification._
+  > - `AC-05`: `GET /api/bookings/my` strictly scopes results using the authenticated user's `req.user.id`.
+  > - `AC-05b`: `GET /api/bookings/:id` correctly grants access to the booking owner or STAFF and returns HTTP 403 `FORBIDDEN` for unauthorized customers.
+  > - `AC-06`: `GET /api/bookings/master` is protected by STAFF role authorization and returns confirmed reservations for the selected date across all nine rooms.
+  > - The customer and staff interfaces are integrated into `AppLayout`, with booking detail inspection connected to the corresponding API.
+  > - Automated tests cover customer data isolation, booking ownership, staff access, all-nine-room schedule coverage, date filtering, and unauthorized access.
   >
-  > _No blocking issues were found within the scope of this PR._
+  > The PR reports 69/69 tests passing, with TypeScript typecheck and client production build also reported as successful. These results are author-provided evidence; no workflow run was available for independent CI verification.
   >
-  > _Recommendation: Approve."_
+  > No blocking issues were found within the scope of this PR.
+  >
+  > **Recommendation: Approve.**
+
   - **Status:** **Approved**
 
 - **Developer Response (@lephirada):**

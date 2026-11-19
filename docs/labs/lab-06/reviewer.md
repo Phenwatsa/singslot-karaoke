@@ -20,7 +20,7 @@
 
 | Issue | Title / Scope | Primary Owner | Reviewer | Branch Name | PR Target | Status | Verdict |
 | :---: | :--- | :---: | :---: | :--- | :--- | :---: | :---: |
-| **Issue 1** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package` | @Phenwatsa | @lephirada | `docs/lab6-issue-1-uat-plan-prep` | `sprint-1-staging` | Under Review | Pending |
+| **Issue 1 (#32)** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package` | @Phenwatsa | @lephirada | `docs/lab6-issue-1-uat-plan-prep` | [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36) (`sprint-1-staging`) | **Approved** | **Ready to Merge** |
 | **Issue 2** | `[Lab 6 - Issue 2] Independent UAT Execution on Partner App & Outgoing Defect Reporting` | @lephirada | @Phenwatsa | `docs/lab6-issue-2-partner-uat-execution` | `sprint-1-staging` | Queued | Pending |
 | **Issue 3** | `[Lab 6 - Issue 3] Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment` | @Phenwatsa | @lephirada | `fix/lab6-issue-3-defect-resolution` | `sprint-1-staging` → `main` | Queued | Pending |
 | **Issue 4** | `[Lab 6 - Issue 4] Defect Triage, Partner Retest Verification & UAT Acceptance Decision` | @lephirada | @Phenwatsa | `docs/lab6-issue-4-triage-retest-signoff` | `sprint-1-staging` | Queued | Pending |
@@ -30,17 +30,29 @@
 ## 3. Detailed Peer Review Logs
 
 ### 📌 Issue 1: Sprint 1 UAT Plan, Test Specification & Handoff Package
-* **GitHub Issue:** `[Lab 6 - Issue 1]`
+* **GitHub Issue:** [Issue #32](https://github.com/Phenwatsa/singslot-karaoke/issues/32)
+* **PR Link:** [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36)
 * **Branch:** `docs/lab6-issue-1-uat-plan-prep`
 * **Primary Owner:** @Phenwatsa
 * **Reviewer:** @lephirada
 * **PR Target:** `sprint-1-staging`
-* **Status:** Pending Review
+* **Status:** **Approved**
+* **Verdict:** **Ready to Merge**
 
 #### 🔍 Review Discussion & Verification Notes
 
 * **Developer (@Phenwatsa):**
-  > _"I have finalized the UAT test specification (`uat-cases.md`) covering all 4 required categories (UAT-01 to UAT-05) mapped to our Sprint 1 contracts, prepared the safe handoff guide (`handoff.md`) with Cloud Run baseline details and role descriptions, and reorganized `docs/` into centralized `system-specifications/` and `screenshots/` directories. Ready for your review."_
+
+  > I have finalized the UAT test specification (`uat-cases.md`) covering all 4 required categories (UAT-01 to UAT-05) mapped to our Sprint 1 contracts, prepared the safe handoff guide (`handoff.md`) with Cloud Run baseline details (`singslot-00004-6mv`), Git tag (`v0.1.0-sprint1`), role descriptions, and date-scoped reset procedure, and reorganized `docs/` into centralized `system-specifications/` and `screenshots/` directories. Ready for your review.
 
 * **Reviewer (@lephirada):**
-  > _(Pending peer review feedback and checks)_
+
+  > Approved Ka. The UAT cases, test coverage, traceability, and handoff documentation meet the requirements of Issue [#32](https://github.com/Phenwatsa/singslot-karaoke/issues/32). No further changes are required. Great work!
+
+  * **Status:** **Approved**
+
+* **Developer Response (@Phenwatsa):**
+
+  > Thank you @lephirada for the review and approval! I have recorded the peer review approval in `docs/labs/lab-06/reviewer.md`. PR #36 is now ready to merge into `sprint-1-staging`.
+
+* **Outcome:** PR #36 approved by @lephirada and ready for integration into `sprint-1-staging`.

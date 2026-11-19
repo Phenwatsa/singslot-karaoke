@@ -90,26 +90,45 @@ To satisfy security and course governance rules (**R-12**), secret passwords are
 * **Immediate Self-Service Re-run (Zero Wait Time):**
   - Because slot occupancy is uniquely scoped to `(roomId, bookingDate, slotIndex)` across 9 rooms (`S01–S03`, `M01–M03`, `L01–L03`) and any future calendar date, the UAT Team can re-run `UAT-01` through `UAT-05` at any time on a completely clean 14-slot matrix simply by selecting an unused future date (e.g., `Today + 2 days`, `Today + 3 days`) or another Medium room (`M02`, `M03`).
 
-### 4.3 Full Database Cleanup & Reset Procedure (Removing UAT-Generated Bookings)
-> ⚠️ **Important Note on `singslot-migrate`:** The Cloud Run job `singslot-migrate` runs `prisma migrate deploy` and `server/prisma/seed.ts`. Because `seed.ts` is strictly an **idempotent upsert** of the 3 demo users (`users`) and 9 rooms (`rooms`), running `singslot-migrate` alone **does NOT delete** existing `bookings` or `booking_slots` records.
+### 4.3 Scoped UAT Database Cleanup & Reset Procedure (Preserving Baseline & Prior Lab Evidence)
+> ⚠️ **Important Note on Environment & `singslot-migrate`:**
+> 1. **Dedicated Assessment & UAT Database:** The Cloud SQL database (`singslot-pg`) is a dedicated course evaluation environment containing **zero real production customer data**. Its baseline seeded state (`server/prisma/seed.ts`) consists strictly of **3 demo users (`users`)** and **9 rooms (`rooms`)** with **0 pre-seeded bookings**.
+> 2. **Protected Historical Lab 5 Grading Records:** Two historical bookings from Lab 5 deployment verification (`BK-20261113-IA4Q` on `2026-11-13` and `BK-20261115-MQRX` on `2026-11-15`) reside in the database for Lab 5 grading corroboration and must be preserved.
+> 3. **Why `singslot-migrate` Alone Is Insufficient:** The Cloud Run job `singslot-migrate` runs `prisma migrate deploy` and `server/prisma/seed.ts` (which performs an idempotent upsert of the 3 users and 9 rooms) and does not delete UAT-generated bookings.
 
-When the UAT Team requests a full database reset to purge all UAT-generated reservations while preserving the 3 seeded accounts and 9 rooms:
-1. Notify the SingSlot Product Team (@Phenwatsa / @lephirada) via the private handoff channel.
-2. The Product Team executes the following **transactional cleanup and seed verification** against Cloud SQL (`singslot-pg`), completing within 1–2 minutes:
+When the UAT Team requests a database reset to clear UAT-generated reservations while strictly preserving the 3 seeded accounts, 9 rooms, and historical Lab 5 evidence records:
+1. Notify the SingSlot Product Team (@Phenwatsa / @lephirada) via the private handoff channel with the target UAT date(s) to clear.
+2. The Product Team executes the following **scoped transactional cleanup** against Cloud SQL (`singslot-pg`), restricting deletion strictly to UAT test dates (`"bookingDate" >= '2026-11-18'`) and explicitly protecting the Lab 5 baseline booking codes:
    ```bash
-   # Step 1: Transactionally purge all UAT-generated slot claims, bookings, and room blocks
-   # while keeping the seeded 'users' and 'rooms' tables intact
+   # Step 1: Transactionally delete ONLY UAT-generated slot claims and bookings
+   # (Scoped strictly to the Lab 6 UAT window >= 2026-11-18 and excluding Lab 5 evidence codes)
    gcloud sql connect singslot-pg \
      --project=cpe334-singslot-en-038-p1 \
      --user=postgres \
      --database=singslot \
      --quiet << 'EOF'
    BEGIN;
-   DELETE FROM "booking_slots";
-   DELETE FROM "bookings";
-   DELETE FROM "room_blocks";
+
+   DELETE FROM "booking_slots"
+   WHERE "bookingDate" >= '2026-11-18'
+     AND "bookingId" IN (
+       SELECT "id" FROM "bookings"
+       WHERE "bookingDate" >= '2026-11-18'
+         AND "bookingCode" NOT IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX')
+     );
+
+   DELETE FROM "bookings"
+   WHERE "bookingDate" >= '2026-11-18'
+     AND "bookingCode" NOT IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX');
+
+   DELETE FROM "room_blocks"
+   WHERE "blockDate" >= '2026-11-18';
+
    COMMIT;
-   SELECT COUNT(*) AS remaining_bookings FROM "bookings";
+
+   -- Verify UAT window is clean while baseline users, rooms, and Lab 5 records remain intact
+   SELECT COUNT(*) AS remaining_uat_bookings FROM "bookings" WHERE "bookingDate" >= '2026-11-18';
+   SELECT COUNT(*) AS preserved_lab5_bookings FROM "bookings" WHERE "bookingCode" IN ('BK-20261113-IA4Q', 'BK-20261115-MQRX');
    SELECT COUNT(*) AS seeded_users FROM "users";
    SELECT COUNT(*) AS seeded_rooms FROM "rooms";
    EOF
@@ -117,7 +136,7 @@ When the UAT Team requests a full database reset to purge all UAT-generated rese
    # Step 2: Re-run idempotent seed job to verify the 3 demo accounts and 9 rooms
    gcloud run jobs execute singslot-migrate --region asia-southeast1 --wait
    ```
-3. **Post-Reset Verification:** The Product Team confirms that `remaining_bookings = 0`, `seeded_users = 3`, `seeded_rooms = 9`, and `GET /api/availability?date=<TOMORROW>` returns all 14 slots (`0..13`) as `isAvailable: true` across all 9 rooms before notifying the UAT Team.
+3. **Post-Reset Verification:** The Product Team verifies that `remaining_uat_bookings = 0`, `preserved_lab5_bookings = 2`, `seeded_users = 3`, `seeded_rooms = 9`, and `GET /api/availability?date=<TOMORROW>` returns all 14 slots (`0..13`) as `isAvailable: true` across all 9 rooms before notifying the UAT Team.
 
 ---
 

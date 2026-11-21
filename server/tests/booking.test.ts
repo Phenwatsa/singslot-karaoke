@@ -29,9 +29,9 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
     const hourStr = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Bangkok',
       hour: 'numeric',
-      hour12: false
+      hourCycle: 'h23'
     }).format(new Date());
-    return parseInt(hourStr, 10);
+    return parseInt(hourStr, 10) % 24;
   };
 
   const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'Pass1234!';
@@ -361,14 +361,9 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
       expect(res.body.error.code).toBe('CANNOT_BOOK_PAST_SLOT');
       expect(res.body.error.message).toMatch(/past/i);
     } else {
-      // If executed before 10:00 AM Bangkok, yesterday's late slot has definitely elapsed
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const yesterdayStr = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }).format(yesterday);
+      // If executed before 10:00 AM Bangkok (e.g. 00:00 - 09:59 ICT), compute yesterday directly from todayBangkok calendar date
+      const [bYear, bMonth, bDay] = todayBangkok.split('-').map(Number);
+      const yesterdayStr = new Date(Date.UTC(bYear, bMonth - 1, bDay - 1)).toISOString().slice(0, 10);
 
       const res = await request(app)
         .post('/api/bookings/online')

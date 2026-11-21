@@ -42,10 +42,10 @@
   1. Harmonize all evidence filenames in `partner-execution-log.md` to `.png` and `.txt`, resolving extension mismatches with actual repository files.
   2. Reconcile case `UAT-S1-04 4A` outcome to `FAIL` based on verified Admin API role bypass (`DEF-OUT-01`) on capitalized routes (`/api/Accounts`, `/api/Reports/summary`).
   3. Reclassify `DEF-OUT-02` (unauthenticated logout) as a Contract Discrepancy / Advisory Finding to respect idempotent REST API design possibilities, maintaining `DEF-OUT-01` as the sole primary verified Critical defect.
-  4. Verify tenant isolation mechanism in `UAT-S1-04 4B` using authentic `user_other` Checking Bank UUID (`656b87b3-79c0-4a37-bc47-68ed01321292`) captured live in `EVD-17_cross_user_isolation_404.png`, demonstrating Prisma's `where: { id: primaryId, user_id: userId }` masking behavior.
-  5. Refine input parameter documentation for `2F-2` and `2G` to reflect exact tested values, and verify post-repayment balance stability in `2D`.
+  4. Verify tenant isolation mechanism in `UAT-S1-04 4B` using authentic 2-step verification: `user_other` Checking Bank UUID ownership proof (`656b87b3-79c0-4a37-bc47-68ed01321292` in `EVD-17b`) and foreign injection rejection from `user_demo` with HTTP 404 in `EVD-17`.
+  5. Refine input parameter documentation for `2F-2` and `2G` to reflect exact tested values, verify post-repayment balance stability in `2D`, and reconcile Acceptance Decision to Not Accepted pending resolution of Critical Defect `DEF-OUT-01`.
 * **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `git status`).
-* **Outcome:** Updated `partner-execution-log.md` with 100% accurate file mapping and real cross-tenant UUID proof, reconciled test outcome summary (17 PASS / 1 FAIL on bypass / 0 BLOCKED), and clearly demarcated Section 6 into Primary Verified Defect (`DEF-OUT-01`) vs. Advisory Findings (`DEF-OUT-02` + `AUDIT-01`..`AUDIT-04`).
+* **Outcome:** Updated `partner-execution-log.md` with 100% accurate file mapping, 2-step cross-tenant UUID proof (`EVD-17` and `EVD-17b`), reconciled test outcome summary (UI: 17 PASS / Direct API: 4A FAIL, 4B PASS, 4C PASS / UI-Blocked Forms: API NOT RUN), and clearly demarcated Section 6 into Primary Verified Defect (`DEF-OUT-01`) vs. Advisory Findings (`DEF-OUT-02` + `AUDIT-01`..`AUDIT-04`).
 
 
 

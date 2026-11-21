@@ -9,7 +9,7 @@ import { isValidDateString, isSlotInPast } from './availability.controller';
  */
 export const generateBookingCode = (bookingDate: string): string => {
   const cleanDate = bookingDate.replace(/-/g, '');
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const randomSuffix = (Math.random().toString(36) + '0000').substring(2, 6).toUpperCase();
   return `BK-${cleanDate}-${randomSuffix}`;
 };
 
@@ -22,6 +22,59 @@ export const formatBookingTimeRange = (startSlot: number, durationHours: number)
   const startHour = 10 + startSlot;
   const endHour = startHour + durationHours;
   return `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`;
+};
+
+/**
+ * Transactional service helper for creating a RoomBlock under the shared Room row lock (BR-02, DEF-SS-01).
+ * Acquires the identical `SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE` lock used by
+ * `createOnlineBooking` and verifies that no active CONFIRMED `BookingSlot` or existing `RoomBlock`
+ * occupies the target (roomId, blockDate, slotIndex) before committing.
+ */
+export const createMaintenanceRoomBlock = async (params: {
+  roomId: string;
+  blockDate: string;
+  slotIndex: number;
+  reason?: string;
+}) => {
+  const { roomId, blockDate, slotIndex, reason } = params;
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${roomId} FOR UPDATE`;
+
+    const [conflictingBookings, conflictingBlocks] = await Promise.all([
+      tx.bookingSlot.findMany({
+        where: {
+          roomId,
+          bookingDate: blockDate,
+          slotIndex,
+          booking: { status: 'CONFIRMED' }
+        }
+      }),
+      tx.roomBlock.findMany({
+        where: {
+          roomId,
+          blockDate,
+          slotIndex
+        }
+      })
+    ]);
+
+    if (conflictingBookings.length > 0 || conflictingBlocks.length > 0) {
+      const conflictErr: any = new Error('Cannot block a slot that is already occupied by a confirmed booking or block.');
+      conflictErr.code = 'SLOT_CONFLICT';
+      conflictErr.status = 409;
+      throw conflictErr;
+    }
+
+    return tx.roomBlock.create({
+      data: {
+        roomId,
+        blockDate,
+        slotIndex,
+        reason: reason || 'Maintenance block'
+      }
+    });
+  });
 };
 
 /**
@@ -182,96 +235,158 @@ export const createOnlineBooking = async (
       return;
     }
 
-    // 8. Atomic Booking Creation inside Transaction (NFR-03, BR-06)
-    const bookingCode = generateBookingCode(bookingDate);
+    // 8. Atomic Booking Creation inside Transaction with Row Lock & Code Retry (NFR-03, BR-02, BR-06)
     const userId = req.user!.id;
+    const MAX_CODE_RETRIES = 5;
 
-    try {
-      const newBooking = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({ where: { id: userId } });
-        const customerName = user?.fullName || req.user!.email;
-        const customerPhone = user?.phone || null;
+    for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
+      const bookingCode = generateBookingCode(bookingDate);
 
-        const booking = await tx.booking.create({
-          data: {
-            bookingCode,
-            userId,
-            roomId: room.id,
-            bookingDate,
-            startSlot,
-            durationHours,
-            partySize,
-            channel: 'ONLINE',
-            customerName,
-            customerPhone,
-            status: 'CONFIRMED',
-            slots: {
-              create: requestedSlots.map((slotIndex) => ({
+      try {
+        const newBooking = await prisma.$transaction(async (tx) => {
+          // DEF-SS-01 (BR-02, BR-06): Acquire transaction-scoped exclusive row lock on the target Room
+          await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${room.id} FOR UPDATE`;
+
+          // DEF-SS-02 (FR-03, FR-04): Purge any lingering BookingSlot rows from prior CANCELLED bookings
+          await tx.bookingSlot.deleteMany({
+            where: {
+              roomId: room.id,
+              bookingDate,
+              slotIndex: { in: requestedSlots },
+              booking: { status: 'CANCELLED' }
+            }
+          });
+
+          // DEF-SS-01 (BR-01, BR-02): Re-verify both BookingSlot and RoomBlock inside the locked transaction
+          const [txConflictingBookings, txConflictingBlocks] = await Promise.all([
+            tx.bookingSlot.findMany({
+              where: {
                 roomId: room.id,
                 bookingDate,
-                slotIndex
-              }))
-            }
-          },
-          include: {
-            room: true
+                slotIndex: { in: requestedSlots },
+                booking: { status: 'CONFIRMED' }
+              }
+            }),
+            tx.roomBlock.findMany({
+              where: {
+                roomId: room.id,
+                blockDate: bookingDate,
+                slotIndex: { in: requestedSlots }
+              }
+            })
+          ]);
+
+          if (txConflictingBookings.length > 0 || txConflictingBlocks.length > 0) {
+            const slotConflictErr: any = new Error('One or more requested slots are already occupied.');
+            slotConflictErr.code = 'TX_SLOT_CONFLICT';
+            throw slotConflictErr;
           }
+
+          const user = await tx.user.findUnique({ where: { id: userId } });
+          const customerName = user?.fullName || req.user!.email;
+          const customerPhone = user?.phone || null;
+
+          const booking = await tx.booking.create({
+            data: {
+              bookingCode,
+              userId,
+              roomId: room.id,
+              bookingDate,
+              startSlot,
+              durationHours,
+              partySize,
+              channel: 'ONLINE',
+              customerName,
+              customerPhone,
+              status: 'CONFIRMED',
+              slots: {
+                create: requestedSlots.map((slotIndex) => ({
+                  roomId: room.id,
+                  bookingDate,
+                  slotIndex
+                }))
+              }
+            },
+            include: {
+              room: true
+            }
+          });
+
+          // Fault Injection hook for NFR-03 / TEST-04f
+          if (
+            process.env.NODE_ENV === 'test' &&
+            req.headers['x-simulate-failure'] === 'true'
+          ) {
+            throw new Error('Simulated transaction failure for TEST-04f');
+          }
+
+          return booking;
         });
 
-        // Fault Injection hook for NFR-03 / TEST-04f
-        if (
-          process.env.NODE_ENV === 'test' &&
-          req.headers['x-simulate-failure'] === 'true'
-        ) {
-          throw new Error('Simulated transaction failure for TEST-04f');
-        }
+        const timeRange = formatBookingTimeRange(newBooking.startSlot, newBooking.durationHours);
 
-        return booking;
-      });
-
-      const timeRange = formatBookingTimeRange(newBooking.startSlot, newBooking.durationHours);
-
-      res.status(201).json({
-        success: true,
-        booking: {
-          id: newBooking.id,
-          bookingCode: newBooking.bookingCode,
-          roomNumber: newBooking.room.roomNumber,
-          bookingDate: newBooking.bookingDate,
-          timeRange,
-          durationHours: newBooking.durationHours,
-          partySize: newBooking.partySize,
-          status: newBooking.status
-        }
-      });
-    } catch (txError: any) {
-      // Catch concurrent collision via PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex])
-      // Strictly verify that the collision target is the slot composite constraint and not an unrelated unique field (e.g. bookingCode)
-      if (txError.code === 'P2002') {
-        const target = txError.meta?.target;
-        const isSlotConstraint =
-          (Array.isArray(target) &&
-            target.includes('roomId') &&
-            target.includes('bookingDate') &&
-            target.includes('slotIndex')) ||
-          (typeof target === 'string' &&
-            (target.includes('roomId_bookingDate_slotIndex') ||
-              (target.includes('roomId') &&
-                target.includes('bookingDate') &&
-                target.includes('slotIndex'))));
-
-        if (isSlotConstraint) {
+        res.status(201).json({
+          success: true,
+          booking: {
+            id: newBooking.id,
+            bookingCode: newBooking.bookingCode,
+            roomNumber: newBooking.room.roomNumber,
+            bookingDate: newBooking.bookingDate,
+            timeRange,
+            durationHours: newBooking.durationHours,
+            partySize: newBooking.partySize,
+            status: newBooking.status
+          }
+        });
+        return;
+      } catch (txError: any) {
+        if (txError.code === 'TX_SLOT_CONFLICT') {
           res.status(409).json({
             success: false,
             error: {
               code: 'SLOT_CONFLICT',
-              message: 'One or more requested slots were just reserved by another booking.'
+              message: 'One or more requested slots are already occupied.'
             }
           });
           return;
         }
+
+        // Catch concurrent collision via PostgreSQL composite unique constraint @@unique([roomId, bookingDate, slotIndex])
+        // or retry automatically on bookingCode unique constraint collision (DEF-SS-03)
+        if (txError.code === 'P2002') {
+          const target = txError.meta?.target;
+          const isSlotConstraint =
+            (Array.isArray(target) &&
+              target.includes('roomId') &&
+              target.includes('bookingDate') &&
+              target.includes('slotIndex')) ||
+            (typeof target === 'string' &&
+              (target.includes('roomId_bookingDate_slotIndex') ||
+                (target.includes('roomId') &&
+                  target.includes('bookingDate') &&
+                  target.includes('slotIndex'))));
+
+          if (isSlotConstraint) {
+            res.status(409).json({
+              success: false,
+              error: {
+                code: 'SLOT_CONFLICT',
+                message: 'One or more requested slots were just reserved by another booking.'
+              }
+            });
+            return;
+          }
+
+          const isBookingCodeConstraint =
+            (Array.isArray(target) && target.includes('bookingCode')) ||
+            (typeof target === 'string' && target.includes('bookingCode'));
+
+          if (isBookingCodeConstraint && attempt < MAX_CODE_RETRIES - 1) {
+            continue;
+          }
+        }
+        throw txError;
       }
-      throw txError;
     }
   } catch (error) {
     next(error);

@@ -24,11 +24,11 @@
 | **R-02 / Task 2** | Checklist 6: Zero Query Accumulation | `server/src/app.ts` | Repeated probe timeouts while database is pending guarantee exactly 1 query launched | **PASS** |
 | **Quality Gate** | TypeScript Type Safety | Client & Server workspaces | `npm run typecheck` (tsc `--noEmit` across both workspaces) | **PASS** |
 | **C-03 / R-01 (Task 3)** | Docker & Compose Fresh Clone | `Dockerfile`, `docker-compose.yml` | `npm ci`, `docker compose up --build -d`, `GET /api/ready` | **PASS** |
-| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR (PR #24 bootstrap & PR targeting `main`) | **Bootstrap CI: PASS; Post-Bootstrap C-01: Pending** |
+| **C-01 / R-05 (Task 4)** | CI Pipeline Execution | `.github/workflows/ci-docker.yml` | GitHub Actions workflow execution on PR (PR #24 bootstrap & PR targeting `main`) | **PASS** |
 | **C-02 / R-06 (Task 6)** | Blocked Merge on Failed Check | Branch ruleset `protect-main` | Temporary failing PR `test/prove-gate` showing blocked merge | **PASS** |
 | **C-04 / R-03 (Task 5, 6)** | End-to-End Cloud Run Workflow | Public Cloud Run URL | Login, room selection, slot booking, business rule rejection | **PASS** |
-| **C-05 / R-04 (Task 8)** | Data Persistence on Restart | Cloud Run & Cloud SQL | Scale-to-zero restart & redeploy with booking intact | *Pending Task 8* |
-| **C-06 / R-07 (Task 7)** | Repeatable Automated Release | `.github/workflows/deploy.yml` | UI string update PR to `main` auto-deploys revision 2 | *Pending Task 7* |
+| **C-05 / R-04 (Task 8)** | Data Persistence on Restart | Cloud Run & Cloud SQL | Scale-to-zero restart & redeploy with booking intact | **PASS** |
+| **C-06 / R-07 (Task 7)** | Repeatable Automated Release | `.github/workflows/deploy.yml` | UI string update PR to `main` auto-deploys revision 2 | **PASS** |
 
 ---
 
@@ -586,18 +586,65 @@ $ npm run build
 ---
 
 ## 7. Task 8 Verification Evidence: Data Persistence on Restart & Redeploy (C-05 / R-04)
-<!-- To be populated during Task 8 execution -->
 
-- **Booking Code / Record:**
-- **Scale-to-Zero Container Recycle Proof:**
-- **Redeployment Intact Verification:**
+### 7.1 Baseline Room Reservation
+- **Authenticated Customer:** `customer1@singslot.local` (Alice Customer)
+- **Room Number:** `L01` (Karaoke Suite L01 - Large)
+- **Reservation Date:** `2026-11-15`
+- **Time Slots:** `13:00 - 17:00` (4 hours, 5 Guests)
+- **Booking Reference Code:** `BK-20261115-MQRX`
+- **Initial Status:** `CONFIRMED`
+- **Baseline Evidence:** Verified on live UI `https://singslot-4o7kwmd5ma-as.a.run.app` with visible release badge `v1.0.1 - Cloud Verified`.
+
+### 7.2 Scale-to-Zero Container Recycling & Cold Start Proof
+- **Idle Scale-to-Zero Verification:**
+  - Cloud Run service `singslot` configured with `min-instances=0`.
+  - Monitored Cloud Run Metrics Explorer (`Metric Query: Instance Count`).
+  - Active container instances dropped to `0`, and idle container instances dropped to `0` at `Nov 14, 10:51 PM ICT`.
+  - Confirmed 0 container instances running in the cluster.
+- **Cold Start Request & Container Process Replacement:**
+  - Dispatched HTTP GET request to `https://singslot-4o7kwmd5ma-as.a.run.app`.
+  - Cloud Run Logs Explorer recorded brand-new container instance cold start:
+    ```text
+    2026-11-14 22:59:40.664 ICT: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors
+    2026-11-14 22:59:42.418 ICT: SingSlot Server listening on http://0.0.0.0:8080
+    2026-11-14 22:59:42.421 ICT: Default STARTUP TCP probe succeeded after 1 attempt for container "singslot-1" on port 8080.
+    ```
+- **Post-Recycling Data Persistence:**
+  - Navigated to `My Reservations` view.
+  - Baseline reservation `BK-20261115-MQRX` and historical reservation `BK-20261113-IA4Q` retrieved from Cloud SQL intact with status `CONFIRMED`.
+  - Proves reservation records survive container process termination and cold start.
+
+### 7.3 Cloud Run Redeployment & Revision Persistence Proof
+- **Redeployment Execution:**
+  - Executed automated persistence verification script in Google Cloud Shell against project `cpe334-singslot-en-038-p1` in region `asia-southeast1`.
+  - Generated trigger timestamp: `PERSISTENCE_TEST_TRIGGER=1794672641`.
+  - Previous Active Revision: `singslot-00003-2fg`
+  - Deployed New Revision: `singslot-00004-6mv`
+- **Immutable Digest & Traffic Invariance Verification:**
+  - Deployed Image Digest: `asia-southeast1-docker.pkg.dev/cpe334-singslot-en-038-p1/singslot/singslot@sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3`
+  - New Revision Image Digest: `asia-southeast1-docker.pkg.dev/cpe334-singslot-en-038-p1/singslot/singslot@sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3` (100% identical immutable digest).
+  - Revision Condition `Ready`: `True`
+  - Traffic Allocation: `100%` shifted to new revision `singslot-00004-6mv`.
+- **Post-Redeployment Data Persistence:**
+  - Refreshed live application at `https://singslot-4o7kwmd5ma-as.a.run.app`.
+  - Reservation `BK-20261115-MQRX` (Suite L01, 2026-11-15, 13:00 - 17:00) verified intact with status `CONFIRMED`.
+- **Verdict:** **PASS (Requirement C-05 / R-04 satisfied)**
 
 ---
 
 ## 8. Task 7 Verification Evidence: Repeatable Release Pipeline (C-06 / R-07, R-08)
-<!-- To be populated during Task 7 execution -->
 
-- **UI Update PR:**
-- **Commit SHA:**
-- **Automated Deployment Run Link:**
-- **Live URL Verification:**
+### 8.1 Automated Continuous Deployment & Quality Gate
+- **CD Workflow File:** `.github/workflows/deploy.yml`
+- **Promotion PRs:**
+  - Pipeline Implementation: [PR #27](https://github.com/Phenwatsa/singslot-karaoke/pull/27) (`feat/lab5-auto-deploy` → `sprint-1-staging`) and [PR #28](https://github.com/Phenwatsa/singslot-karaoke/pull/28) (Release 1: `sprint-1-staging` → `main`).
+  - Repeatable Release Proof (Task 7b): [PR #30](https://github.com/Phenwatsa/singslot-karaoke/pull/30) (`feat/lab5-deploy-proof` → `sprint-1-staging`) and [PR #31](https://github.com/Phenwatsa/singslot-karaoke/pull/31) (Release 2: `sprint-1-staging` → `main`).
+- **Target Branch:** `main`
+- **Release Commit SHA:** `aa5f109b97c157a143a7a9a94cd58dc02998467e`
+- **Immutable Image Digest:** `sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3`
+- **Deployed Cloud Run Revision:** `singslot-00003-2fg`
+- **Automated Workflow Execution:** GitHub Actions `Deploy demo` run triggered on push to `main` upon merge of PR #31. Execution completed in 4m 12s with 100% green status across `test-and-docker` quality gate and keyless WIF deployment job.
+- **Dynamic Smoke Test Results:** Passed all checks (`/api/health`, `/api/ready`, static HTML bundle, 9 seeded rooms).
+- **Live UI Verification:** Public service URL `https://singslot-4o7kwmd5ma-as.a.run.app` dynamically updated with visible release badge `v1.0.1 - Cloud Verified` in top navigation and footer without manual deployment commands.
+- **Verdict:** **PASS (Requirement C-06 / R-07, R-08 satisfied)**

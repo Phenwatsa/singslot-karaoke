@@ -1,0 +1,127 @@
+# Lab 6 Peer Review Record & Audit Trail
+
+## Project: SingSlot — Karaoke Room Reservation & Management System
+
+**Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
+**Target:** Lab 6 (Independent User Acceptance Testing & Defect Management)  
+**Team Members:** @Phenwatsa & @lephirada (Equal Engineering Partners)  
+**Repository:** `https://github.com/Phenwatsa/singslot-karaoke`
+
+---
+
+## 1. Peer Review Policy & Reciprocal Agreement
+
+1. **Equal Reciprocal Review (No Self-Approval):** Both team members collaborate as equal engineering partners. Every Pull Request targeting `sprint-1-staging` or `main` must be reviewed and approved by the other partner. Authors never approve their own PRs.
+2. **Substantive Technical Verification:** Every PR review must document a specific check, verification question, finding, or explicit justification for approval (no empty approvals).
+3. **Continuous Chronological Logging:** Every PR review conversation, feedback, developer response, fixes applied, and final approval is logged sequentially in this document to serve as evidence for the final Lab 6 PDF report.
+
+---
+
+## 2. Summary of Lab 6 Issues & Pull Requests
+
+|       Issue       | Title / Scope                                                                            | Primary Owner |  Reviewer  | Branch Name                               | PR Target                                                                            |    Status    |      Verdict       |
+| :---------------: | :--------------------------------------------------------------------------------------- | :-----------: | :--------: | :---------------------------------------- | :----------------------------------------------------------------------------------- | :----------: | :----------------: |
+| **Issue 1 (#32)** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package`              |  @Phenwatsa   | @lephirada | `docs/lab6-issue-1-uat-plan-prep`         | [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36) (`sprint-1-staging`) | **Approved** |     **Merged**     |
+| **Issue 2 (#33)** | `[Lab 6 - Issue 2] Independent UAT Execution on Partner App & Outgoing Defect Reporting` |  @lephirada   | @Phenwatsa | `docs/lab6-issue-2-partner-uat-execution` | [PR #37](https://github.com/Phenwatsa/singslot-karaoke/pull/37) (`sprint-1-staging`) | **Approved** |     **Merged**     |
+| **Issue 3 (#34)** | `[Lab 6 - Issue 3] Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment`           |  @Phenwatsa   | @lephirada | `fix/lab6-issue-3-defect-resolution`      | [PR #39](https://github.com/Phenwatsa/singslot-karaoke/pull/39) (`sprint-1-staging` → `main`) | **Approved** | **Ready to Merge** |
+| **Issue 4 (#35)** | `[Lab 6 - Issue 4] Defect Triage, Partner Retest Verification & UAT Acceptance Decision` |  @lephirada   | @Phenwatsa | `docs/lab6-issue-4-triage-retest-signoff` | `sprint-1-staging`                                                                   |    Queued    |      Pending       |
+
+---
+
+## 3. Detailed Peer Review Logs
+
+### 📌 Issue 1: Sprint 1 UAT Plan, Test Specification & Handoff Package
+
+- **GitHub Issue:** [Issue #32](https://github.com/Phenwatsa/singslot-karaoke/issues/32)
+- **PR Link:** [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36)
+- **Branch:** `docs/lab6-issue-1-uat-plan-prep`
+- **Primary Owner:** @Phenwatsa
+- **Reviewer:** @lephirada
+- **PR Target:** `sprint-1-staging`
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Developer (@Phenwatsa):**
+
+  > I have finalized the UAT test specification (`uat-cases.md`) covering all 4 required categories (UAT-01 to UAT-05) mapped to our Sprint 1 contracts, prepared the safe handoff guide (`handoff.md`) with Cloud Run baseline details (`singslot-00004-6mv`), Git tag (`v0.1.0-sprint1`), role descriptions, and date-scoped reset procedure, and reorganized `docs/` into centralized `system-specifications/` and `screenshots/` directories. Ready for your review.
+
+- **Reviewer (@lephirada):**
+
+  > Approved Ka. The UAT cases, test coverage, traceability, and handoff documentation meet the requirements of Issue [#32](https://github.com/Phenwatsa/singslot-karaoke/issues/32). No further changes are required. Great work!
+  - **Status:** **Approved**
+
+- **Developer Response (@Phenwatsa):**
+
+  > Thank you @lephirada for the review and approval! I have recorded the peer review approval in `docs/labs/lab-06/reviewer.md`. PR #36 is now ready to merge into `sprint-1-staging`.
+
+- **Outcome:** PR #36 approved by @lephirada and merged into `sprint-1-staging`.
+
+---
+
+### 📌 Issue 2: Independent UAT Execution on Partner App & Outgoing Defect Reporting
+
+- **GitHub Issue:** [Issue #33](https://github.com/Phenwatsa/singslot-karaoke/issues/33)
+- **GitHub PR:** [PR #37](https://github.com/Phenwatsa/singslot-karaoke/pull/37)
+- **Branch:** `docs/lab6-issue-2-partner-uat-execution`
+- **Primary Owner:** @lephirada
+- **Reviewer:** @Phenwatsa
+- **PR Target:** `sprint-1-staging`
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Reviewer (@Phenwatsa):**
+
+  > The UAT execution log and supporting evidence have been reviewed.
+  >
+  > The UI-level validation results are appropriately recorded as PASS, with API checks marked NOT RUN where client-side validation prevented backend mutations.
+  > Preflight evidence limitations are transparently disclosed.
+  > Supplementary code audit findings (AUDIT-01 to AUDIT-04) are clearly separated from the black-box UAT results.
+  > Outgoing defect reports, including the Critical DEF-OUT-01 and Advisory DEF-OUT-02, are formally documented in the partner repository's Issue #38.
+  > The Not Accepted / Rejected for Release decision is justified by the identified Critical defect.
+  > The deliverables satisfy the PR's acceptance criteria. **Approved**
+  - **Status:** **Approved**
+
+- **Developer Response (@lephirada):**
+
+  > Thank you @Phenwatsa for the thorough review and approval! The peer review record has been updated. PR #37 is ready to merge into `sprint-1-staging`.
+
+- **Outcome:** PR #37 approved by @Phenwatsa and merged into `sprint-1-staging`.
+
+---
+
+### 📌 Issue 3: Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment
+
+- **GitHub Issue:** [Issue #34](https://github.com/Phenwatsa/singslot-karaoke/issues/34)
+- **PR Link:** [PR #39](https://github.com/Phenwatsa/singslot-karaoke/pull/39)
+- **Branch:** `fix/lab6-issue-3-defect-resolution`
+- **Primary Owner:** @Phenwatsa
+- **Reviewer:** @lephirada
+- **PR Target:** `sprint-1-staging` (followed by promotion PR `sprint-1-staging` → `main` for automated Cloud Run deployment)
+- **Reviewed Commit SHA:** `13059da48f07dbf7e9aec750adec34f33741b021` (CI Run [`#44939259228`](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/44939259228))
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Developer (@Phenwatsa):**
+
+  > I have reproduced and resolved the 3 accepted release-blocking partner-reported defects (`DEF-SS-01`, `DEF-SS-02`, and `DEF-SS-03` from partner comments [`#issuecomment-7060029335`](https://github.com/Phenwatsa/singslot-karaoke/issues/35#issuecomment-7060029335) & [`#issuecomment-7060643935`](https://github.com/Phenwatsa/singslot-karaoke/issues/35#issuecomment-7060643935)) via TDD (RED → GREEN), enforced symmetric Room `FOR UPDATE` locking via both `createMaintenanceRoomBlock()` and global `prisma.$use` middleware (`DEF-SS-01b`), documented the formal triage disposition of `DEF-SS-04`, and verified 100% passing regression suites (`105/105` server tests with `--runInBand`, `12/12` client tests, `0` TS errors, Docker build) on GitHub Actions CI Run [`#44939259228`](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/44939259228). Ready for your peer review.
+
+- **Reviewer (@lephirada) — [Review #6007649744](https://github.com/Phenwatsa/singslot-karaoke/pull/39#pullrequestreview-6007649744):**
+
+  > Reviewed the implementation and regression tests.
+  >
+  > The reported defects have been addressed, the regression suite and CI checks pass on the current PR HEAD, and the documentation and acceptance evidence are consistent.
+  >
+  > Approved.
+  - **Status:** **Approved**
+
+- **Developer Response (@Phenwatsa):**
+
+  > Thank you @lephirada for the review and approval! I have recorded the peer review approval in `docs/labs/lab-06/reviewer.md`. PR #39 is now ready to merge into `sprint-1-staging`, followed by our promotion PR to `main` for automated Cloud Run redeployment.
+
+- **Outcome:** PR #39 approved by @lephirada and ready for integration into `sprint-1-staging` (and promotion to `main` to complete `AC-04` Cloud Run redeployment).

@@ -331,3 +331,15 @@
   4. Updated `docs/labs/lab-05/reviewer.md` with Task 7b submission details for Issue #29.
 - **Tools Used:** `read_file`, `edit_file`, `run_command` (`npm run test:client`, `npm run typecheck`, `npm run build`).
 - **Outcome:** Visible UI change ready for Feature PR into `sprint-1-staging` to initiate the second automated continuous deployment lifecycle.
+
+#### 38. Task 8 Database Persistence on Instance Recycling & Revision Redeployment (C-05, R-04)
+- **Prompt Intent:** Guide and verify Task 8 operational reliability tests on GCP Cloud Run and Cloud SQL (Issue #21):
+  1. Supported peer review approval of Release PR #31 (`sprint-1-staging` → `main`) promoting visible UI indicator badge `v1.0.1 - Cloud Verified` ([Issue #29](https://github.com/Phenwatsa/singslot-karaoke/issues/29)) to satisfy Requirement C-06.
+  2. Guided baseline booking creation on live application: authenticated as `customer1@singslot.local` and reserved Suite L01 on `2026-11-15 13:00-17:00` (code `BK-20261115-MQRX`, status `CONFIRMED`).
+  3. Verified Cloud Run idle scale-to-zero via Metrics Explorer (`min-instances=0`, active: 0, idle: 0).
+  4. Dispatched HTTP request to trigger cold start; verified container recreation in Logs Explorer (`SingSlot Server listening on http://0.0.0.0:8080` at `2026-11-14 22:59:42 ICT`). Confirmed reservation `BK-20261115-MQRX` remained intact in Cloud SQL.
+  5. Executed automated redeployment script in Cloud Shell enforcing project sanity check, capturing old revision (`singslot-00003-2fg`), deploying new revision (`singslot-00004-6mv`) with identical immutable digest `sha256:570cd6b0e0df4ef3910bc27d53a20cadab03fd722776298c3a15edd5a03ba3e3`, shifting 100% traffic, and validating `Ready=True`.
+  6. Refreshed live UI and verified booking `BK-20261115-MQRX` remained fully intact, proving data resides in Cloud SQL rather than ephemeral container storage (Requirement C-05 satisfied).
+  7. Updated `docs/labs/lab-05/tests.md` and `docs/labs/lab-05/reviewer.md` recording authentic peer review discussions and verification evidence.
+- **Tools Used:** `read_file`, `edit_file`.
+- **Outcome:** Database persistence on container recycling and redeployment verified with complete audit trail and zero regressions (C-05 satisfied). Issue #21 completed.

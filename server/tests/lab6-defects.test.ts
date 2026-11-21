@@ -186,6 +186,15 @@ describe('Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite 
     const blockSucceeded1 = blockOutcome1.status === 'fulfilled';
     expect(bookingSucceeded1 !== blockSucceeded1).toBe(true);
 
+    if (bookingSucceeded1) {
+      expect(blockOutcome1.status).toBe('rejected');
+      const blockErr1 = (blockOutcome1 as PromiseRejectedResult).reason;
+      expect(blockErr1.code).toBe('SLOT_CONFLICT');
+    } else {
+      expect(bookingRes1.status).toBe(409);
+      expect(bookingRes1.body.error?.code).toBe('SLOT_CONFLICT');
+    }
+
     const [slotsCount1, blocksCount1] = await Promise.all([
       prisma.bookingSlot.count({
         where: { roomId: roomS01.id, bookingDate: DEF01_DATE, slotIndex: raceSlot1 }

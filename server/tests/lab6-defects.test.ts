@@ -144,69 +144,113 @@ describe('Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite 
 
   /**
    * DEF-SS-01b (Critical — Two-Transaction Concurrency Race Between Booking & RoomBlock — BR-02, BR-06):
-   * Executes two real concurrent database transactions simultaneously via Promise.all:
-   * - Transaction A: POST /api/bookings/online
-   * - Transaction B: createMaintenanceRoomBlock (using the shared Room FOR UPDATE locking protocol)
-   * Proves that PostgreSQL serializes both transactions on the Room row lock and permits strictly
-   * ONE claim to commit while rejecting the competing transaction with 409 SLOT_CONFLICT.
+   * Executes real concurrent database transactions simultaneously via Promise.allSettled for BOTH:
+   * 1. POST /api/bookings/online vs. createMaintenanceRoomBlock (service helper)
+   * 2. POST /api/bookings/online vs. direct prisma.roomBlock.create (intercepted by global Prisma $use middleware)
+   * Proves that every RoomBlock writer in the system is serialized on the Room FOR UPDATE row lock
+   * and permits strictly ONE claim to commit while rejecting the competing transaction with 409 SLOT_CONFLICT.
    */
-  it('DEF-SS-01b: concurrent two-transaction race between online booking and createMaintenanceRoomBlock serializes on Room FOR UPDATE lock and prevents coexistence (BR-02, BR-06)', async () => {
-    const raceSlot = 11; // 21:00 - 22:00
+  it('DEF-SS-01b: concurrent two-transaction race between online booking and RoomBlock creation (both service helper and direct prisma.roomBlock.create) serializes on Room FOR UPDATE lock and prevents coexistence (BR-02, BR-06)', async () => {
+    // Part 1: Race between POST /api/bookings/online and createMaintenanceRoomBlock on Slot 11
+    const raceSlot1 = 11; // 21:00 - 22:00
 
-    const [bookingOutcome, blockOutcome] = await Promise.allSettled([
+    const [bookingOutcome1, blockOutcome1] = await Promise.allSettled([
       request(app)
         .post('/api/bookings/online')
         .set('Authorization', `Bearer ${customer1Token}`)
         .send({
           roomId: roomS01.id,
           bookingDate: DEF01_DATE,
-          startSlot: raceSlot,
+          startSlot: raceSlot1,
           durationHours: 1,
           partySize: 2
         }),
       createMaintenanceRoomBlock({
         roomId: roomS01.id,
         blockDate: DEF01_DATE,
-        slotIndex: raceSlot,
-        reason: 'Concurrent maintenance block transaction'
+        slotIndex: raceSlot1,
+        reason: 'Concurrent maintenance block via service helper'
       })
     ]);
 
-    expect(bookingOutcome.status).toBe('fulfilled');
-    const bookingRes = (bookingOutcome as PromiseFulfilledResult<any>).value;
-    if (bookingRes.body?.booking?.id) {
-      createdBookingIds.push(bookingRes.body.booking.id);
+    expect(bookingOutcome1.status).toBe('fulfilled');
+    const bookingRes1 = (bookingOutcome1 as PromiseFulfilledResult<any>).value;
+    if (bookingRes1.body?.booking?.id) {
+      createdBookingIds.push(bookingRes1.body.booking.id);
     }
-    if (blockOutcome.status === 'fulfilled' && blockOutcome.value?.id) {
-      createdBlockIds.push(blockOutcome.value.id);
-    }
-
-    const bookingSucceeded = bookingRes.status === 201;
-    const blockSucceeded = blockOutcome.status === 'fulfilled';
-
-    // Strictly one transaction wins and the competing transaction is rejected with 409 SLOT_CONFLICT
-    expect(bookingSucceeded !== blockSucceeded).toBe(true);
-
-    if (bookingSucceeded) {
-      expect(blockOutcome.status).toBe('rejected');
-      const blockErr = (blockOutcome as PromiseRejectedResult).reason;
-      expect(blockErr.code).toBe('SLOT_CONFLICT');
-    } else {
-      expect(bookingRes.status).toBe(409);
-      expect(bookingRes.body.error?.code).toBe('SLOT_CONFLICT');
+    if (blockOutcome1.status === 'fulfilled' && blockOutcome1.value?.id) {
+      createdBlockIds.push(blockOutcome1.value.id);
     }
 
-    const [persistedSlotsCount, persistedBlocksCount] = await Promise.all([
+    const bookingSucceeded1 = bookingRes1.status === 201;
+    const blockSucceeded1 = blockOutcome1.status === 'fulfilled';
+    expect(bookingSucceeded1 !== blockSucceeded1).toBe(true);
+
+    const [slotsCount1, blocksCount1] = await Promise.all([
       prisma.bookingSlot.count({
-        where: { roomId: roomS01.id, bookingDate: DEF01_DATE, slotIndex: raceSlot }
+        where: { roomId: roomS01.id, bookingDate: DEF01_DATE, slotIndex: raceSlot1 }
       }),
       prisma.roomBlock.count({
-        where: { roomId: roomS01.id, blockDate: DEF01_DATE, slotIndex: raceSlot }
+        where: { roomId: roomS01.id, blockDate: DEF01_DATE, slotIndex: raceSlot1 }
+      })
+    ]);
+    expect(slotsCount1 + blocksCount1).toBe(1);
+
+    // Part 2: Race between POST /api/bookings/online and direct prisma.roomBlock.create on Slot 12
+    const raceSlot2 = 12; // 22:00 - 23:00
+
+    const [bookingOutcome2, blockOutcome2] = await Promise.allSettled([
+      request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${customer1Token}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: DEF01_DATE,
+          startSlot: raceSlot2,
+          durationHours: 1,
+          partySize: 2
+        }),
+      prisma.roomBlock.create({
+        data: {
+          roomId: roomS01.id,
+          blockDate: DEF01_DATE,
+          slotIndex: raceSlot2,
+          reason: 'Concurrent maintenance block via direct prisma.roomBlock.create'
+        }
       })
     ]);
 
-    // Total claims across both tables for (roomS01, DEF01_DATE, Slot 11) must be strictly 1 (never 2)
-    expect(persistedSlotsCount + persistedBlocksCount).toBe(1);
+    expect(bookingOutcome2.status).toBe('fulfilled');
+    const bookingRes2 = (bookingOutcome2 as PromiseFulfilledResult<any>).value;
+    if (bookingRes2.body?.booking?.id) {
+      createdBookingIds.push(bookingRes2.body.booking.id);
+    }
+    if (blockOutcome2.status === 'fulfilled' && blockOutcome2.value?.id) {
+      createdBlockIds.push(blockOutcome2.value.id);
+    }
+
+    const bookingSucceeded2 = bookingRes2.status === 201;
+    const blockSucceeded2 = blockOutcome2.status === 'fulfilled';
+    expect(bookingSucceeded2 !== blockSucceeded2).toBe(true);
+
+    if (bookingSucceeded2) {
+      expect(blockOutcome2.status).toBe('rejected');
+      const blockErr = (blockOutcome2 as PromiseRejectedResult).reason;
+      expect(blockErr.code).toBe('SLOT_CONFLICT');
+    } else {
+      expect(bookingRes2.status).toBe(409);
+      expect(bookingRes2.body.error?.code).toBe('SLOT_CONFLICT');
+    }
+
+    const [slotsCount2, blocksCount2] = await Promise.all([
+      prisma.bookingSlot.count({
+        where: { roomId: roomS01.id, bookingDate: DEF01_DATE, slotIndex: raceSlot2 }
+      }),
+      prisma.roomBlock.count({
+        where: { roomId: roomS01.id, blockDate: DEF01_DATE, slotIndex: raceSlot2 }
+      })
+    ]);
+    expect(slotsCount2 + blocksCount2).toBe(1);
   });
 
   /**

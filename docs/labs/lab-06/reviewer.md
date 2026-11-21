@@ -1,10 +1,11 @@
 # Lab 6 Peer Review Record & Audit Trail
 
 ## Project: SingSlot — Karaoke Room Reservation & Management System
+
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Target:** Lab 6 (Independent User Acceptance Testing & Defect Management)  
 **Team Members:** @Phenwatsa & @lephirada (Equal Engineering Partners)  
-**Repository:** `https://github.com/Phenwatsa/singslot-karaoke`  
+**Repository:** `https://github.com/Phenwatsa/singslot-karaoke`
 
 ---
 
@@ -18,41 +19,73 @@
 
 ## 2. Summary of Lab 6 Issues & Pull Requests
 
-| Issue | Title / Scope | Primary Owner | Reviewer | Branch Name | PR Target | Status | Verdict |
-| :---: | :--- | :---: | :---: | :--- | :--- | :---: | :---: |
-| **Issue 1 (#32)** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package` | @Phenwatsa | @lephirada | `docs/lab6-issue-1-uat-plan-prep` | [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36) (`sprint-1-staging`) | **Approved** | **Ready to Merge** |
-| **Issue 2** | `[Lab 6 - Issue 2] Independent UAT Execution on Partner App & Outgoing Defect Reporting` | @lephirada | @Phenwatsa | `docs/lab6-issue-2-partner-uat-execution` | `sprint-1-staging` | Queued | Pending |
-| **Issue 3** | `[Lab 6 - Issue 3] Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment` | @Phenwatsa | @lephirada | `fix/lab6-issue-3-defect-resolution` | `sprint-1-staging` → `main` | Queued | Pending |
-| **Issue 4** | `[Lab 6 - Issue 4] Defect Triage, Partner Retest Verification & UAT Acceptance Decision` | @lephirada | @Phenwatsa | `docs/lab6-issue-4-triage-retest-signoff` | `sprint-1-staging` | Queued | Pending |
+|       Issue       | Title / Scope                                                                            | Primary Owner |  Reviewer  | Branch Name                               | PR Target                                                                            |    Status    |      Verdict       |
+| :---------------: | :--------------------------------------------------------------------------------------- | :-----------: | :--------: | :---------------------------------------- | :----------------------------------------------------------------------------------- | :----------: | :----------------: |
+| **Issue 1 (#32)** | `[Lab 6 - Issue 1] Sprint 1 UAT Plan, Test Specification & Handoff Package`              |  @Phenwatsa   | @lephirada | `docs/lab6-issue-1-uat-plan-prep`         | [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36) (`sprint-1-staging`) | **Approved** | **Ready to Merge** |
+|    **Issue 2**    | `[Lab 6 - Issue 2] Independent UAT Execution on Partner App & Outgoing Defect Reporting` |  @lephirada   | @Phenwatsa | `docs/lab6-issue-2-partner-uat-execution` | [PR #37](https://github.com/Phenwatsa/singslot-karaoke/pull/37) (`sprint-1-staging`) | **Approved** | **Ready to Merge** |
+|    **Issue 3**    | `[Lab 6 - Issue 3] Defect Resolution via TDD (RED/GREEN) & Cloud Redeployment`           |  @Phenwatsa   | @lephirada | `fix/lab6-issue-3-defect-resolution`      | `sprint-1-staging` → `main`                                                          |    Queued    |      Pending       |
+|    **Issue 4**    | `[Lab 6 - Issue 4] Defect Triage, Partner Retest Verification & UAT Acceptance Decision` |  @lephirada   | @Phenwatsa | `docs/lab6-issue-4-triage-retest-signoff` | `sprint-1-staging`                                                                   |    Queued    |      Pending       |
 
 ---
 
 ## 3. Detailed Peer Review Logs
 
 ### 📌 Issue 1: Sprint 1 UAT Plan, Test Specification & Handoff Package
-* **GitHub Issue:** [Issue #32](https://github.com/Phenwatsa/singslot-karaoke/issues/32)
-* **PR Link:** [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36)
-* **Branch:** `docs/lab6-issue-1-uat-plan-prep`
-* **Primary Owner:** @Phenwatsa
-* **Reviewer:** @lephirada
-* **PR Target:** `sprint-1-staging`
-* **Status:** **Approved**
-* **Verdict:** **Ready to Merge**
+
+- **GitHub Issue:** [Issue #32](https://github.com/Phenwatsa/singslot-karaoke/issues/32)
+- **PR Link:** [PR #36](https://github.com/Phenwatsa/singslot-karaoke/pull/36)
+- **Branch:** `docs/lab6-issue-1-uat-plan-prep`
+- **Primary Owner:** @Phenwatsa
+- **Reviewer:** @lephirada
+- **PR Target:** `sprint-1-staging`
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
 
 #### 🔍 Review Discussion & Verification Notes
 
-* **Developer (@Phenwatsa):**
+- **Developer (@Phenwatsa):**
 
   > I have finalized the UAT test specification (`uat-cases.md`) covering all 4 required categories (UAT-01 to UAT-05) mapped to our Sprint 1 contracts, prepared the safe handoff guide (`handoff.md`) with Cloud Run baseline details (`singslot-00004-6mv`), Git tag (`v0.1.0-sprint1`), role descriptions, and date-scoped reset procedure, and reorganized `docs/` into centralized `system-specifications/` and `screenshots/` directories. Ready for your review.
 
-* **Reviewer (@lephirada):**
+- **Reviewer (@lephirada):**
 
   > Approved Ka. The UAT cases, test coverage, traceability, and handoff documentation meet the requirements of Issue [#32](https://github.com/Phenwatsa/singslot-karaoke/issues/32). No further changes are required. Great work!
+  - **Status:** **Approved**
 
-  * **Status:** **Approved**
-
-* **Developer Response (@Phenwatsa):**
+- **Developer Response (@Phenwatsa):**
 
   > Thank you @lephirada for the review and approval! I have recorded the peer review approval in `docs/labs/lab-06/reviewer.md`. PR #36 is now ready to merge into `sprint-1-staging`.
 
-* **Outcome:** PR #36 approved by @lephirada and ready for integration into `sprint-1-staging`.
+- **Outcome:** PR #36 approved by @lephirada and ready for integration into `sprint-1-staging`.
+
+---
+
+### 📌 Issue 2: Independent UAT Execution on Partner App & Outgoing Defect Reporting
+
+- **GitHub PR:** [PR #37](https://github.com/Phenwatsa/singslot-karaoke/pull/37)
+- **Branch:** `docs/lab6-issue-2-partner-uat-execution`
+- **Primary Owner:** @lephirada
+- **Reviewer:** @Phenwatsa
+- **PR Target:** `sprint-1-staging`
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Reviewer (@Phenwatsa):**
+
+  > The UAT execution log and supporting evidence have been reviewed.
+  >
+  > The UI-level validation results are appropriately recorded as PASS, with API checks marked NOT RUN where client-side validation prevented backend mutations.
+  > Preflight evidence limitations are transparently disclosed.
+  > Supplementary code audit findings (AUDIT-01 to AUDIT-04) are clearly separated from the black-box UAT results.
+  > Outgoing defect reports, including the Critical DEF-OUT-01 and Advisory DEF-OUT-02, are formally documented in the partner repository's Issue #38.
+  > The Not Accepted / Rejected for Release decision is justified by the identified Critical defect.
+  > The deliverables satisfy the PR's acceptance criteria. **Approved**
+  - **Status:** **Approved**
+
+- **Developer Response (@lephirada):**
+
+  > Thank you @Phenwatsa for the thorough review and approval! The peer review record has been updated. PR #37 is ready to merge into `sprint-1-staging`.
+
+- **Outcome:** PR #37 approved by @Phenwatsa and ready for integration into `sprint-1-staging`.

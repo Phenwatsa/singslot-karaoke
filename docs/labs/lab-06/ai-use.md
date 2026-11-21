@@ -35,6 +35,17 @@
 #### 4. Live Partner UAT Execution, Outgoing Defect Discovery & Full Handoff (Issue #2)
 * **Prompt Intent:** Execute all 18 test slices of Partner Team's application (Whatsss-PMandELS, Theme 7) on Google Cloud Run deployment (`https://whatsss-sipqw4logq-as.a.run.app`). Ensure strict 1-to-1 live binding between user-provided visual evidence and documented test outcomes. Conduct deep security penetration and code audit on partner repository: discovered and verified 6 real defects including Critical Case-Sensitivity Authorization Bypass in `roleGuard.ts` (`BR-10`), Unauthenticated Logout (`AC-01e`), and Incomplete Opening Balance Locking in `income.service.ts` (`F-03`). Formulate formal Outgoing Defect Reports (Part C1) and prepare PR handover package adhering to course rules.
 * **Tools Used:** `read_file`, `edit_file`, `write_file`, `run_command` (`cp`, `ls -la`, `git status`).
-* **Outcome:** Successfully executed and verified 18/18 test cases (100% Pass Rate on baseline UI flows). Captured and bound 25 authentic evidence files (`EVD-01` through `EVD-18`, `DEFECT-01`, `DEFECT-01b`, `DEFECT-02`) in `docs/labs/lab-06/screenshots/partner/`. Documented 6 formal Outgoing Defect Reports in Section 6 of `partner-execution-log.md` with concrete root cause analysis and code recommendations. Prepared PR handover package.
+* **Outcome:** Successfully executed and verified 18/18 test cases. Captured and bound 26 authentic evidence files (`EVD-01` through `EVD-18`, `DEFECT-01`, `DEFECT-01b`, `DEFECT-02`) in `docs/labs/lab-06/screenshots/partner/`. Documented formal Outgoing Defect Reports in Section 6 of `partner-execution-log.md` with concrete root cause analysis and code recommendations. Prepared PR handover package.
+
+#### 5. Peer Review Audit Resolution & Evidence/Contract Harmonization (Issue #2)
+* **Prompt Intent:** Address peer review feedback on PR #37 from `@Phenwatsa`:
+  1. Harmonize all evidence filenames in `partner-execution-log.md` to `.png` and `.txt`, resolving extension mismatches with actual repository files.
+  2. Reconcile case `UAT-S1-04 4A` outcome to `FAIL` based on verified Admin API role bypass (`DEF-OUT-01`) on capitalized routes (`/api/Accounts`, `/api/Reports/summary`).
+  3. Reclassify `DEF-OUT-02` (unauthenticated logout) as a Contract Discrepancy / Advisory Finding to respect idempotent REST API design possibilities, maintaining `DEF-OUT-01` as the sole primary verified Critical defect.
+  4. Clarify tenant isolation mechanism in `UAT-S1-04 4B` referencing Prisma's `where: { id: primaryId, user_id: userId }` masking behavior.
+  5. Refine input parameter documentation for `2F-2` and `2G` to reflect exact tested values.
+* **Tools Used:** `read_file`, `edit_file`, `run_command` (`git diff`, `git status`).
+* **Outcome:** Updated `partner-execution-log.md` with 100% accurate file mapping, reconciled test outcome summary (17 PASS / 1 FAIL on bypass / 0 BLOCKED), and clearly demarcated Section 6 into Primary Verified Defect (`DEF-OUT-01`) vs. Advisory Findings (`DEF-OUT-02` + `AUDIT-01`..`AUDIT-04`).
+
 
 

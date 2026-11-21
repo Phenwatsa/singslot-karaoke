@@ -22,3 +22,14 @@
   4. Add `docs/screenshots/lab-06/.gitkeep` so the Lab 6 screenshots directory is preserved in Git upon clone.
 * **Tools Used:** `read_file`, `write_file`, `run_command` (`git status`, `npm run typecheck`).
 * **Outcome:** All 4 findings resolved and verified against `srs.md`, `contracts.md`, and `schema.prisma`.
+
+---
+
+### Session Log: 21 November 2026
+
+#### 3. Issue 3 (#34): Partner Defect Resolution via TDD (RED/GREEN) & Regression Verification
+* **Prompt Intent:** Reproduce and resolve the release-blocking defects reported by the partner UAT team (Whatsss Team: `@Pilaiwan3492` & `@Apichaya251400`) on Issue #35 (`DEF-SS-01`, `DEF-SS-02`, `DEF-SS-03`) following a strict TDD RED-to-GREEN cycle:
+  1. **TDD RED Phase (`server/tests/lab6-defects.test.ts` — Commit `f3c2972`):** Author automated Supertest + Jest tests reproducing `DEF-SS-01` (TOCTOU race condition between `BookingSlot` and `RoomBlock` violating `BR-02` & `BR-06`), `DEF-SS-02` (latent "Zombie Slot" permanent 409 lockout when a `CANCELLED` booking leaves an orphaned `BookingSlot` row), and `DEF-SS-03` (unhandled `P2002` `HTTP 500` crash on `bookingCode` collision). Verified all 3 tests fail (RED) against the unmodified `booking.controller.ts` baseline.
+  2. **TDD GREEN Phase (`server/src/controllers/booking.controller.ts`):** Acquire an exclusive transaction-scoped row lock on the target room (`SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE`), purge any orphaned `BookingSlot` rows belonging to `CANCELLED` bookings inside the transaction (`DEF-SS-02`), re-verify both `tx.bookingSlot.findMany` and `tx.roomBlock.findMany` inside the locked transaction (`DEF-SS-01`), and wrap transaction execution in a bounded retry loop (`MAX_CODE_RETRIES = 5`) that regenerates `bookingCode` upon `P2002` collision (`DEF-SS-03`).
+* **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`npm --prefix server test -- tests/lab6-defects.test.ts`, `npm run test:server`, `npm run test:client`, `npm run typecheck`).
+* **Outcome:** All 3 defect reproduction tests transitioned from RED (3 failed) to GREEN (3 passed) without modifying any test assertions; full regression suite passed 116/116 tests (104 server + 12 client) with `--runInBand` and 0 TypeScript errors.

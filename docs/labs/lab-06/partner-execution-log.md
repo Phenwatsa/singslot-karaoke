@@ -69,11 +69,11 @@ Per course security guidelines and `uat-plan.md` Section A2.4, testing credentia
 
 ## 4. Summary of UAT Results & Acceptance Progress
 
-* **Total Test Slices Defined:** 18 items
-* **Execution Status on Baseline Scenarios (17 Combined UI & API Passing Outcomes / 1 Overall Case FAIL on `4A`):**
-  - **Client-Side Journey & Validation (UI Layer):** 15 items PASS (`UAT-S1-01` [1], `UAT-S1-02 2A`..`2G` [8], `UAT-S1-03 3.1`..`3.2` [2], `UAT-S1-05` [1], `UAT-S1-06 6A`..`6C` [3]; plus the UI standard path of `UAT-S1-04 4A`).
-  - **Direct Security & Tenancy Probing (API Layer):**
-    - `UAT-S1-04 4A` (Admin Route Segregation): **FAIL** (Vulnerability: Role bypass on capitalized paths `/api/Accounts`, `/api/Reports/summary` returning HTTP 200 OK; logged as `DEF-OUT-01`).
+* **Total Test Slices Defined:** 18 items (15 UI-Layer Slices + 3 Direct Security & Tenancy API Slices = 17 Overall Slices PASS, 1 Overall Slice FAIL on `4A`)
+* **Execution Status on Baseline Scenarios:**
+  - **Client-Side Journey & Validation (UI Layer — 15 Slices):** **15 PASS** (`UAT-S1-01` [1] + `UAT-S1-02 2A`..`2G` [8] + `UAT-S1-03 3.1`..`3.2` [2] + `UAT-S1-05` [1] + `UAT-S1-06 6A`..`6C` [3] = **15 UI PASS**).
+  - **Direct Security & Tenancy Probing (API Layer — 3 Slices: 1 FAIL, 2 PASS):**
+    - `UAT-S1-04 4A` (Admin Route Segregation): **FAIL** (Standard lowercase UI path redirected to `/access-denied`, but direct API requests to capitalized paths `/api/Accounts` and `/api/Reports/summary` bypassed `roleGuard.ts` and returned HTTP 200 OK; logged as `DEF-OUT-01`).
     - `UAT-S1-04 4B` (Cross-Tenant Isolation): **PASS** (Ownership confirmed in User B session via `EVD-17b`; foreign injection from User A masked with HTTP 404 via `EVD-17`).
     - `UAT-S1-04 4C` (CSRF Origin Protection): **PASS** (Untrusted origin rejected with HTTP 403 `CSRF_ORIGIN_REJECTED` via `EVD-18`).
   - **API Checks on UI-Blocked Forms:** Marked **API NOT RUN** (because client-side form validation safely intercepted invalid inputs and disabled submit buttons, preventing malformed HTTP mutations from reaching the backend).
@@ -119,7 +119,7 @@ Per course security guidelines and `uat-plan.md` Section A2.4, testing credentia
 | **Tested Revision / Commit SHA** | Cloud Run Revision: `whatsss-00020-65k` (Commit `ba2f9dd` on branch `staging-lab5`) |
 | **Target Cloud Run URL** | `https://whatsss-sipqw4logq-as.a.run.app` |
 | **Total Test Slices Executed** | **18 / 18 items (100% Complete)** |
-| **Overall Execution Result** | **UI Layer: 15 PASS / Direct Security API: 4A FAIL (Role Bypass), 4B PASS (Tenancy), 4C PASS (CSRF) / UI-Blocked Forms: API NOT RUN** *(17 combined UI & API passing outcomes, 1 overall case FAIL on 4A)* |
+| **Overall Execution Result** | **UI Layer: 15 PASS / Direct Security API: 4A FAIL (Role Bypass), 4B PASS (Tenancy), 4C PASS (CSRF) / UI-Blocked Forms: API NOT RUN** *(15 UI PASS + 2 Direct API PASS = 17 Overall Slices PASS, 1 Overall Slice FAIL on 4A; 18 Total Slices)* |
 | **Critical / Major Defects Found** | **1 Critical Security Defect (`DEF-OUT-01`) verified with live runtime evidence** (plus 1 Advisory Contract Discrepancy `DEF-OUT-02` and 4 code inspection findings in Section 6.2) |
 | **Minor UX Usability Observations** | In Credit Card Repayment modal, the `Description` field is an `<input>` rather than a `<textarea>`, causing horizontal text scrolling for long descriptions (detailed in Section 6.2). |
 | **Defect Handoff Status** | **Dispatched & Formally Submitted** to Whatsss Engineering Team via GitHub Issue [#38](https://github.com/Pilaiwan3492/Whatsss-PMandELS/issues/38) on 21 November 2026. |

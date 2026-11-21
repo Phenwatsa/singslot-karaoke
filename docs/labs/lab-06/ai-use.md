@@ -48,8 +48,49 @@
 * **Outcome:** Updated `partner-execution-log.md` with 100% accurate file mapping, 2-step cross-tenant UUID proof (`EVD-17` and `EVD-17b`), reconciled test outcome summary (UI: 17 PASS / Direct API: 4A FAIL, 4B PASS, 4C PASS / UI-Blocked Forms: API NOT RUN), and clearly demarcated Section 6 into Primary Verified Defect (`DEF-OUT-01`) vs. Advisory Findings (`DEF-OUT-02` + `AUDIT-01`..`AUDIT-04`).
 
 #### 6. Issue 3 (#34): Partner Defect Resolution via TDD (RED/GREEN) & Regression Verification
-* **Prompt Intent:** Reproduce and resolve the release-blocking defects reported by the partner UAT team (Whatsss Team: `@Pilaiwan3492` & `@Apichaya251400`) on Issue #35 (`DEF-SS-01`, `DEF-SS-02`, `DEF-SS-03`) following a strict TDD RED-to-GREEN cycle:
-  1. **TDD RED Phase (`server/tests/lab6-defects.test.ts` — Commit `f3c2972`):** Author automated Supertest + Jest tests reproducing `DEF-SS-01` (TOCTOU race condition between `BookingSlot` and `RoomBlock` violating `BR-02` & `BR-06`), `DEF-SS-02` (latent "Zombie Slot" permanent 409 lockout when a `CANCELLED` booking leaves an orphaned `BookingSlot` row), and `DEF-SS-03` (unhandled `P2002` `HTTP 500` crash on `bookingCode` collision). Verified all 3 tests fail (RED) against the unmodified `booking.controller.ts` baseline.
-  2. **TDD GREEN Phase (`server/src/controllers/booking.controller.ts` — Commit `1be7764`):** Acquire an exclusive transaction-scoped row lock on the target room (`SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE`), purge any orphaned `BookingSlot` rows belonging to `CANCELLED` bookings inside the transaction (`DEF-SS-02`), re-verify both `tx.bookingSlot.findMany` and `tx.roomBlock.findMany` inside the locked transaction (`DEF-SS-01`), and wrap transaction execution in a bounded retry loop (`MAX_CODE_RETRIES = 5`) that regenerates `bookingCode` upon `P2002` collision (`DEF-SS-03`).
+* **Prompt Intent:** Reproduce and resolve the accepted release-blocking defects reported by the partner UAT team (Whatsss Team: `@Pilaiwan3492` & `@Apichaya251400`) on [Issue #35](https://github.com/Phenwatsa/singslot-karaoke/issues/35) (`DEF-SS-01`, `DEF-SS-02`, `DEF-SS-03`), document the formal disposition of `DEF-SS-04`, and verify the complete TDD RED-to-GREEN cycle across local and CI test suites:
+  1. **TDD RED Phase (`server/tests/lab6-defects.test.ts` — Commit `167bea35788bc5feb3d23f3669a9ab49d2d5b9b0`):** Authored 3 initial automated Supertest + Jest tests reproducing `DEF-SS-01` (TOCTOU race condition between `BookingSlot` and `RoomBlock` violating `BR-02` & `BR-06`), `DEF-SS-02` (latent "Zombie Slot" permanent 409 lockout when a `CANCELLED` booking leaves an orphaned `BookingSlot` row), and `DEF-SS-03` (unhandled `P2002` `HTTP 500` crash on `bookingCode` collision). Verified all 3 tests failed (`3 failed, 3 total`) against the unmodified `booking.controller.ts` baseline (`aa5f109b97c157a143a7a9a94cd58dc02998467e`).
+  2. **TDD GREEN Phase (`server/src/controllers/booking.controller.ts` — Commit `c7b22b649fa9ad290f7def0471ec2b5999ea14ea`):** Acquired a transaction-scoped exclusive row lock on the target room (`SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE`), purged any orphaned `BookingSlot` rows belonging to `CANCELLED` bookings inside the transaction (`DEF-SS-02`), re-verified both `tx.bookingSlot.findMany` and `tx.roomBlock.findMany` inside the locked transaction (`DEF-SS-01`), and wrapped transaction execution in a bounded retry loop (`MAX_CODE_RETRIES = 5`) that regenerates `bookingCode` upon `P2002` collision (`DEF-SS-03`). Verified all 3 initial defect tests passed (`3 passed, 3 total`) without modifying test assertions.
+  3. **Concurrency Hardening Follow-Up 1 (Commit `a810b9808ffc1d1eaec3b956de75eb32723c5ff5`):** Added `createMaintenanceRoomBlock()` in `server/src/controllers/booking.controller.ts` enforcing the symmetric `SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE` locking protocol, added the 4th regression test `DEF-SS-01b` (two-transaction parallel concurrency race via `Promise.allSettled`), and aligned the `ABSD` suffix comment in `DEF-SS-03`.
+  4. **Global Prisma Middleware & Midnight Boundary Follow-Up 2 (Commit `c540ca900c5ec1a757e79b5505591372610e879f`):** Registered global Prisma client middleware (`prisma.$use`) in `server/src/prisma.ts` so every standalone `prisma.roomBlock.create` call across the application automatically executes inside a transaction holding the target Room's `FOR UPDATE` lock and checking for `CONFIRMED` `BookingSlot` conflicts; extended `DEF-SS-01b` to verify both `createMaintenanceRoomBlock` and direct `prisma.roomBlock.create`; and fixed `getBangkokCurrentHour()` in `server/tests/booking.test.ts` (`TEST-04c`) to use `hourCycle: 'h23'` (`% 24`) and derive `yesterdayStr` directly from `todayBangkok` so midnight (`00:00–00:59 ICT`) CI runs never misclassify hour `0` as `24`.
+  5. **Explicit Disposition of `DEF-SS-04` (Permissive Wildcard CORS & JWT Stored in `localStorage`):**
+     - **Sub-item 4A (JWT in `localStorage` vs. `HttpOnly` Cookies):** Classified as **Not-Defect (By-Design per Agreed Sprint 1 Contract)**. Both [`docs/system-specifications/srs.md` §7.3](../../system-specifications/srs.md) and [`docs/sprints/sprint-1/contracts.md` Contract 1 (`AC-01`, `AC-01e`)](../../sprints/sprint-1/contracts.md) explicitly specify stateless signed Bearer JWT authentication returned in JSON and stored client-side in `localStorage` (`singslot_token`). Modifying authentication transport to `HttpOnly` cookies would break the agreed Sprint 1 API contract and automated/UAT test suites.
+     - **Sub-item 4B (`app.use(cors())` Configuration):** Classified as **Advisory / Deferred Enhancement (Non-Blocking for Sprint 1 Acceptance)**. In production on Google Cloud Run (`https://singslot-4o7kwmd5ma-as.a.run.app`), the React SPA static bundle and Express API are served from the exact same single origin container, and `srs.md` defines no cross-origin whitelist requirement for Sprint 1.
 * **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`npm --prefix server test -- tests/lab6-defects.test.ts`, `npm run test:server`, `npm run test:client`, `npm run typecheck`).
-* **Outcome:** All 3 defect reproduction tests transitioned from RED (3 failed) to GREEN (3 passed) without modifying any test assertions; full regression suite passed 116/116 tests (104 server + 12 client) with `--runInBand` and 0 TypeScript errors.
+* **Outcome & Reproducible Verification Evidence:**
+  - **Reproducible TDD RED Terminal Log (Commit `167bea35788bc5feb3d23f3669a9ab49d2d5b9b0`):**
+    ```text
+    > singslot-server@1.0.0 test
+    > jest --runInBand --detectOpenHandles --forceExit tests/lab6-defects.test.ts
+
+    FAIL tests/lab6-defects.test.ts
+      Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite (Issue #34 / Issue #35)
+        ✕ DEF-SS-01: rejects online booking with HTTP 409 SLOT_CONFLICT when a RoomBlock is inserted concurrently before transaction commit (BR-02, BR-06) (29 ms)
+        ✕ DEF-SS-02: allows booking a slot shown as available when a prior CANCELLED booking left an orphaned BookingSlot row (FR-03, FR-04) (33 ms)
+        ✕ DEF-SS-03: automatically retries and returns HTTP 201 Created when an initial bookingCode collision (P2002) occurs (FR-04, AC-04a) (21 ms)
+
+      ● DEF-SS-01: expect(received).toBe(expected) — Expected: 409, Received: 201
+      ● DEF-SS-02: expect(received).toBe(expected) — Expected: 201, Received: 409
+      ● DEF-SS-03: expect(received).toBe(expected) — Expected: 201, Received: 500
+
+    Test Suites: 1 failed, 1 total
+    Tests:       3 failed, 3 total
+    Time:        1.33 s
+    ```
+  - **Reproducible TDD GREEN Terminal Log (4/4 Defect Cases Passing at Commit `c540ca900c5ec1a757e79b5505591372610e879f`):**
+    ```text
+    > singslot-server@1.0.0 test
+    > jest --runInBand --detectOpenHandles --forceExit tests/lab6-defects.test.ts
+
+    PASS tests/lab6-defects.test.ts
+      Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite (Issue #34 / Issue #35)
+        ✓ DEF-SS-01: rejects online booking with HTTP 409 SLOT_CONFLICT when a RoomBlock is inserted concurrently before transaction commit (BR-02, BR-06) (18 ms)
+        ✓ DEF-SS-01b: concurrent two-transaction race between online booking and RoomBlock creation (both service helper and direct prisma.roomBlock.create) serializes on Room FOR UPDATE lock and prevents coexistence (BR-02, BR-06) (28 ms)
+        ✓ DEF-SS-02: allows booking a slot shown as available when a prior CANCELLED booking left an orphaned BookingSlot row (FR-03, FR-04) (26 ms)
+        ✓ DEF-SS-03: automatically retries and returns HTTP 201 Created when an initial bookingCode collision (P2002) occurs (FR-04, AC-04a) (34 ms)
+
+    Test Suites: 1 passed, 1 total
+    Tests:       4 passed, 4 total
+    Time:        1.425 s
+    ```
+  - **Full Regression & CI Verification (GitHub Actions Run [`44930162938`](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/44930162938)):** `10/10` server test suites (`105/105` server tests with `--runInBand`), `12/12` client tests (`--test-concurrency=1`), `0` TypeScript errors, and production multi-stage Docker build succeeded. (Cloud Run deployment `AC-04` and final merge `AC-05` remain pending until PR #39 is peer-reviewed by `@lephirada`, merged into `sprint-1-staging`, and promoted to `main`).

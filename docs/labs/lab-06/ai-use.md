@@ -22,3 +22,19 @@
   4. Add `docs/screenshots/lab-06/.gitkeep` so the Lab 6 screenshots directory is preserved in Git upon clone.
 * **Tools Used:** `read_file`, `write_file`, `run_command` (`git status`, `npm run typecheck`).
 * **Outcome:** All 4 findings resolved and verified against `srs.md`, `contracts.md`, and `schema.prisma`.
+
+---
+
+### Session Log: 21 November 2026
+
+#### 3. Partner UAT Master Plan Calibration & Execution Log Scaffolding (Issue #2)
+* **Prompt Intent:** Calibrate the operational UAT Master Plan Tracker and author the formal partner execution log (`docs/labs/lab-06/partner-execution-log.md`) against Whatsss-PMandELS Sprint 1 UAT Plan (`uat-plan.md` on branch `staging-lab5`). Verify test accounts (`user_demo`, `user_other`, `admin`), decouple 2F into discrete sub-checks (2F-1 missing CC and 2F-2 malformed amount), correct 2E API expected code to `INVALID_TRANSACTION_AMOUNT`, verify initial screenshots in `docs/labs/lab-06/screenshots/partner/`, and enforce secret hygiene across all documentation.
+* **Tools Used:** `read_file`, `write_file`, `run_command` (`ls -lah`, `git status`).
+* **Outcome:** Created `docs/labs/lab-06/partner-execution-log.md` with complete 18-slice traceability table, verified active test fixtures on Cloud Run, and initialized sequential live test execution across all 4 mandatory categories.
+
+#### 4. Live Partner UAT Execution, Outgoing Defect Discovery & Full Handoff (Issue #2)
+* **Prompt Intent:** Execute all 18 test slices of Partner Team's application (Whatsss-PMandELS, Theme 7) on Google Cloud Run deployment (`https://whatsss-sipqw4logq-as.a.run.app`). Ensure strict 1-to-1 live binding between user-provided visual evidence and documented test outcomes. Conduct deep security penetration and code audit on partner repository: discovered and verified 6 real defects including Critical Case-Sensitivity Authorization Bypass in `roleGuard.ts` (`BR-10`), Unauthenticated Logout (`AC-01e`), and Incomplete Opening Balance Locking in `income.service.ts` (`F-03`). Formulate formal Outgoing Defect Reports (Part C1) and prepare PR handover package adhering to course rules.
+* **Tools Used:** `read_file`, `edit_file`, `write_file`, `run_command` (`cp`, `ls -la`, `git status`).
+* **Outcome:** Successfully executed and verified 18/18 test cases (100% Pass Rate on baseline UI flows). Captured and bound 25 authentic evidence files (`EVD-01` through `EVD-18`, `DEFECT-01`, `DEFECT-01b`, `DEFECT-02`) in `docs/labs/lab-06/screenshots/partner/`. Documented 6 formal Outgoing Defect Reports in Section 6 of `partner-execution-log.md` with concrete root cause analysis and code recommendations. Prepared PR handover package.
+
+

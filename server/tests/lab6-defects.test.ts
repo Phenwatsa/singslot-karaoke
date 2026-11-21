@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, jest } from '@jes
 import request from 'supertest';
 import { app } from '../src/app';
 import { prisma } from '../src/prisma';
-import { generateBookingCode } from '../src/controllers/booking.controller';
+import { generateBookingCode, createMaintenanceRoomBlock } from '../src/controllers/booking.controller';
 
 describe('Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite (Issue #34 / Issue #35)', () => {
   const getFutureBangkokDateString = (daysAhead: number): string => {
@@ -143,6 +143,73 @@ describe('Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite 
   });
 
   /**
+   * DEF-SS-01b (Critical — Two-Transaction Concurrency Race Between Booking & RoomBlock — BR-02, BR-06):
+   * Executes two real concurrent database transactions simultaneously via Promise.all:
+   * - Transaction A: POST /api/bookings/online
+   * - Transaction B: createMaintenanceRoomBlock (using the shared Room FOR UPDATE locking protocol)
+   * Proves that PostgreSQL serializes both transactions on the Room row lock and permits strictly
+   * ONE claim to commit while rejecting the competing transaction with 409 SLOT_CONFLICT.
+   */
+  it('DEF-SS-01b: concurrent two-transaction race between online booking and createMaintenanceRoomBlock serializes on Room FOR UPDATE lock and prevents coexistence (BR-02, BR-06)', async () => {
+    const raceSlot = 11; // 21:00 - 22:00
+
+    const [bookingOutcome, blockOutcome] = await Promise.allSettled([
+      request(app)
+        .post('/api/bookings/online')
+        .set('Authorization', `Bearer ${customer1Token}`)
+        .send({
+          roomId: roomS01.id,
+          bookingDate: DEF01_DATE,
+          startSlot: raceSlot,
+          durationHours: 1,
+          partySize: 2
+        }),
+      createMaintenanceRoomBlock({
+        roomId: roomS01.id,
+        blockDate: DEF01_DATE,
+        slotIndex: raceSlot,
+        reason: 'Concurrent maintenance block transaction'
+      })
+    ]);
+
+    expect(bookingOutcome.status).toBe('fulfilled');
+    const bookingRes = (bookingOutcome as PromiseFulfilledResult<any>).value;
+    if (bookingRes.body?.booking?.id) {
+      createdBookingIds.push(bookingRes.body.booking.id);
+    }
+    if (blockOutcome.status === 'fulfilled' && blockOutcome.value?.id) {
+      createdBlockIds.push(blockOutcome.value.id);
+    }
+
+    const bookingSucceeded = bookingRes.status === 201;
+    const blockSucceeded = blockOutcome.status === 'fulfilled';
+
+    // Strictly one transaction wins and the competing transaction is rejected with 409 SLOT_CONFLICT
+    expect(bookingSucceeded !== blockSucceeded).toBe(true);
+
+    if (bookingSucceeded) {
+      expect(blockOutcome.status).toBe('rejected');
+      const blockErr = (blockOutcome as PromiseRejectedResult).reason;
+      expect(blockErr.code).toBe('SLOT_CONFLICT');
+    } else {
+      expect(bookingRes.status).toBe(409);
+      expect(bookingRes.body.error?.code).toBe('SLOT_CONFLICT');
+    }
+
+    const [persistedSlotsCount, persistedBlocksCount] = await Promise.all([
+      prisma.bookingSlot.count({
+        where: { roomId: roomS01.id, bookingDate: DEF01_DATE, slotIndex: raceSlot }
+      }),
+      prisma.roomBlock.count({
+        where: { roomId: roomS01.id, blockDate: DEF01_DATE, slotIndex: raceSlot }
+      })
+    ]);
+
+    // Total claims across both tables for (roomS01, DEF01_DATE, Slot 11) must be strictly 1 (never 2)
+    expect(persistedSlotsCount + persistedBlocksCount).toBe(1);
+  });
+
+  /**
    * DEF-SS-02 (Major — FR-03, FR-04, BR-01, AC-03, AC-04a):
    * Latent "Zombie Slot" Permanent Lockout When Booking Status Transitions to CANCELLED.
    * When a CANCELLED booking has lingering BookingSlot rows in PostgreSQL, GET /api/availability
@@ -214,7 +281,7 @@ describe('Lab 6 Part D: Partner-Reported Defect Reproduction & Regression Suite 
    * HTTP 201 Created rather than crashing with HTTP 500 INTERNAL_SERVER_ERROR.
    */
   it('DEF-SS-03: automatically retries and returns HTTP 201 Created when an initial bookingCode collision (P2002) occurs (FR-04, AC-04a)', async () => {
-    const fixedRandomValue = 0.28687331; // Deterministically yields 4-char suffix 'ABCD'
+    const fixedRandomValue = 0.28687331; // Deterministically yields 4-char suffix 'ABSD'
 
     // 1. Pre-create a booking on Room M01 Slot 1 that holds the deterministic colliding bookingCode
     const randomSpy = jest.spyOn(Math, 'random').mockReturnValueOnce(fixedRandomValue);

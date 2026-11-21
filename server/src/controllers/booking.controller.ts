@@ -25,6 +25,59 @@ export const formatBookingTimeRange = (startSlot: number, durationHours: number)
 };
 
 /**
+ * Transactional service helper for creating a RoomBlock under the shared Room row lock (BR-02, DEF-SS-01).
+ * Acquires the identical `SELECT "id" FROM "rooms" WHERE "id" = ... FOR UPDATE` lock used by
+ * `createOnlineBooking` and verifies that no active CONFIRMED `BookingSlot` or existing `RoomBlock`
+ * occupies the target (roomId, blockDate, slotIndex) before committing.
+ */
+export const createMaintenanceRoomBlock = async (params: {
+  roomId: string;
+  blockDate: string;
+  slotIndex: number;
+  reason?: string;
+}) => {
+  const { roomId, blockDate, slotIndex, reason } = params;
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${roomId} FOR UPDATE`;
+
+    const [conflictingBookings, conflictingBlocks] = await Promise.all([
+      tx.bookingSlot.findMany({
+        where: {
+          roomId,
+          bookingDate: blockDate,
+          slotIndex,
+          booking: { status: 'CONFIRMED' }
+        }
+      }),
+      tx.roomBlock.findMany({
+        where: {
+          roomId,
+          blockDate,
+          slotIndex
+        }
+      })
+    ]);
+
+    if (conflictingBookings.length > 0 || conflictingBlocks.length > 0) {
+      const conflictErr: any = new Error('Cannot block a slot that is already occupied by a confirmed booking or block.');
+      conflictErr.code = 'SLOT_CONFLICT';
+      conflictErr.status = 409;
+      throw conflictErr;
+    }
+
+    return tx.roomBlock.create({
+      data: {
+        roomId,
+        blockDate,
+        slotIndex,
+        reason: reason || 'Maintenance block'
+      }
+    });
+  });
+};
+
+/**
  * POST /api/bookings/online
  * Customer online booking endpoint with strict ACID transactional guarantees.
  * Enforces BR-01 (Contiguous Slots), BR-03 (Operating Window), BR-04 (Past Slot Rejection),

@@ -19,7 +19,8 @@ Before executing any UAT case, service health, readiness, and active serving ver
 
 * `GET /api/health` $\rightarrow$ HTTP `200 OK`
 * `GET /api/ready` $\rightarrow$ HTTP `200 OK`, `{"status":"ready","database":"connected"}`
-* **Serving Commit SHA:** `ba2f9dd` / `f160f25` (Container build verified on Cloud Run revision `whatsss-00020-65k`)
+* **Serving Git Commit SHA:** `ba2f9dd` (`ba2f9dd43d8ed620d4b27820d43bee243d2e3d4d` on partner repository branch `staging-lab5`)
+* **Cloud Build / Container Digest Tag:** `f160f25` (Artifact digest built from commit `ba2f9dd` deployed to Cloud Run revision `whatsss-00020-65k`)
 * **Serving Revision:** `whatsss-00020-65k`
 * **Preflight Evidence Register Status (`A-EV-01`, `A-EV-02`):** `PENDING / NOT ARCHIVED AS SEPARATE FILES` (Endpoint health and test fixtures were verified interactively in live browser sessions prior to test execution; standalone screenshot files were not archived in this run).
 

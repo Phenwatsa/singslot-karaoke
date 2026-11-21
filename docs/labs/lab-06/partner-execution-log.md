@@ -122,16 +122,16 @@ Per course security guidelines and `uat-plan.md` Section A2.4, testing credentia
 | **Overall Execution Result** | **UI Layer: 17 PASS / Direct Security API: 4A FAIL (Role Bypass), 4B PASS (Tenancy), 4C PASS (CSRF) / Client-Blocked Forms: API NOT RUN** |
 | **Critical / Major Defects Found** | **1 Critical Security Defect (`DEF-OUT-01`) verified with live runtime evidence** (plus 1 Advisory Contract Discrepancy `DEF-OUT-02` and 4 code inspection findings in Section 6.2) |
 | **Minor UX Usability Observations** | In Credit Card Repayment modal, the `Description` field is an `<input>` rather than a `<textarea>`, causing horizontal text scrolling for long descriptions (detailed in Section 6.2). |
-| **Defect Handoff Status** | Formally documented & packaged in Section 6; prepared for submission to partner team via GitHub Issues (`https://github.com/Apichaya251400/whatsss-frontend/issues`) and course Discord upon PR merge. |
+| **Defect Handoff Status** | **Dispatched & Formally Submitted** to Whatsss Engineering Team via GitHub Issue [#38](https://github.com/Pilaiwan3492/Whatsss-PMandELS/issues/38) on 21 November 2026. |
 | **Independent Acceptance Decision** | **[X] Not Accepted / Rejected for Release (Blocked by Critical Defect DEF-OUT-01; Sprint 1 resolution & independent re-test required per Part C)** |
 | **Independent UAT Lead & Tester** | Lephirada (`@lephirada`), SingSlot Team (Issue #2 Lead) |
 | **Sign-off Date & Time** | 21 November 2026, 16:15 ICT |
 
 ---
 
-## 6. Outgoing Defect Reports & Code Audit (Part C1 — Prepared for Submission to Whatsss-PMandELS)
+## 6. Outgoing Defect Reports & Code Audit (Part C1 — Formally Submitted to Whatsss-PMandELS)
 
-The findings below have been formally triaged and prepared for submission to the partner development team (`@Pilaiwan3492` & `@Apichaya251400`) based on live testing and deep architectural inspection of Cloud Run revision `whatsss-00020-65k` (Commit `ba2f9dd`). Final dispatch to partner team will occur upon PR merge into `sprint-1-staging`.
+The findings below have been formally triaged and submitted to the partner development team (`@Pilaiwan3492` & `@Apichaya251400`) via partner repository [Issue #38](https://github.com/Pilaiwan3492/Whatsss-PMandELS/issues/38) on 21 November 2026 based on live testing and deep architectural inspection of Cloud Run revision `whatsss-00020-65k` (Commit `ba2f9dd`). Retest verification will be conducted in Part D following defect resolution.
 
 ### 6.1 Primary Verified Defect (Runtime & Visual Evidence Bound)
 

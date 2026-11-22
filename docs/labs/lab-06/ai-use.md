@@ -127,3 +127,8 @@
 * **Tools Used:** `read_file`, `write_file`, `edit_file`, `run_command` (`curl`, `cp`, `git status`, `git diff`).
 * **Outcome:** Authored `triage.md` and `resolution-retest.md`, saved retest screenshot, updated `reviewer.md`, and prepared PR handover package. Zero code modifications.
 
+#### 8. Issue 4 Peer Review Clarification on AC-02 & Verification Methodology
+* **Prompt Intent:** Address peer review feedback from `@Phenwatsa` requesting clarification on `AC-02` regarding the distinction between code/CI verification and live production retesting. Update `docs/labs/lab-06/resolution-retest.md` with a tiered verification framework (Tier 1 Code/CI vs. Tier 2 Live Cloud Run) and transparently document technical production reproduction limitations for `DEF-SS-01` (microsecond TOCTOU race), `DEF-SS-02` (latent cancellation without public endpoint), and `DEF-SS-03` (1/1.68M suffix collision probability). Synchronize `reviewer.md`.
+* **Tools Used:** `read_file`, `edit_file`, `run_command` (`git status`, `git diff`).
+* **Outcome:** Updated `docs/labs/lab-06/resolution-retest.md` with Section 2 ("Verification Methodology & Production Constraints Disclosure"), fully addressing AC-02 traceability requirements, and updated `reviewer.md`. Zero code changes.
+

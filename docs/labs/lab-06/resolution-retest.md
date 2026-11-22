@@ -68,7 +68,31 @@ _The following content is the exact, verbatim report delivered by the independen
 
 ---
 
-## 2. Peer Review & Archival Signatures
+## 2. SingSlot QA Team Analysis & Verification Disclosure (AC-02 Clarification)
+
+In response to peer review inquiry regarding `AC-02`, this section explicitly documents the tiered verification strategy employed by the engineering and testing teams, distinguishing automated code/CI verification from live production retesting and disclosing practical reproduction constraints:
+
+### 🔬 2.1 Tiered Verification Framework
+
+| Verification Tier | Scope & Execution Layer | Evidence Produced | Evaluated Scope |
+| :--- | :--- | :--- | :--- |
+| **Tier 1: Automated Regression & Concurrency Suites (Code/CI Layer)** | Executed via Jest + Supertest (`--runInBand`) on local PostgreSQL and GitHub Actions CI workflow ([Run `#44941547401`](https://github.com/Phenwatsa/singslot-karaoke/actions/runs/44941547401)). | Terminal RED/GREEN logs, passing test assertions in `server/tests/lab6-defects.test.ts`, and CI run status. | Core transactional defect mechanics (`DEF-SS-01`, `DEF-SS-02`, `DEF-SS-03`). |
+| **Tier 2: Live Cloud Run Spot-Checks & Regression Smoke (Production Layer)** | Executed live against Google Cloud Run revision `singslot-00005-26q` (`https://singslot-4o7kwmd5ma-as.a.run.app`) on commit `f3eb92d4`. | Health check responses, successful booking confirmation (`BK-20261122-LB00`), and Master Schedule UI sync. | Production service health, catalog rendering, and end-to-end booking flow without regression. |
+
+---
+
+### 📋 2.2 Defect-by-Defect Verification Breakdown & Practical Production Limitations
+
+| Defect ID | Primary Verification Layer | Verification Mechanism & Test Steps | Production Live Retest Constraint / Limitation | Retest Verdict |
+| :---: | :---: | :--- | :--- | :---: |
+| **`DEF-SS-01`**<br>*(TOCTOU Race Condition)* | **Tier 1 (CI / Supertest Concurrency)** | **Step 1:** Injected concurrent maintenance block during outer check window (`tests/lab6-defects.test.ts`).<br>**Step 2:** Simulated simultaneous parallel transactions via `Promise.allSettled`.<br>**Step 3:** Verified locked room re-check catches block and returns `409 SLOT_CONFLICT`. | **Impractical for Manual Live Reproduction:** Microsecond race window between concurrent `RoomBlock` and `BookingSlot` commits cannot be reliably or deterministically triggered via manual browser clicks without automated load harness. | **PASS**<br>*(Verified via CI & Code Inspection)* |
+| **`DEF-SS-02`**<br>*(Zombie Slot on Cancellation)* | **Tier 1 (CI / Supertest Regression)** | **Step 1:** Seeded a booking with status `CANCELLED` retaining historical `BookingSlot` rows.<br>**Step 2:** Verified `GET /api/availability` advertises slot as available.<br>**Step 3:** Executed `POST /api/bookings/online` on that slot; verified in-transaction purge allows `201 Created` without `409` lockout. | **Impractical for Live UI Reproduction:** Sprint 1 does not expose a public cancellation endpoint or UI button (`srs.md` strictly scopes cancellations to Sprint 2). Creating cancelled bookings on Cloud Run requires direct Cloud SQL tampering, making user-level UI reproduction impossible. | **PASS**<br>*(Verified via CI & Code Inspection)* |
+| **`DEF-SS-03`**<br>*(P2002 Crash on Code Collision)* | **Tier 1 (CI / Supertest Regression)** | **Step 1:** Pre-seeded existing booking with deterministic 4-char code `ABSD`.<br>**Step 2:** Mocked initial `Math.random()` to force code collision on incoming booking request.<br>**Step 3:** Verified transaction retry loop catches `P2002`, regenerates fresh code, and returns `201 Created`. | **Impractical for Live UI Reproduction:** Random code collision probability is $1/36^4 \approx 1/1,679,616$. Deterministic collision cannot be induced on production Cloud Run without mocking backend runtime environment. | **PASS**<br>*(Verified via CI & Code Inspection)* |
+| **`DEF-SS-04`**<br>*(JWT / Permissive CORS)* | **Specification & Contract Audit** | **Step 1:** Audited `client/src/utils/session.ts` against `srs.md §7.3` and `contracts.md (Contract 1: AC-01)`.<br>**Step 2:** Confirmed single-origin packaging on Cloud Run container renders wildcard CORS non-exploitable in production. | **Non-Defect / Deferred:** Conforms strictly to Sprint 1 contract; origin whitelist deferred to Sprint 2 hardening. | **ACK**<br>*(Non-Blocking)* |
+
+---
+
+## 3. Peer Review & Archival Signatures
 
 | Role                             | Engineer             | GitHub Username   |    Date     | Decision / Status       |
 | :------------------------------- | :------------------- | :---------------- | :---------: | :---------------------- |

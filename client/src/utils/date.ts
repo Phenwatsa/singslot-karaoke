@@ -41,3 +41,20 @@ export const isPastBangkokSlot = (
   const slotStartTime = new Date(slotIso).getTime();
   return referenceDate.getTime() >= slotStartTime;
 };
+
+/**
+ * Checks whether a specific slot violates the 60-minute online advance booking cutoff (BR-04 v1.3.0).
+ * Exact 60 minutes remaining (slotStartTime - now == 60m) is permitted (returns false).
+ */
+export const isWithinOnlineCutoffSlot = (
+  dateString: string,
+  slotIndex: number,
+  referenceDate: Date = new Date()
+): boolean => {
+  if (isPastBangkokDate(dateString)) return true;
+
+  const slotHour = 10 + slotIndex;
+  const slotIso = `${dateString}T${String(slotHour).padStart(2, '0')}:00:00+07:00`;
+  const slotStartTime = new Date(slotIso).getTime();
+  return referenceDate.getTime() > slotStartTime - 60 * 60 * 1000;
+};

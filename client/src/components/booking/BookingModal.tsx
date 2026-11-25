@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '../layout/GlassCard';
 import { Room } from '../../types/room';
 import { User } from '../../types/auth';
-import { isPastBangkokDate, isPastBangkokSlot, getBangkokTodayString } from '../../utils/date';
+import { isPastBangkokDate, isPastBangkokSlot, isWithinOnlineCutoffSlot, getBangkokTodayString } from '../../utils/date';
 import { DatePicker } from '../common/DatePicker';
 import {
   X,
@@ -122,6 +122,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const timeRangePreview = `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`;
   const isPastDate = isPastBangkokDate(bookingDate);
   const isSelectedSlotPast = isPastBangkokSlot(bookingDate, startSlot);
+  const isSelectedSlotWithinCutoff = isWithinOnlineCutoffSlot(bookingDate, startSlot);
   const exceedsOperatingHours = startSlot + durationHours - 1 > 13;
 
   // Lab 7 BR-01 & BR-12: Peak-Hour (18:00-22:00, slots 8..11) 3-hour cap & live fare preview
@@ -150,6 +151,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
     if (isSelectedSlotPast) {
       setError('Selected start slot has already elapsed today in Asia/Bangkok time (BR-04). Please choose an upcoming open slot.');
+      return;
+    }
+
+    if (isSelectedSlotWithinCutoff) {
+      setError('Online bookings require at least 60 minutes advance notice before slot start (BR-04). Please choose a later slot.');
       return;
     }
 
@@ -402,9 +408,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     >
                       {Array.from({ length: 14 }).map((_, idx) => {
                         const isSlotPast = isPastBangkokSlot(bookingDate, idx);
+                        const isSlotCutoff = !isSlotPast && isWithinOnlineCutoffSlot(bookingDate, idx);
                         return (
-                          <option key={idx} value={idx} disabled={isSlotPast}>
-                            Slot #{idx} ({10 + idx}:00 – {11 + idx}:00) {isSlotPast ? '(Elapsed)' : ''}
+                          <option key={idx} value={idx} disabled={isSlotPast || isSlotCutoff}>
+                            Slot #{idx} ({10 + idx}:00 – {11 + idx}:00){' '}
+                            {isSlotPast ? '(Elapsed)' : isSlotCutoff ? '(Within 60m cutoff)' : ''}
                           </option>
                         );
                       })}
@@ -510,9 +518,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="pt-3.5 mt-2 border-t border-pink-100/70 shrink-0 bg-white/98">
                 <button
                   type="submit"
-                  disabled={isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast}
+                  disabled={isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast || isSelectedSlotWithinCutoff}
                   className={`w-full h-11 sm:h-12 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all border ${
-                    isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast
+                    isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast || isSelectedSlotWithinCutoff
                       ? 'bg-slate-200 text-slate-400 border-slate-200 shadow-none cursor-not-allowed'
                       : 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 border-pink-200/50 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 cursor-pointer'
                   }`}
@@ -529,6 +537,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     ? 'Cannot Book Past Date'
                     : isSelectedSlotPast
                     ? 'Selected Slot Already Elapsed'
+                    : isSelectedSlotWithinCutoff
+                    ? 'Within 60-Min Cutoff'
                     : `Confirm Reservation (฿${estimatedTotalPrice.toLocaleString()})`}
                 </button>
               </div>

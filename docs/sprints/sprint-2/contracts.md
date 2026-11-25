@@ -114,7 +114,7 @@
 * **Component Responsibilities:**
   * **Backend:** Restricted to `STAFF` role (`403 FORBIDDEN` for `CUSTOMER`).
     * `GET /api/room-blocks?date=YYYY-MM-DD`: Lists active maintenance blocks (optional `date` filter).
-    * `POST /api/room-blocks`: Creates block(s) for `roomId`, `blockDate`, `slotIndex` (or array `slotIndices` / `durationHours` `1..5` within `0..13`). Inside `prisma.$transaction` with row lock on `rooms`, verifies no active `CONFIRMED` `BookingSlot` overlaps `[roomId, blockDate, slotIndex]`. Overlap returns `409 BLOCK_CONFLICT`. Duplicate block returns `409 BLOCK_ALREADY_EXISTS` (or idempotent/409 per input).
+    * `POST /api/room-blocks`: Creates block(s) for `roomId`, `blockDate`, `slotIndex` (or array `slotIndices` / `durationHours` `1..5` within `0..13`). Inside `prisma.$transaction` with row lock on `rooms`, verifies no active `CONFIRMED` `BookingSlot` overlaps `[roomId, blockDate, slotIndex]`. Overlap returns `409 BLOCK_CONFLICT`. Duplicate block returns `409 BLOCK_ALREADY_EXISTS` without creating duplicate rows.
     * `DELETE /api/room-blocks/:id`: Removes maintenance block (`404 NOT_FOUND` if missing), restoring slot availability in `GET /api/availability`.
   * **Frontend:** Staff Room Blockout management panel inside `<AppLayout>` / `<GlassCard>` to view, create (with reason), and remove slot blocks.
 * **API Specifications:**
@@ -134,14 +134,14 @@
     * `phone=<string>` (case-insensitive substring match on `customerPhone`)
     * `roomId=<uuid>` or `roomType=SMALL|MEDIUM|LARGE`
     * `status=CONFIRMED|CANCELLED`
-    * If no filter is provided, defaults to today (`Asia/Bangkok`) or returns matching records ordered by `bookingDate DESC, startSlot ASC`. Invalid filter format (e.g., malformed date or invalid `roomType`/`status`) returns `400 INVALID_INPUT`.
+    * If no query filter is provided, defaults to today's date in `Asia/Bangkok` (`ICT`, `UTC+7`). All results are ordered by `bookingDate DESC, startSlot ASC`. Invalid filter format (e.g., malformed date or invalid `roomType`/`status`) returns `400 INVALID_INPUT`.
   * **Frontend:** Add search & filter toolbar (phone input, date/range, room type, status) to the Staff Master Schedule page inside `<AppLayout>`.
 
 ---
 
 ### 2.5 Contract 9: Availability Query Latency Target (`NFR-04`)
 * **Linked Requirements:** `FR-03`, `NFR-04`
-* **Operational Target:** `GET /api/availability?date=YYYY-MM-DD` must respond in **`<= 200 ms`** under local test execution when PostgreSQL contains at least **50 pre-existing bookings** across the 9 rooms.
+* **Operational Target:** `GET /api/availability?date=YYYY-MM-DD` must respond in **`< 200 ms`** under local test execution when PostgreSQL contains at least **50 pre-existing bookings** across the 9 rooms.
 
 ---
 
@@ -149,14 +149,14 @@
 
 | AC ID | Target Feature | Scenario | Observable Expected Outcome |
 |---|---|---|---|
-| **AC-07** | F-07 | Staff creates walk-in booking (`POST /api/bookings/walk-in`) including `< 60 min` before start or Peak-Hour 4 hrs; Customer attempts same endpoint | Staff receives `201 Created` (`channel: "WALK_IN"`, `totalPrice` computed); Customer receives `403 FORBIDDEN`. |
+| **AC-07** | F-07 | Staff creates walk-in booking (`POST /api/bookings/walk-in`) `< 60 min` before start, for 4 hrs in Peak-Hour, and when daily `CONFIRMED` hours already exceed 6 hrs; Customer attempts same endpoint | Staff receives `201 Created` (`channel: "WALK_IN"`, `totalPrice` computed, exempt from online-only Lab 7 rules); Customer receives `403 FORBIDDEN`. |
 | **AC-08** | F-09 | Staff creates and deletes a `RoomBlock` on an open slot | `POST` returns `201 Created`; `GET /api/availability` marks slot `isAvailable: false`; `DELETE` returns `200` and restores `isAvailable: true`. |
 | **AC-08b** | F-09 | Staff attempts to block a slot that has a `CONFIRMED` booking | `409 Conflict` with code `BLOCK_CONFLICT`; zero `RoomBlock` rows created. |
 | **AC-09** | F-08 | Customer cancels own booking `>= 24h` before start; another customer attempts to cancel it | Owner receives `200 OK` (`status: "CANCELLED"`), slots released & quota restored; non-owner receives `403 FORBIDDEN`. |
 | **AC-09a** | F-08 | Customer attempts to cancel or reschedule `< 24h` before start (`BR-09`) | `400 Bad Request` with code `CANCELLATION_WINDOW_EXPIRED`; booking & slots remain unchanged. |
 | **AC-10** | F-08 | Customer reschedules own booking `>= 24h` before start to open slots | `200 OK`, old `BookingSlot` rows replaced atomically, `totalPrice` recalculated, and `BR-11` excludes `targetBookingId`. |
 | **AC-11** | F-10 | Staff filters Master Schedule by `phone`, `date`/`range`, `roomType`, and `status`; Customer attempts access | Staff receives `200 OK` with matching subset; Customer receives `403 FORBIDDEN`. |
-| **AC-03b** | NFR-04 | `GET /api/availability` queried with `>= 50` bookings seeded | `200 OK` with response time `<= 200 ms`. |
+| **AC-03b** | NFR-04 | `GET /api/availability` queried with `>= 50` bookings seeded | `200 OK` with response time `< 200 ms`. |
 
 ---
 
@@ -164,14 +164,14 @@
 
 | Test ID | Linked AC | Level | Preconditions & Input | Test Action | Expected Result |
 |---|---|---|---|---|---|
-| **TEST-07** | AC-07 | API Integration & Security | Staff token + Customer token; Room M01 open | `POST /api/bookings/walk-in` (4 hrs Peak-Hour) by Staff, then by Customer | Staff → `201 Created` (`WALK_IN`, `totalPrice = 1400`); Customer → `403 FORBIDDEN`. |
+| **TEST-07** | AC-07 | API Integration & Security | Staff token + Customer token; Room M01 open; slot `< 60 min` before start; Staff user already holds `>= 6` confirmed hours on target date | `POST /api/bookings/walk-in` (4 hrs Peak-Hour, `< 60 min` lead time) by Staff, then by Customer | Staff → `201 Created` (`WALK_IN`, `totalPrice = 1400`, not blocked by 60-min cutoff, Peak-Hour cap, or 6-hr quota); Customer → `403 FORBIDDEN`. |
 | **TEST-08** | AC-08 | API Integration | Staff token; Room S01 Slot 4 open | `POST /api/room-blocks`, query `/api/availability`, then `DELETE /api/room-blocks/:id` | `201` → slot unavailable → `200` → slot available again. |
 | **TEST-08b** | AC-08b | Domain Rule (TDD) | Room S01 Slot 2 has `CONFIRMED` booking | Staff sends `POST /api/room-blocks` on S01 Slot 2 | `409 Conflict`, `BLOCK_CONFLICT`, 0 blocks persisted. |
 | **TEST-09** | AC-09 | API Integration & Ownership | Customer A owns booking `> 24h` away; Customer B token | Customer B calls `PATCH /api/bookings/:id/cancel`; then Customer A calls it | Customer B → `403 FORBIDDEN`; Customer A → `200 OK`, `status = CANCELLED`, `BookingSlot` rows deleted. |
 | **TEST-09a** | AC-09a | Domain Rule (TDD) | Booking starts `< 24h` from server time | Owner calls `PATCH /api/bookings/:id/cancel` and `/reschedule` | `400 Bad Request`, `CANCELLATION_WINDOW_EXPIRED`, booking remains `CONFIRMED`. |
-| **TEST-10** | AC-10 | API Integration & Rule | Customer A owns 4-hr booking `> 24h` away; target room open | `PATCH /api/bookings/:id/reschedule` to new slot/room | `200 OK`, slots swapped atomically, `totalPrice` updated, `BR-11` does not double-count. |
+| **TEST-10** | AC-10 | API Integration & Rule | Customer A holds 6 confirmed hrs on target date (Booking #1: 4 hrs in S01 `> 24h` away + Booking #2: 2 hrs in S02); target room M01 open | `PATCH /api/bookings/:id/reschedule` moving Booking #1 (4 hrs) to M01 on the same date | `200 OK` (total remains `2 + 4 = 6 <= 6`, proving `targetBookingId` is excluded from `BR-11` sum), slots swapped atomically, `totalPrice` updated to `1400`. |
 | **TEST-11** | AC-11 | API Integration & Security | Multiple bookings across rooms/phones/statuses | Staff calls `GET /api/bookings/master?phone=...&roomType=...&status=...`; Customer calls same | Staff → `200 OK` filtered results; Customer → `403 FORBIDDEN`. |
-| **TEST-03b** | AC-03b | Performance (NFR-04) | `>= 50` bookings inserted across 9 rooms | Measure elapsed time of `GET /api/availability?date=...` | `200 OK` and elapsed duration `<= 200 ms`. |
+| **TEST-03b** | AC-03b | Performance (NFR-04) | `>= 50` bookings inserted across 9 rooms | Measure elapsed time of `GET /api/availability?date=...` | `200 OK` and elapsed duration `< 200 ms`. |
 
 ---
 

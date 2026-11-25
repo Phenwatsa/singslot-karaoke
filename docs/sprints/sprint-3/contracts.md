@@ -65,11 +65,12 @@
   * **Backend:** All mutation endpoints restricted to `STAFF` role (`403 FORBIDDEN` for `CUSTOMER`, `401` if unauthenticated).
     * `POST /api/rooms`: Create room with unique `roomNumber` (`409 ROOM_ALREADY_EXISTS` on duplicate), `type` (`SMALL|MEDIUM|LARGE`), `capacity > 0`, `hourlyRate > 0`.
     * `PATCH /api/rooms/:id`: Update `capacity`, `hourlyRate`, `description`, or `isActive`. Deactivating (`isActive: false`) hides the room from new online bookings without deleting historical `Booking` records.
-    * `DELETE /api/rooms/:id` (soft-deactivate or reject `409 ROOM_HAS_BOOKINGS` if historical bookings exist, preserving referential integrity `onDelete: Restrict`).
+    * `DELETE /api/rooms/:id`: Soft-deactivates the room (`isActive = false`, returning `200 OK` with updated room record) while preserving all historical `Booking` records and referential integrity (`onDelete: Restrict`).
   * **Frontend:** Staff Room Management table & modal inside `<AppLayout>` / `<GlassCard>`.
 * **API Specifications:**
   * `POST /api/rooms` (`STAFF` only) → `201 Created` | `400 INVALID_INPUT` | `403 FORBIDDEN` | `409 ROOM_ALREADY_EXISTS`.
   * `PATCH /api/rooms/:id` (`STAFF` only) → `200 OK` | `400 INVALID_INPUT` | `403 FORBIDDEN` | `404 NOT_FOUND`.
+  * `DELETE /api/rooms/:id` (`STAFF` only) → `200 OK` (`isActive: false`) | `403 FORBIDDEN` | `404 NOT_FOUND`.
 
 ---
 
@@ -126,8 +127,9 @@
 | Test ID | Linked AC | Level | Preconditions & Input | Test Action | Expected Result |
 |---|---|---|---|---|---|
 | **TEST-12** | AC-12 | API Integration & Security | Fresh email + existing email `customer1@singslot.local`; payload with `role: "STAFF"` | `POST /api/auth/register` (valid, duplicate, invalid password, forged role) + `POST /api/auth/login` | Valid → `201` + `role: "CUSTOMER"` + `bcrypt` hash in DB + login `200`; Duplicate → `409`; Invalid → `400`. |
-| **TEST-13** | AC-13 | API Integration & Security | Staff token + Customer token | `POST /api/rooms`, `PATCH /api/rooms/:id` (`isActive: false`) by Staff, then by Customer | Staff → `201`/`200` and room hidden from availability; Customer → `403 FORBIDDEN`. |
-| **TEST-14** | AC-14 | API Integration & Security | Seeded `CONFIRMED` and `CANCELLED` bookings in date range | Staff calls `GET /api/reports/summary?startDate=...&endDate=...`; Customer calls same | Staff → `200 OK` summing only `CONFIRMED` bookings; Customer → `403 FORBIDDEN`. |
+| **TEST-13** | AC-13 | API Integration & Security | Staff token + Customer token | `POST /api/rooms`, `PATCH /api/rooms/:id`, and `DELETE /api/rooms/:id` by Staff, then by Customer | Staff → `201`/`200` (`DELETE` sets `isActive: false`, preserves historical bookings, and hides room from availability); Customer → `403 FORBIDDEN`. |
+| **TEST-14** | AC-14 | API Integration & Security | Seeded fixtures: 2 `CONFIRMED` bookings (2 hrs `SMALL` ONLINE = 400 THB; 3 hrs `MEDIUM` WALK_IN = 1050 THB) + 1 `CANCELLED` booking in 1-day range (9 active rooms × 14 slots = 126 slots) | Staff calls `GET /api/reports/summary?startDate=...&endDate=...`; Customer calls same | Staff → `200 OK` with `totalConfirmedBookings = 2`, `totalBookedHours = 5`, `totalRevenue = 1450`, `occupancyRatePercent = 3.97`, `byChannel = { ONLINE: 1, WALK_IN: 1 }`; Customer → `403 FORBIDDEN`. |
+| **TEST-14-POLISH** | AC-14-POLISH | Security / Integration / Manual | Configured `CORS_ORIGIN`; full regression suite; UI & video checklist | Send request from allowed vs. disallowed origin; run `npm test -- --runInBand`; verify UI polish & demo video | Allowed origin succeeds; disallowed origin rejected by CORS; all automated suites pass 100%; UI & final video manually verified. |
 
 ---
 

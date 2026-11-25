@@ -95,7 +95,10 @@
           "totalRevenue": 19500,
           "occupancyRatePercent": 6.58,
           "byChannel": { "ONLINE": 18, "WALK_IN": 6 },
-          "peakSlots": [{ "slotIndex": 9, "bookedCount": 11 }]
+          "peakSlots": [{ "slotIndex": 9, "bookedCount": 11 }],
+          "byRoom": [
+            { "roomId": "r-s01", "roomNumber": "S01", "type": "SMALL", "bookedHours": 12, "revenue": 2400, "occupancyRatePercent": 12.24 }
+          ]
         }
       }
       ```
@@ -128,7 +131,7 @@
 |---|---|---|---|---|---|
 | **TEST-12** | AC-12 | API Integration & Security | Fresh email + existing email `customer1@singslot.local`; payload with `role: "STAFF"` | `POST /api/auth/register` (valid, duplicate, invalid password, forged role) + `POST /api/auth/login` | Valid → `201` + `role: "CUSTOMER"` + `bcrypt` hash in DB + login `200`; Duplicate → `409`; Invalid → `400`. |
 | **TEST-13** | AC-13 | API Integration & Security | Staff token + Customer token | `POST /api/rooms`, `PATCH /api/rooms/:id`, and `DELETE /api/rooms/:id` by Staff, then by Customer | Staff → `201`/`200` (`DELETE` sets `isActive: false`, preserves historical bookings, and hides room from availability); Customer → `403 FORBIDDEN`. |
-| **TEST-14** | AC-14 | API Integration & Security | Seeded fixtures: 2 `CONFIRMED` bookings (2 hrs `SMALL` ONLINE = 400 THB; 3 hrs `MEDIUM` WALK_IN = 1050 THB) + 1 `CANCELLED` booking in 1-day range (9 active rooms × 14 slots = 126 slots) | Staff calls `GET /api/reports/summary?startDate=...&endDate=...`; Customer calls same | Staff → `200 OK` with `totalConfirmedBookings = 2`, `totalBookedHours = 5`, `totalRevenue = 1450`, `occupancyRatePercent = 3.97`, `byChannel = { ONLINE: 1, WALK_IN: 1 }`; Customer → `403 FORBIDDEN`. |
+| **TEST-14** | AC-14 | API Integration & Security | Seeded fixtures: 2 `CONFIRMED` bookings (2 hrs `SMALL` `S01` ONLINE = 400 THB; 3 hrs `MEDIUM` `M01` WALK_IN = 1050 THB) + 1 `CANCELLED` booking in 1-day range (9 active rooms × 14 slots = 126 slots) | Staff calls `GET /api/reports/summary?startDate=...&endDate=...`; Customer calls same | Staff → `200 OK` with `totalConfirmedBookings = 2`, `totalBookedHours = 5`, `totalRevenue = 1450`, `occupancyRatePercent = 3.97`, `byChannel = { ONLINE: 1, WALK_IN: 1 }`, and `byRoom` containing `S01` (`bookedHours = 2`, `revenue = 400`) & `M01` (`bookedHours = 3`, `revenue = 1050`); Customer → `403 FORBIDDEN`. |
 | **TEST-14-POLISH** | AC-14-POLISH | Security / Integration / Manual | Configured `CORS_ORIGIN`; full regression suite; UI & video checklist | Send request from allowed vs. disallowed origin; run `npm test -- --runInBand`; verify UI polish & demo video | Allowed origin succeeds; disallowed origin rejected by CORS; all automated suites pass 100%; UI & final video manually verified. |
 
 ---

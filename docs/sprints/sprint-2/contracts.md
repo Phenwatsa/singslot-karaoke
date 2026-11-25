@@ -88,7 +88,7 @@
 * **Data Layer:** Uses `Booking.status` (`CONFIRMED` → `CANCELLED`), `Booking.totalPrice`, and `BookingSlot` rows. No schema change needed.
 * **Domain Rules & Boundaries:**
   1. **Ownership & Role Guard:** `CUSTOMER` can cancel/reschedule **only** their own bookings (`booking.userId === req.user.id`); accessing another customer's booking returns `403 FORBIDDEN`. `STAFF` may cancel/reschedule any booking.
-  2. **Status Guard:** Cannot cancel or reschedule an already `CANCELLED` booking (`400 ALREADY_CANCELLED` or `409 BOOKING_ALREADY_CANCELLED`).
+  2. **Status Guard:** Cannot cancel or reschedule an already `CANCELLED` booking; always returns `409 BOOKING_ALREADY_CANCELLED`.
   3. **24-Hour Advance Policy (`BR-09`):** Authoritative server time in `Asia/Bangkok` must satisfy `serverTime <= slotStartDateTime - 24 hours`. Exact boundary (`== 24h` remaining) is **permitted**; `< 24h` remaining is **rejected** with `400 CANCELLATION_WINDOW_EXPIRED`.
   4. **Atomic Slot Release on Cancel:** Inside `prisma.$transaction`, set `Booking.status = 'CANCELLED'` and delete all `BookingSlot` rows for `bookingId`, immediately freeing those slots and restoring customer daily quota (`BR-11`).
   5. **Atomic Slot Swap & Lab 7 Alignment on Reschedule:** Inside `prisma.$transaction` (with `SELECT ... FOR UPDATE` row locking):
@@ -113,15 +113,20 @@
 * **Data Layer:** Uses existing `RoomBlock` model (`roomId`, `blockDate`, `slotIndex`, `reason`). No schema change required.
 * **Component Responsibilities:**
   * **Backend:** Restricted to `STAFF` role (`403 FORBIDDEN` for `CUSTOMER`).
-    * `GET /api/room-blocks?date=YYYY-MM-DD`: Lists active maintenance blocks (optional `date` filter).
-    * `POST /api/room-blocks`: Creates block(s) for `roomId`, `blockDate`, `slotIndex` (or array `slotIndices` / `durationHours` `1..5` within `0..13`). Inside `prisma.$transaction` with row lock on `rooms`, verifies no active `CONFIRMED` `BookingSlot` overlaps `[roomId, blockDate, slotIndex]`. Overlap returns `409 BLOCK_CONFLICT`. Duplicate block returns `409 BLOCK_ALREADY_EXISTS` without creating duplicate rows.
+    * `GET /api/room-blocks?date=YYYY-MM-DD`: Lists active maintenance blocks (optional `date` filter; invalid date returns `400 INVALID_INPUT`).
+    * `POST /api/room-blocks`: Creates block(s) for `roomId`, `blockDate`, and either a single `slotIndex` (`0..13`) or a non-empty array of unique integers `slotIndices` (`0..13`); invalid or empty slot input returns `400 INVALID_INPUT`. Executes atomically inside `prisma.$transaction` with a row lock on `rooms` (all-or-nothing): if *any* requested slot overlaps an active `CONFIRMED` `BookingSlot`, rejects the entire request with `409 BLOCK_CONFLICT` and creates zero blocks; if *any* requested slot is already blocked, rejects with `409 BLOCK_ALREADY_EXISTS` and creates zero duplicate blocks.
     * `DELETE /api/room-blocks/:id`: Removes maintenance block (`404 NOT_FOUND` if missing), restoring slot availability in `GET /api/availability`.
   * **Frontend:** Staff Room Blockout management panel inside `<AppLayout>` / `<GlassCard>` to view, create (with reason), and remove slot blocks.
 * **API Specifications:**
+  * `GET /api/room-blocks?date=2026-11-29` (Header: `Authorization: Bearer <StaffToken>`)
+    * Success Response (`200 OK`): `{ "success": true, "blocks": [{ "id": "blk-01", "roomId": "r-s01", "roomNumber": "S01", "blockDate": "2026-11-29", "slotIndex": 4, "reason": "Speaker maintenance" }] }`
   * `POST /api/room-blocks` (Header: `Authorization: Bearer <StaffToken>`)
-    * Request Body: `{ "roomId": "r-s01", "blockDate": "2026-11-29", "slotIndex": 4, "reason": "Speaker maintenance" }`
-    * Success Response (`201 Created`): `{ "success": true, "block": { "id": "blk-01", "roomId": "r-s01", "blockDate": "2026-11-29", "slotIndex": 4, "reason": "Speaker maintenance" } }`
-    * Conflict (`409 Conflict`): `{ "success": false, "error": { "code": "BLOCK_CONFLICT", "message": "Cannot block a slot with an existing confirmed booking." } }`
+    * Request Body: `{ "roomId": "r-s01", "blockDate": "2026-11-29", "slotIndex": 4, "reason": "Speaker maintenance" }` (or `"slotIndices": [4, 5]`)
+    * Success Response (`201 Created`): `{ "success": true, "blocks": [{ "id": "blk-01", "roomId": "r-s01", "blockDate": "2026-11-29", "slotIndex": 4, "reason": "Speaker maintenance" }] }`
+    * Conflict (`409 Conflict`): `{ "success": false, "error": { "code": "BLOCK_CONFLICT", "message": "Cannot block a slot with an existing confirmed booking." } }` or `BLOCK_ALREADY_EXISTS`.
+  * `DELETE /api/room-blocks/:id` (Header: `Authorization: Bearer <StaffToken>`)
+    * Success Response (`200 OK`): `{ "success": true, "deletedId": "blk-01" }`
+    * Errors: `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 NOT_FOUND`.
 
 ---
 
@@ -130,12 +135,40 @@
 * **Data Layer:** Queries existing `Booking` + `Room` tables. No schema change required.
 * **Component Responsibilities:**
   * **Backend:** Extend `GET /api/bookings/master` (`STAFF` only; `403 FORBIDDEN` for `CUSTOMER`) to support optional query parameters:
-    * `date=YYYY-MM-DD` (exact date) or `startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` (date range)
+    * `date=YYYY-MM-DD` (exact date) or `startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` (date range). Supplying `date` together with `startDate` or `endDate` is mutually exclusive and returns `400 INVALID_INPUT` (likewise `startDate > endDate` returns `400 INVALID_INPUT`).
     * `phone=<string>` (case-insensitive substring match on `customerPhone`)
     * `roomId=<uuid>` or `roomType=SMALL|MEDIUM|LARGE`
     * `status=CONFIRMED|CANCELLED`
     * If no query filter is provided, defaults to today's date in `Asia/Bangkok` (`ICT`, `UTC+7`). All results are ordered by `bookingDate DESC, startSlot ASC`. Invalid filter format (e.g., malformed date or invalid `roomType`/`status`) returns `400 INVALID_INPUT`.
   * **Frontend:** Add search & filter toolbar (phone input, date/range, room type, status) to the Staff Master Schedule page inside `<AppLayout>`.
+* **API Specifications:**
+  * `GET /api/bookings/master` (Header: `Authorization: Bearer <StaffToken>`)
+    * Success Response (`200 OK`):
+      ```json
+      {
+        "success": true,
+        "bookings": [
+          {
+            "id": "bk-uuid-001",
+            "bookingCode": "BK-20261128-9A2B",
+            "roomId": "r-m01",
+            "roomNumber": "M01",
+            "roomType": "MEDIUM",
+            "bookingDate": "2026-11-28",
+            "startSlot": 8,
+            "durationHours": 2,
+            "timeRange": "18:00 - 20:00",
+            "partySize": 5,
+            "channel": "ONLINE",
+            "customerName": "Customer One",
+            "customerPhone": "0812345678",
+            "totalPrice": 700,
+            "status": "CONFIRMED"
+          }
+        ]
+      }
+      ```
+    * Errors: `400 INVALID_INPUT`, `401 UNAUTHENTICATED`, `403 FORBIDDEN`.
 
 ---
 

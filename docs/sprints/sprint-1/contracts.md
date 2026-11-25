@@ -57,9 +57,10 @@
     * Validation: `date` must match format `YYYY-MM-DD`. Invalid date returns HTTP 400 `INVALID_INPUT`.
     * Slot Availability Semantics (`BR-04` Rev. Lab 7):
       * `isOccupied`: `true` if occupied by an active `CONFIRMED` `BookingSlot` or `RoomBlock`.
-      * `isPast`: `true` if `currentServerTime >= slotStartTime` (`Asia/Bangkok`) — preserved for Staff walk-in eligibility (`F-07`).
+      * `isPast`: `true` if `currentServerTime >= slotStartTime` (`Asia/Bangkok`).
       * `isWithinCutoff`: `true` if `currentServerTime > slotStartTime - 60 minutes` (`Asia/Bangkok`). Exact 60-minute boundary (`== 60 min`) yields `isWithinCutoff: false`.
-      * `isAvailable`: `!isOccupied && !isWithinCutoff` (authoritative online customer bookability).
+      * `isAvailable`: `!isOccupied && !isWithinCutoff` (authoritative **online customer** bookability).
+      * *Walk-in Eligibility Note (`F-07`):* Because `isAvailable` includes the 60-minute online cutoff, future Staff Walk-in availability checks MUST use `!isOccupied && !isPast` rather than `isAvailable`.
     * Success Response (200 OK):
       ```json
       {

@@ -254,9 +254,10 @@ model RoomBlock {
   3. Queries all `RoomBlock` records for the date.
   4. Maps each room to 14 slots, computing:
      - `isOccupied`: `true` if a matching slot index exists in active `BookingSlot` or `RoomBlock`.
-     - `isPast`: `true` if `currentServerTime >= slotStartTime` in `Asia/Bangkok` (preserved for Staff walk-in eligibility `F-07`).
+     - `isPast`: `true` if `currentServerTime >= slotStartTime` in `Asia/Bangkok`.
      - `isWithinCutoff`: `true` if `currentServerTime > slotStartTime - 60 minutes` in `Asia/Bangkok` (`BR-04`).
-     - `isAvailable`: `!isOccupied && !isWithinCutoff` (authoritative online customer bookability).
+     - `isAvailable`: `!isOccupied && !isWithinCutoff` (authoritative **online customer** bookability).
+     - **Staff Walk-in Semantics (`F-07`):** Because `isAvailable` incorporates the 60-minute online cutoff, future Staff on-premise walk-in availability checks MUST evaluate `!isOccupied && !isPast` rather than relying on `isAvailable`.
 * **Authoritative Pricing & Additive Schema Evolution (`BR-12`):**
   `Room.hourlyRate` (`@default(200)`) and `Booking.totalPrice` (`@default(0)`) are introduced via an additive, rollback-safe Prisma migration with SQL backfill (`SMALL=200`, `MEDIUM=350`, `LARGE=500`; historical `bookings.totalPrice = bookings.durationHours * rooms.hourlyRate`). Server controllers always compute `totalPrice = room.hourlyRate * durationHours` and ignore any client-provided price field.
 * **Cancellation Lifecycle (Sprint 2):**

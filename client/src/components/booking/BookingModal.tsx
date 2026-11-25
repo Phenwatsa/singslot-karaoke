@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '../layout/GlassCard';
 import { Room } from '../../types/room';
 import { User } from '../../types/auth';
-import { isPastBangkokDate, isPastBangkokSlot, getBangkokTodayString } from '../../utils/date';
+import { isPastBangkokDate, isPastBangkokSlot, isWithinOnlineCutoffSlot, getBangkokTodayString } from '../../utils/date';
 import { DatePicker } from '../common/DatePicker';
 import {
   X,
@@ -122,7 +122,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const timeRangePreview = `${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`;
   const isPastDate = isPastBangkokDate(bookingDate);
   const isSelectedSlotPast = isPastBangkokSlot(bookingDate, startSlot);
+  const isSelectedSlotWithinCutoff = isWithinOnlineCutoffSlot(bookingDate, startSlot);
   const exceedsOperatingHours = startSlot + durationHours - 1 > 13;
+
+  // Lab 7 BR-01 & BR-12: Peak-Hour (18:00-22:00, slots 8..11) 3-hour cap & live fare preview
+  const overlapsPeakHours = Array.from({ length: durationHours }, (_, i) => startSlot + i).some(
+    (s) => s >= 8 && s <= 11
+  );
+  const exceedsPeakDuration = overlapsPeakHours && durationHours > 3;
+  const roomHourlyRate =
+    currentRoom?.hourlyRate ??
+    (currentRoom?.type === 'MEDIUM' ? 350 : currentRoom?.type === 'LARGE' ? 500 : 200);
+  const estimatedTotalPrice = roomHourlyRate * durationHours;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,8 +154,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
 
+    if (isSelectedSlotWithinCutoff) {
+      setError('Online bookings require at least 60 minutes advance notice before slot start (BR-04). Please choose a later slot.');
+      return;
+    }
+
     if (exceedsOperatingHours) {
       setError('Booking duration extends past midnight closing time (24:00). Please shorten duration or select an earlier start slot.');
+      return;
+    }
+
+    if (exceedsPeakDuration) {
+      setError('Online bookings overlapping Peak Hours (18:00 – 22:00) are limited to 3 hours maximum (BR-01).');
       return;
     }
 
@@ -259,9 +280,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     {confirmedBooking.timeRange} ({confirmedBooking.durationHours} hrs)
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-1 border-b border-pink-100/60">
                   <span className="text-slate-500 font-medium">Party Size</span>
                   <span className="font-bold text-slate-800">{confirmedBooking.partySize} guests</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 font-medium">Total Fare</span>
+                  <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2.5 py-0.5 font-extrabold text-sky-900 text-sm border border-cyan-200/80">
+                    ฿{(confirmedBooking.totalPrice ?? estimatedTotalPrice).toLocaleString()}
+                  </span>
                 </div>
               </div>
 
@@ -381,9 +408,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     >
                       {Array.from({ length: 14 }).map((_, idx) => {
                         const isSlotPast = isPastBangkokSlot(bookingDate, idx);
+                        const isSlotCutoff = !isSlotPast && isWithinOnlineCutoffSlot(bookingDate, idx);
                         return (
-                          <option key={idx} value={idx} disabled={isSlotPast}>
-                            Slot #{idx} ({10 + idx}:00 – {11 + idx}:00) {isSlotPast ? '(Elapsed)' : ''}
+                          <option key={idx} value={idx} disabled={isSlotPast || isSlotCutoff}>
+                            Slot #{idx} ({10 + idx}:00 – {11 + idx}:00){' '}
+                            {isSlotPast ? '(Elapsed)' : isSlotCutoff ? '(Within 60m cutoff)' : ''}
                           </option>
                         );
                       })}
@@ -474,12 +503,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <span className="text-sm font-black text-slate-900 tracking-tight">
                       {timeRangePreview}
                     </span>
-                    <span className="text-[11px] font-extrabold text-purple-900 bg-white/95 px-2.5 py-0.5 rounded-full border border-pink-200/60 shadow-2xs">
-                      {durationHours} hr{durationHours > 1 ? 's' : ''}
+                    <span className="text-[11px] font-extrabold text-sky-900 bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2.5 py-0.5 rounded-full border border-cyan-200/80 shadow-2xs">
+                      ฿{estimatedTotalPrice.toLocaleString()} ({durationHours} hr{durationHours > 1 ? 's' : ''})
                     </span>
                   </div>
                   <span className="text-[11px] text-purple-600 font-semibold mt-1.5 block">
-                    {durationHours} contiguous hour{durationHours > 1 ? 's' : ''} reserved
+                    ฿{roomHourlyRate}/hr • {overlapsPeakHours ? 'Peak Hours (18:00–22:00): max 3 hrs' : 'Off-Peak: up to 5 hrs'}
                   </span>
                 </div>
                 </div>
@@ -489,9 +518,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="pt-3.5 mt-2 border-t border-pink-100/70 shrink-0 bg-white/98">
                 <button
                   type="submit"
-                  disabled={isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast}
+                  disabled={isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast || isSelectedSlotWithinCutoff}
                   className={`w-full h-11 sm:h-12 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider transition-all border ${
-                    isLoading || !token || exceedsOperatingHours || isPastDate || isSelectedSlotPast
+                    isLoading || !token || exceedsOperatingHours || exceedsPeakDuration || isPastDate || isSelectedSlotPast || isSelectedSlotWithinCutoff
                       ? 'bg-slate-200 text-slate-400 border-slate-200 shadow-none cursor-not-allowed'
                       : 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 border-pink-200/50 shadow-sm shadow-purple-100 hover:brightness-105 active:scale-95 cursor-pointer'
                   }`}
@@ -502,11 +531,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     ? 'Sign In Required to Book'
                     : exceedsOperatingHours
                     ? 'Exceeds Operating Hours'
+                    : exceedsPeakDuration
+                    ? 'Peak Hours Max 3 Hours'
                     : isPastDate
                     ? 'Cannot Book Past Date'
                     : isSelectedSlotPast
                     ? 'Selected Slot Already Elapsed'
-                    : `Confirm Reservation (${timeRangePreview})`}
+                    : isSelectedSlotWithinCutoff
+                    ? 'Within 60-Min Cutoff'
+                    : `Confirm Reservation (฿${estimatedTotalPrice.toLocaleString()})`}
                 </button>
               </div>
             </form>

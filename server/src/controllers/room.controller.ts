@@ -20,29 +20,33 @@ export const getRooms = async (_req: Request, res: Response, next: NextFunction)
         roomNumber: true,
         type: true,
         capacity: true,
+        hourlyRate: true,
         description: true,
         isActive: true
       }
     });
 
-    // Group rooms by capacity tier (Small: 4, Medium: 8, Large: 12) per In-Scope
+    // Group rooms by capacity tier (Small: 4, Medium: 8, Large: 12) per In-Scope & BR-12 pricing
     const tiers = {
       SMALL: {
         tier: 'SMALL',
         displayName: 'Small Rooms',
         capacity: 4,
+        hourlyRate: 200,
         rooms: rooms.filter((r) => r.type === 'SMALL')
       },
       MEDIUM: {
         tier: 'MEDIUM',
         displayName: 'Medium Rooms',
         capacity: 8,
+        hourlyRate: 350,
         rooms: rooms.filter((r) => r.type === 'MEDIUM')
       },
       LARGE: {
         tier: 'LARGE',
         displayName: 'Large Rooms',
         capacity: 12,
+        hourlyRate: 500,
         rooms: rooms.filter((r) => r.type === 'LARGE')
       }
     };

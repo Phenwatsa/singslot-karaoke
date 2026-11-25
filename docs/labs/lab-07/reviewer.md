@@ -19,11 +19,11 @@
 
 ## 2. Summary of Lab 7 Issues & Pull Requests
 
-| Issue | Title / Scope | Primary Owner | Reviewer | Branch Name | PR Target | Status | Verdict |
-| :---: | :--- | :---: | :---: | :--- | :--- | :---: | :---: |
-| **Issue 1** | `[Lab 7 - Issue 1] Sprint 1 Adaptive Change Request, Impact Analysis & Contract Revision` | `@Phenwatsa` | `@lephirada` | `docs/lab7-issue-1-contract-impact` | [PR #49](https://github.com/Phenwatsa/singslot-karaoke/pull/49) (`sprint-1-staging`) | **Approved** | **Ready to Merge** |
-| **Issue 2** | `[Lab 7 - Issue 2] TDD Implementation (RED/GREEN), Regression Verification & Cloud Run Release` | `@lephirada` | `@Phenwatsa` | `feat/lab7-issue-2-booking-rules-pricing` | `sprint-1-staging` $\rightarrow$ `main` | Planned | Pending Issue 1 Merge |
-| **Issue 3** | `[Lab 7 - Issue 3] Post-Deployment Verification, Engineering Metrics & Release Readiness` | `@Phenwatsa` | `@lephirada` | `docs/lab7-issue-3-metrics-readiness` | `sprint-1-staging` | Planned | Pending Issue 2 Deploy |
+|    Issue    | Title / Scope                                                                                   | Primary Owner |   Reviewer   | Branch Name                               | PR Target                                                                            |    Status    |            Verdict             |
+| :---------: | :---------------------------------------------------------------------------------------------- | :-----------: | :----------: | :---------------------------------------- | :----------------------------------------------------------------------------------- | :----------: | :----------------------------: |
+| **Issue 1** | `[Lab 7 - Issue 1] Sprint 1 Adaptive Change Request, Impact Analysis & Contract Revision`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-1-contract-impact`       | [PR #49](https://github.com/Phenwatsa/singslot-karaoke/pull/49) (`sprint-1-staging`) |  **Merged**  |    **Approved (`17a5a53`)**    |
+| **Issue 2** | `[Lab 7 - Issue 2] TDD Implementation (RED/GREEN), Regression Verification & Cloud Run Release` | `@lephirada`  | `@Phenwatsa` | `feat/lab7-issue-2-booking-rules-pricing` | `sprint-1-staging` $\rightarrow$ `main`                                              | **Approved** | **Ready to Merge (`a32592c`)** |
+| **Issue 3** | `[Lab 7 - Issue 3] Post-Deployment Verification, Engineering Metrics & Release Readiness`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-3-metrics-readiness`     | `sprint-1-staging`                                                                   |   Planned    |     Pending Issue 2 Deploy     |
 
 ---
 
@@ -44,14 +44,54 @@
 #### 🔍 Review Discussion & Verification Notes
 
 - **Developer (`@Phenwatsa`):**
+
   > Completed the pre-implementation Change Impact Analysis (`docs/labs/lab-07/change-impact.md`) and versioned all affected engineering specifications from `v1.2.0` to `v1.3.0` (`srs.md`, `features.md`, `system-sds.md`, `traceability.md`, `docs/sprints/sprint-1/contracts.md`, and `docs/sprints/sprint-1/tests.md` §8 with Planned / Pre-Implementation STS entries `TEST-02b`, `TEST-03c`, and `TEST-04g`–`TEST-04j` while keeping historical Sprint 1 §1–§7 logs frozen). Preserved `AC-03b`/`TEST-03b` for Sprint 2 `NFR-04`, aligned `NFR-05` naming with SRS (`Container Readiness & Durability`), explicitly documented `!isOccupied && !isPast` for future Staff Walk-in (`F-07`) availability, and documented self-exclusion (`id != targetBookingId`) in `BR-11` for Sprint 2 rescheduling (`F-08`). Zero application or test code has been modified in this PR. Ready for your pre-implementation contract review.
 
 - **Reviewer (`@lephirada`):**
+
   > The documentation is consistent with the project requirements, preserves the existing test history, and clearly distinguishes planned test cases from executed test results. The PR remains within the intended documentation scope, and all required checks have passed.
   > No further issues were found. The changes are satisfactory and approved.
   - **Status:** **Approved**
 
 - **Developer Response (`@Phenwatsa`):**
+
   > Thank you @lephirada for the review and approval! I have recorded the peer review approval in `docs/labs/lab-07/reviewer.md`. PR #49 is ready to merge into `sprint-1-staging`.
 
 - **Outcome:** PR #49 approved by `@lephirada` on 2026-11-25 and cleared for merge into `sprint-1-staging` prior to Lab 7 Issue 2 implementation.
+
+---
+
+### 📌 Lab 7 — Issue 2: TDD Implementation (RED/GREEN), Regression Verification & Cloud Run Release
+
+- **Branch:** `feat/lab7-issue-2-booking-rules-pricing`
+- **Primary Owner:** `@lephirada`
+- **Reviewer:** `@Phenwatsa`
+- **PR Target:** `sprint-1-staging` $\rightarrow$ `main`
+- **TDD Commit Trail:** RED `70d3b3d` $\rightarrow$ GREEN `38a2b92` $\rightarrow$ Review Fix `a32592c`
+- **Review Date:** `2026-11-25`
+- **Status:** **Approved**
+- **Verdict:** **Ready to Merge**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Reviewer (`@Phenwatsa`) — Initial Review: Requested Changes**
+
+  > **[P2] Enforce the 60-minute cutoff in `BookingModal`**
+  > The booking modal currently checks only `isPastBangkokSlot`, so slots within the 60-minute online booking cutoff remain selectable and submittable from this flow, even though the API rejects them. Please apply the same cutoff boundary in the UI, disable or indicate affected slots, and preserve the exact 60-minute permitted boundary.
+
+- **Developer Response (`@lephirada`) — Commit `70d3b3d`, `38a2b92`, `a32592c`:**
+
+  > Resolved P2 in `a32592c`: Added `isWithinOnlineCutoffSlot` in `client/src/utils/date.ts` (preserving the exact 60-minute permitted boundary) and enforced it in `client/src/components/booking/BookingModal.tsx` to disable cutoff slots (`(Within 60m cutoff)`) and block submission. Verified `typecheck`, `build:client`, and all `12/12` client tests pass.
+
+- **Reviewer (`@Phenwatsa`) — Final Approval:**
+
+  > **Review: Approved**
+  > The requested changes have been implemented and verified.
+  >
+  > - The 60-minute online booking cutoff is now enforced in `BookingModal`, including slot selection and submission validation.
+  > - The exact 60-minute boundary remains permitted, consistent with the backend logic.
+  > - Pricing, migration/backfill, Peak-Hour limits, and daily booking quota were reviewed with no blocking issues found.
+  > - CI checks passed successfully.
+  - **Status:** **Approved**
+
+- **Outcome:** Feature PR approved by `@Phenwatsa` on 2026-11-25 and cleared for merge into `sprint-1-staging` (followed by Release PR into `main` for Cloud Run deployment `v0.1.2-lab7`).

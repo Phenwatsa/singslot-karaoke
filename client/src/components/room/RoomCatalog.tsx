@@ -135,12 +135,17 @@ export const RoomCatalog: React.FC<RoomCatalogProps> = ({ rooms, isLoading = fal
                     </div>
                   </div>
 
-                  {/* Bottom Row: Max Capacity & Action Button */}
+                  {/* Bottom Row: Max Capacity, Hourly Rate & Action Button */}
                   <div className="mt-4 flex items-center justify-between border-t border-pink-100/70 pt-3 text-xs text-slate-600 font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span>
-                        Max Capacity: <strong className="text-slate-900 font-bold">{room.capacity} Pax</strong>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="h-4 w-4 text-purple-500 shrink-0" />
+                        <span>
+                          <strong className="text-slate-900 font-bold">{room.capacity} Pax</strong>
+                        </span>
+                      </div>
+                      <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2.5 py-0.5 text-[11px] font-extrabold text-sky-900 border border-cyan-200/80">
+                        ฿{room.hourlyRate ?? (room.type === 'SMALL' ? 200 : room.type === 'MEDIUM' ? 350 : 500)}/hr
                       </span>
                     </div>
                     {onBookRoom && (

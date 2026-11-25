@@ -5,6 +5,7 @@ export interface Room {
   roomNumber: string;
   type: RoomType;
   capacity: number;
+  hourlyRate?: number;
   description?: string | null;
   isActive?: boolean;
 }
@@ -13,6 +14,7 @@ export interface SlotAvailability {
   slotIndex: number;
   timeRange: string;
   isAvailable: boolean;
+  isWithinCutoff?: boolean;
   isPast?: boolean;
   isOccupied?: boolean;
 }
@@ -22,6 +24,7 @@ export interface RoomAvailability {
   roomNumber: string;
   type: RoomType;
   capacity: number;
+  hourlyRate?: number;
   description?: string | null;
   slots: SlotAvailability[];
 }
@@ -30,6 +33,7 @@ export interface RoomTierGroup {
   tier: RoomType;
   displayName: string;
   capacity: number;
+  hourlyRate?: number;
   rooms: Room[];
 }
 

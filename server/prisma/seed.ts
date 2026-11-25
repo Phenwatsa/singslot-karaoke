@@ -74,15 +74,15 @@ async function main() {
 
   // 2. Seed 9 Rooms
   const rooms = [
-    { roomNumber: 'S01', type: RoomType.SMALL, capacity: 4, description: 'Cozy private room for up to 4 guests' },
-    { roomNumber: 'S02', type: RoomType.SMALL, capacity: 4, description: 'Cozy private room for up to 4 guests' },
-    { roomNumber: 'S03', type: RoomType.SMALL, capacity: 4, description: 'Cozy private room for up to 4 guests' },
-    { roomNumber: 'M01', type: RoomType.MEDIUM, capacity: 8, description: 'Standard party room for up to 8 guests' },
-    { roomNumber: 'M02', type: RoomType.MEDIUM, capacity: 8, description: 'Standard party room for up to 8 guests' },
-    { roomNumber: 'M03', type: RoomType.MEDIUM, capacity: 8, description: 'Standard party room for up to 8 guests' },
-    { roomNumber: 'L01', type: RoomType.LARGE, capacity: 12, description: 'VIP Luxury suite for up to 12 guests' },
-    { roomNumber: 'L02', type: RoomType.LARGE, capacity: 12, description: 'VIP Luxury suite for up to 12 guests' },
-    { roomNumber: 'L03', type: RoomType.LARGE, capacity: 12, description: 'VIP Luxury suite for up to 12 guests' }
+    { roomNumber: 'S01', type: RoomType.SMALL, capacity: 4, hourlyRate: 200, description: 'Cozy private room for up to 4 guests' },
+    { roomNumber: 'S02', type: RoomType.SMALL, capacity: 4, hourlyRate: 200, description: 'Cozy private room for up to 4 guests' },
+    { roomNumber: 'S03', type: RoomType.SMALL, capacity: 4, hourlyRate: 200, description: 'Cozy private room for up to 4 guests' },
+    { roomNumber: 'M01', type: RoomType.MEDIUM, capacity: 8, hourlyRate: 350, description: 'Standard party room for up to 8 guests' },
+    { roomNumber: 'M02', type: RoomType.MEDIUM, capacity: 8, hourlyRate: 350, description: 'Standard party room for up to 8 guests' },
+    { roomNumber: 'M03', type: RoomType.MEDIUM, capacity: 8, hourlyRate: 350, description: 'Standard party room for up to 8 guests' },
+    { roomNumber: 'L01', type: RoomType.LARGE, capacity: 12, hourlyRate: 500, description: 'VIP Luxury suite for up to 12 guests' },
+    { roomNumber: 'L02', type: RoomType.LARGE, capacity: 12, hourlyRate: 500, description: 'VIP Luxury suite for up to 12 guests' },
+    { roomNumber: 'L03', type: RoomType.LARGE, capacity: 12, hourlyRate: 500, description: 'VIP Luxury suite for up to 12 guests' }
   ];
 
   for (const room of rooms) {
@@ -91,6 +91,7 @@ async function main() {
       update: {
         type: room.type,
         capacity: room.capacity,
+        hourlyRate: room.hourlyRate,
         description: room.description,
         isActive: true
       },

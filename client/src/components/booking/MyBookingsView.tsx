@@ -11,6 +11,7 @@ interface BookingSummary {
   durationHours: number;
   timeRange?: string;
   partySize: number;
+  totalPrice?: number;
   status: 'CONFIRMED' | 'CANCELLED';
   createdAt: string;
   room: {
@@ -18,6 +19,7 @@ interface BookingSummary {
     roomNumber: string;
     type: 'SMALL' | 'MEDIUM' | 'LARGE';
     capacity: number;
+    hourlyRate?: number;
     description?: string | null;
   };
 }
@@ -205,9 +207,16 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({
                       <span className="text-[10px] text-purple-600 font-bold">({booking.durationHours}h)</span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
-                      <span className="font-semibold">{booking.partySize} Guests</span>
+                    <div className="flex items-center justify-between text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
+                        <span className="font-semibold">{booking.partySize} Guests</span>
+                      </div>
+                      {typeof booking.totalPrice === 'number' && (
+                        <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2 py-0.5 text-[11px] font-extrabold text-sky-900 border border-cyan-200/80">
+                          ฿{booking.totalPrice.toLocaleString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -15,6 +15,7 @@ interface MasterBooking {
   durationHours: number;
   timeRange?: string;
   partySize: number;
+  totalPrice?: number;
   customerName: string;
   customerPhone?: string | null;
   channel: string;
@@ -24,6 +25,7 @@ interface MasterBooking {
     roomNumber: string;
     type: 'SMALL' | 'MEDIUM' | 'LARGE';
     capacity: number;
+    hourlyRate?: number;
     description?: string | null;
   };
   slots: Array<{ id?: string; slotIndex: number }>;
@@ -456,9 +458,16 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                                   <span className="truncate">{b.customerName}</span>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 text-slate-600">
-                                  <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
-                                  <span>{b.partySize} guests</span>
+                                <div className="flex items-center justify-between text-slate-600">
+                                  <div className="flex items-center gap-1.5">
+                                    <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
+                                    <span>{b.partySize} guests</span>
+                                  </div>
+                                  {typeof b.totalPrice === 'number' && (
+                                    <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2 py-0.5 text-[10px] font-extrabold text-sky-900 border border-cyan-200/80">
+                                      ฿{b.totalPrice.toLocaleString()}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>

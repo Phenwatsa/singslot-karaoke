@@ -34,15 +34,32 @@ export const isValidDateString = (dateStr?: string): boolean => {
   );
 };
 
+export const ONLINE_ADVANCE_CUTOFF_MS = 60 * 60 * 1000;
+
 /**
  * Helper to check if a slot on a given date has already started or elapsed in Asia/Bangkok (UTC+7).
- * Per SRS BR-04: currentServerTime >= slotStartTime
+ * Preserved for Staff Walk-in (F-07) which evaluates !isOccupied && !isPast.
  */
 export const isSlotInPast = (dateStr: string, slotIndex: number, referenceDate: Date = new Date()): boolean => {
   const slotHour = 10 + slotIndex;
   const slotIso = `${dateStr}T${String(slotHour).padStart(2, '0')}:00:00+07:00`;
   const slotStartTime = new Date(slotIso).getTime();
   return referenceDate.getTime() >= slotStartTime;
+};
+
+/**
+ * Helper to check if a slot violates the 60-minute advance online booking cutoff (BR-04 v1.3.0).
+ * Exact 60 minutes remaining (slotStartTime - now == 60m) is permitted (returns false).
+ */
+export const isSlotWithinOnlineCutoff = (
+  dateStr: string,
+  slotIndex: number,
+  referenceDate: Date = new Date()
+): boolean => {
+  const slotHour = 10 + slotIndex;
+  const slotIso = `${dateStr}T${String(slotHour).padStart(2, '0')}:00:00+07:00`;
+  const slotStartTime = new Date(slotIso).getTime();
+  return referenceDate.getTime() > slotStartTime - ONLINE_ADVANCE_CUTOFF_MS;
 };
 
 /**
@@ -78,6 +95,7 @@ export const getAvailability = async (
         roomNumber: true,
         type: true,
         capacity: true,
+        hourlyRate: true,
         description: true
       }
     });
@@ -118,18 +136,20 @@ export const getAvailability = async (
 
     const now = new Date();
 
-    // 4. Map each room to 14 discrete slots (BR-03, BR-04)
+    // 4. Map each room to 14 discrete slots (BR-03, BR-04, BR-12)
     const availabilityByRoom = rooms.map((room) => {
       const slots = OPERATING_SLOTS.map((slot) => {
         const isOccupied = occupiedSet.has(`${room.id}:${slot.slotIndex}`);
         const isPast = isSlotInPast(date, slot.slotIndex, now);
-        // Slot is available if and only if it is unoccupied and not in the past
-        const isAvailable = !isOccupied && !isPast;
+        const isWithinCutoff = isSlotWithinOnlineCutoff(date, slot.slotIndex, now);
+        // Online bookable availability requires unoccupied and >= 60m lead time
+        const isAvailable = !isOccupied && !isWithinCutoff;
 
         return {
           slotIndex: slot.slotIndex,
           timeRange: slot.timeRange,
           isAvailable,
+          isWithinCutoff,
           isPast,
           isOccupied
         };
@@ -140,6 +160,7 @@ export const getAvailability = async (
         roomNumber: room.roomNumber,
         type: room.type,
         capacity: room.capacity,
+        hourlyRate: room.hourlyRate,
         description: room.description,
         slots
       };

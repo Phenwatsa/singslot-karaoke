@@ -171,20 +171,21 @@ describe('Feature F-04: Online Booking Engine & Contiguous Validation Suite (Iss
    * Valid 5-hour booking (maximum duration).
    */
   it('TEST-04a: valid 5-hour booking succeeds with 5 slots persisted', async () => {
+    const offPeakDate = getFutureBangkokDateString(21);
     const res = await request(app)
       .post('/api/bookings/online')
       .set('Authorization', `Bearer ${customerToken}`)
       .send({
         roomId: roomS01.id,
-        bookingDate: TEST_DATE,
-        startSlot: 7, // 17:00 - 22:00 (slots 7, 8, 9, 10, 11)
+        bookingDate: offPeakDate,
+        startSlot: 0, // 10:00 - 15:00 (pure Off-Peak slots 0..4, respects BR-01 & BR-11)
         durationHours: 5,
         partySize: 4
       });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.booking.timeRange).toBe('17:00 - 22:00');
+    expect(res.body.booking.timeRange).toBe('10:00 - 15:00');
     createdBookingIds.push(res.body.booking.id);
 
     const dbSlots = await prisma.bookingSlot.findMany({

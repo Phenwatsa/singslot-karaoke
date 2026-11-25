@@ -16,6 +16,7 @@ interface BookingDetail {
   durationHours: number;
   timeRange?: string;
   partySize: number;
+  totalPrice?: number;
   customerName: string;
   customerPhone?: string | null;
   channel: string;
@@ -26,6 +27,7 @@ interface BookingDetail {
     roomNumber: string;
     type: 'SMALL' | 'MEDIUM' | 'LARGE';
     capacity: number;
+    hourlyRate?: number;
     description?: string | null;
   };
   slots: BookingSlot[];
@@ -214,7 +216,10 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       {booking.timeRange || `${booking.startSlot + 10}:00 - ${booking.startSlot + booking.durationHours + 10}:00`}
                     </div>
                   </div>
-                  <div className="text-[10px] font-semibold text-purple-600 mt-1">{booking.durationHours} hrs reserved</div>
+                  <div className="text-[10px] font-semibold text-purple-600 mt-1">
+                    {booking.durationHours} hrs reserved
+                    {typeof booking.totalPrice === 'number' ? ` • Total ฿${booking.totalPrice.toLocaleString()}` : ''}
+                  </div>
                 </div>
               </div>
 

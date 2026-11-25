@@ -164,7 +164,7 @@
 
 | Test ID | Linked AC | Level | Preconditions & Input | Test Action | Expected Result |
 |---|---|---|---|---|---|
-| **TEST-07** | AC-07 | API Integration & Security | Staff token + Customer token; Room M01 open; slot `< 60 min` before start; Staff user already holds `>= 6` confirmed hours on target date | `POST /api/bookings/walk-in` (4 hrs Peak-Hour, `< 60 min` lead time) by Staff, then by Customer | Staff → `201 Created` (`WALK_IN`, `totalPrice = 1400`, not blocked by 60-min cutoff, Peak-Hour cap, or 6-hr quota); Customer → `403 FORBIDDEN`. |
+| **TEST-07** | AC-07 | API Integration & Security | Staff token + Customer token; Room M01 open; slot `< 60 min` before start; the same Staff user (`userId == staff.id`) already holds `>= 6` `CONFIRMED` walk-in hours on target date | `POST /api/bookings/walk-in` (4 hrs Peak-Hour, `< 60 min` lead time) by Staff, then by Customer | Staff → `201 Created` (`WALK_IN`, `totalPrice = 1400`, not blocked by 60-min cutoff, Peak-Hour cap, or 6-hr quota); Customer → `403 FORBIDDEN`. |
 | **TEST-08** | AC-08 | API Integration | Staff token; Room S01 Slot 4 open | `POST /api/room-blocks`, query `/api/availability`, then `DELETE /api/room-blocks/:id` | `201` → slot unavailable → `200` → slot available again. |
 | **TEST-08b** | AC-08b | Domain Rule (TDD) | Room S01 Slot 2 has `CONFIRMED` booking | Staff sends `POST /api/room-blocks` on S01 Slot 2 | `409 Conflict`, `BLOCK_CONFLICT`, 0 blocks persisted. |
 | **TEST-09** | AC-09 | API Integration & Ownership | Customer A owns booking `> 24h` away; Customer B token | Customer B calls `PATCH /api/bookings/:id/cancel`; then Customer A calls it | Customer B → `403 FORBIDDEN`; Customer A → `200 OK`, `status = CANCELLED`, `BookingSlot` rows deleted. |

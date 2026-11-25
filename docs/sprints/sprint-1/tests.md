@@ -2,8 +2,8 @@
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Target:** Deliverable 1 (Sprint 1 Lean Delivery — The Golden Online Booking Slice)  
-**Document Status:** Approved & Authoritative  
-**Last Updated:** 2026-11-05  
+**Document Status:** Approved & Authoritative (Sprint 1 Baseline §1–§7 Preserved; Lab 7 Planned STS Appended in §8)  
+**Last Updated:** 2026-11-05 (Sprint 1 Baseline Logs) / 2026-11-25 (Lab 7 §8 Pre-Implementation STS)  
 
 ---
 
@@ -267,3 +267,37 @@ $ npm audit
 - **Moderate Severity (`esbuild` dev server request reflection GHSA-67mh-4wv8-2f99):** Transitive dependency of Vite dev server tooling (`vite` ➔ `esbuild`).
 - **Production Impact:** **Zero runtime vulnerability.** None of these packages are bundled or included in production client or server builds (`dist/`).
 - **Remediation Plan:** Running `npm audit fix --force` would introduce breaking downgrades to `jest@25` and `vite@8`. These transitive dev tool advisories are documented as non-blocking technical debt and will be tracked for clean non-breaking dependency resolution in Sprint 2.
+
+---
+
+## 8. Lab 7 — Revised Sprint 1 Acceptance & Test Specifications (Planned / Pre-Implementation)
+
+> [!IMPORTANT]
+> **Pre-Implementation Status Notice (2026-11-25):**
+> Sections 1–7 above remain **frozen historical verification evidence** from the accepted Sprint 1 baseline (`v0.1.0-sprint1`). Section 8 defines the **Planned TDD Software Test Specifications (STS)** introduced under the Lab 7 Adaptive Maintenance contract revision (`v1.3.0`, see [`docs/labs/lab-07/change-impact.md`](../../labs/lab-07/change-impact.md) and [`docs/sprints/sprint-1/contracts.md`](./contracts.md)).
+> All entries below are strictly **`PLANNED (Not Yet Executed)`** — RED (failing on pre-change code) and GREEN (passing after implementation) terminal logs will be executed and recorded separately in **Lab 7 Issue 2** (`feat/lab7-issue-2-booking-rules-pricing`).
+
+### 8.1 Revised & New Acceptance Criteria Matrix (Lab 7 Scope)
+
+| AC ID | Target Feature | Linked Req / BR | Scenario | Observable Expected Outcome | Execution Status |
+| :--- | :---: | :--- | :--- | :--- | :---: |
+| **AC-02b** | F-02 | `FR-02`, `BR-12` | Client queries `/api/rooms` and `/api/availability` for tier hourly rates | Every room returns accurate integer `hourlyRate` (`SMALL`: 200, `MEDIUM`: 350, `LARGE`: 500 THB/hr). | **PLANNED (Not Executed)** |
+| **AC-03c** | F-03 | `FR-03`, `BR-04` | Client queries `/api/availability` for a slot `< 60 min` vs. `== 60 min` before start | Slot `< 60 min` away returns `isWithinCutoff: true`, `isAvailable: false`, `isPast: false` (Walk-in uses `!isOccupied && !isPast`); slot `== 60 min` away returns `isWithinCutoff: false`, `isAvailable: true` (if unoccupied). *(Preserves `AC-03b` for Sprint 2 `NFR-04`.)* | **PLANNED (Not Executed)** |
+| **AC-04g** | F-04 | `FR-04`, `BR-04` | Customer submits online booking at exact 60-min boundary vs. `< 60 min` before start | Exactly 60 min prior returns HTTP `201 Created`; strictly `< 60 min` prior (e.g., 59m59s) returns HTTP `400 CANNOT_BOOK_PAST_SLOT` with zero rows modified. | **PLANNED (Not Executed)** |
+| **AC-04h** | F-04 | `FR-04`, `BR-01` | Customer books online overlapping Peak Hours `18:00–22:00` (`slots 8..11`) vs. pure Off-Peak | Peak-overlapping booking of 3 hrs returns HTTP `201`; Peak-overlapping booking of 4 hrs returns HTTP `400 PEAK_DURATION_EXCEEDED`; pure Off-Peak 5-hr booking returns HTTP `201`. | **PLANNED (Not Executed)** |
+| **AC-04i** | F-04 | `FR-04`, `BR-06`, `BR-11` | Customer accumulates `<= 6` vs. `> 6` `CONFIRMED` hours on the same `bookingDate` (sequential & concurrent across distinct rooms) | Cumulative `== 6` hrs returns HTTP `201`; cumulative `> 6` hrs returns HTTP `409 DAILY_QUOTA_EXCEEDED`; concurrent multi-room `4h + 4h` yields strictly one `201` and one `409`; `CANCELLED` bookings are excluded from quota. | **PLANNED (Not Executed)** |
+| **AC-04j** | F-04, F-05, F-06 | `FR-04`, `FR-05`, `FR-06`, `BR-12` | Customer creates booking (including forged client `totalPrice`) and views via My Bookings, Detail, and Staff Master Schedule | Server ignores client-supplied price, persists `totalPrice = room.hourlyRate * durationHours`, and returns identical `totalPrice` across all four endpoints while preserving `BR-07`/`BR-08` access guards. | **PLANNED (Not Executed)** |
+
+### 8.2 Planned Lab 7 Software Test Specifications (TDD Targets for Issue 2)
+
+| Test ID | Linked AC | Level | Preconditions & Test Inputs | Test Action | Expected Result | Status |
+| :--- | :---: | :--- | :--- | :--- | :--- | :---: |
+| **TEST-02b** | `AC-02b` | API Integration (TDD) | Seeded PostgreSQL database with 9 rooms (`S01–S03`, `M01–M03`, `L01–L03`) after additive pricing migration (`hourlyRate`) | Call `GET /api/rooms` and `GET /api/availability?date=<futureDate>` | HTTP `200`; every `SMALL` room has `hourlyRate: 200`, `MEDIUM`: `350`, `LARGE`: `500` in both room catalog and availability payloads. | **PLANNED (TDD)** |
+| **TEST-03c** | `AC-03c` | Domain Boundary (TDD) | Unoccupied Room `S01` Slot 4 (`14:00–15:00 ICT`) on `<today>`; mocked server clock at (a) `13:01:00+07:00` (59 min prior) and (b) `13:00:00+07:00` (exact 60 min prior) | Call `GET /api/availability?date=<today>` under clocks (a) and (b) | (a) Slot 4 returns `isWithinCutoff: true`, `isAvailable: false`, `isPast: false`; (b) Slot 4 returns `isWithinCutoff: false`, `isAvailable: true`, `isPast: false`. *(Preserves `TEST-03b` for Sprint 2 `NFR-04`.)* | **PLANNED (TDD)** |
+| **TEST-04g** | `AC-04g` | Domain Boundary (TDD) | Authenticated `CUSTOMER` JWT (`customer1@singslot.local`), open Room `S01` Slot 4 (`14:00 ICT`); mocked server clock at (a) `13:00:00+07:00` (exact 60 min prior) and (b) `13:00:01+07:00` (59m59s prior) | `POST /api/bookings/online` (`roomId: S01`, `startSlot: 4`, `durationHours: 1`, `partySize: 2`) under (a) and (b) | (a) HTTP `201 Created`; (b) HTTP `400 Bad Request` with `error.code === 'CANNOT_BOOK_PAST_SLOT'` and 0 rows persisted. | **PLANNED (TDD)** |
+| **TEST-04h** | `AC-04h` | Domain Boundary (TDD) | Authenticated `CUSTOMER` JWT, open rooms on future date; inputs: (a) `startSlot: 8, durationHours: 3` (Peak 3h), (b) `startSlot: 6, durationHours: 4` (straddles into Peak `8..9`), (c) `startSlot: 8, durationHours: 4` (Peak 4h), (d) `startSlot: 0, durationHours: 5` (pure Off-Peak 5h) | Submit `POST /api/bookings/online` for cases (a)–(d) | (a) HTTP `201 Created`; (b) HTTP `400 PEAK_DURATION_EXCEEDED`; (c) HTTP `400 PEAK_DURATION_EXCEEDED`; (d) HTTP `201 Created`. | **PLANNED (TDD)** |
+| **TEST-04i** | `AC-04i` | Domain & Concurrency (TDD) | Authenticated `CUSTOMER` JWT on future date; (a) two sequential 3h bookings (`sum=6`), (b) additional 1h booking (`sum=7`), (c) pre-seeded 4h `CANCELLED` booking + new 3h booking, (d) two parallel 4h requests targeting distinct rooms `S01` and `S02` via `Promise.all` | Submit `POST /api/bookings/online` for cases (a)–(d) | (a) Both HTTP `201`; (b) HTTP `409 DAILY_QUOTA_EXCEEDED`; (c) HTTP `201` (`CANCELLED` excluded); (d) Strictly one HTTP `201` and one HTTP `409 DAILY_QUOTA_EXCEEDED` (serialized via `users` $\rightarrow$ `rooms` `FOR UPDATE` lock). | **PLANNED (TDD)** |
+| **TEST-04j** | `AC-04j` | Domain & Persistence (TDD) | Authenticated `CUSTOMER` JWT (`customer1`) & `STAFF` JWT (`staff`); Room `M01` (`hourlyRate: 350`), `startSlot: 0`, `durationHours: 3`, `partySize: 4`, plus forged body field `totalPrice: 1` | Submit `POST /api/bookings/online`, then query `GET /api/bookings/my`, `GET /api/bookings/:id`, and Staff `GET /api/bookings/master?date=...` | Forged `totalPrice: 1` ignored; server persists `totalPrice: 1050` (`350 * 3`) in PostgreSQL and returns `totalPrice: 1050` identically across all four endpoints. | **PLANNED (TDD)** |
+
+- **Planned Execution Command (Issue 2 — Serial M1 Safe):** `npm run test:server` (`jest --runInBand`) & `npm run test:client`
+- **Planned Regression Scope (Issue 2):** Must execute and pass 100% of all existing Sprint 1 suites (`TEST-01`–`TEST-06`), Lab 6 concurrency/defect suites (`DEF-SS-01`–`DEF-SS-03`), and client layout smoke tests alongside `TEST-02b`, `TEST-03c`, and `TEST-04g`–`TEST-04j`.

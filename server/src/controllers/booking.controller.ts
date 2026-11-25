@@ -1,7 +1,50 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma, Role } from '@prisma/client';
 import { prisma } from '../prisma';
-import { isValidDateString, isSlotInPast } from './availability.controller';
+import { isValidDateString, isSlotWithinOnlineCutoff } from './availability.controller';
+
+export const PEAK_HOUR_SLOTS = new Set([8, 9, 10, 11]); // 18:00 - 22:00 ICT
+export const MAX_PEAK_DURATION_HOURS = 3;
+export const MAX_DAILY_CUSTOMER_HOURS = 6;
+
+/**
+ * Returns true if [startSlot, startSlot + durationHours - 1] overlaps any Peak Hour slot (8..11).
+ */
+export const hasPeakHourOverlap = (startSlot: number, durationHours: number): boolean => {
+  for (let i = 0; i < durationHours; i++) {
+    if (PEAK_HOUR_SLOTS.has(startSlot + i)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Verifies BR-11 daily 6-hour customer quota inside an active Prisma transaction.
+ * Supports optional excludeBookingId so Sprint 2 F-08 rescheduling does not double-count itself.
+ */
+export const checkCustomerDailyQuota = async (
+  tx: Prisma.TransactionClient,
+  userId: string,
+  bookingDate: string,
+  additionalHours: number,
+  excludeBookingId?: string
+): Promise<{ allowed: boolean; currentHours: number }> => {
+  const existing = await tx.booking.aggregate({
+    _sum: { durationHours: true },
+    where: {
+      userId,
+      bookingDate,
+      status: 'CONFIRMED',
+      ...(excludeBookingId ? { id: { not: excludeBookingId } } : {})
+    }
+  });
+  const currentHours = existing._sum.durationHours ?? 0;
+  return {
+    allowed: currentHours + additionalHours <= MAX_DAILY_CUSTOMER_HOURS,
+    currentHours
+  };
+};
 
 /**
  * Generates a human-readable, unique booking code.
@@ -145,6 +188,18 @@ export const createOnlineBooking = async (
       return;
     }
 
+    // 3b. Peak-Hour Online Duration Cap (BR-01 v1.3.0: 18:00-22:00 ICT slots 8..11 capped at 3 hours)
+    if (hasPeakHourOverlap(startSlot, durationHours) && durationHours > MAX_PEAK_DURATION_HOURS) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'PEAK_DURATION_EXCEEDED',
+          message: 'Online bookings overlapping Peak Hours (18:00 - 22:00) are limited to 3 hours maximum.'
+        }
+      });
+      return;
+    }
+
     // 4. Party Size Lower Boundary Validation
     if (typeof partySize !== 'number' || !Number.isInteger(partySize) || partySize < 1) {
       res.status(400).json({
@@ -187,13 +242,13 @@ export const createOnlineBooking = async (
       return;
     }
 
-    // 6. Past-Time Slot Rejection in Asia/Bangkok (BR-04)
-    if (isSlotInPast(bookingDate, startSlot)) {
+    // 6. 60-Minute Advance Online Cutoff in Asia/Bangkok (BR-04 v1.3.0)
+    if (isSlotWithinOnlineCutoff(bookingDate, startSlot)) {
       res.status(400).json({
         success: false,
         error: {
           code: 'CANNOT_BOOK_PAST_SLOT',
-          message: 'Cannot book slots in the past or currently in progress.'
+          message: 'Cannot book past slots or slots within the 60-minute advance online cutoff.'
         }
       });
       return;
@@ -244,8 +299,17 @@ export const createOnlineBooking = async (
 
       try {
         const newBooking = await prisma.$transaction(async (tx) => {
-          // DEF-SS-01 (BR-02, BR-06): Acquire transaction-scoped exclusive row lock on the target Room
+          // Deterministic lock order: users -> rooms FOR UPDATE to serialize both daily quota (BR-11) and slot exclusivity (BR-02)
+          await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
           await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${room.id} FOR UPDATE`;
+
+          // BR-11: Enforce 6-hour daily customer quota across all rooms
+          const quotaCheck = await checkCustomerDailyQuota(tx, userId, bookingDate, durationHours);
+          if (!quotaCheck.allowed) {
+            const quotaErr: any = new Error('Daily customer booking quota of 6 hours exceeded.');
+            quotaErr.code = 'TX_DAILY_QUOTA_EXCEEDED';
+            throw quotaErr;
+          }
 
           // DEF-SS-02 (FR-03, FR-04): Purge any lingering BookingSlot rows from prior CANCELLED bookings
           await tx.bookingSlot.deleteMany({
@@ -285,6 +349,7 @@ export const createOnlineBooking = async (
           const user = await tx.user.findUnique({ where: { id: userId } });
           const customerName = user?.fullName || req.user!.email;
           const customerPhone = user?.phone || null;
+          const totalPrice = room.hourlyRate * durationHours;
 
           const booking = await tx.booking.create({
             data: {
@@ -295,6 +360,7 @@ export const createOnlineBooking = async (
               startSlot,
               durationHours,
               partySize,
+              totalPrice,
               channel: 'ONLINE',
               customerName,
               customerPhone,
@@ -335,11 +401,24 @@ export const createOnlineBooking = async (
             timeRange,
             durationHours: newBooking.durationHours,
             partySize: newBooking.partySize,
+            hourlyRate: newBooking.room.hourlyRate,
+            totalPrice: newBooking.totalPrice,
             status: newBooking.status
           }
         });
         return;
       } catch (txError: any) {
+        if (txError.code === 'TX_DAILY_QUOTA_EXCEEDED') {
+          res.status(409).json({
+            success: false,
+            error: {
+              code: 'DAILY_QUOTA_EXCEEDED',
+              message: 'Daily limit of 6 confirmed booking hours per customer exceeded.'
+            }
+          });
+          return;
+        }
+
         if (txError.code === 'TX_SLOT_CONFLICT') {
           res.status(409).json({
             success: false,
@@ -415,6 +494,7 @@ export const getMyBookings = async (
             roomNumber: true,
             type: true,
             capacity: true,
+            hourlyRate: true,
             description: true
           }
         },
@@ -463,6 +543,7 @@ export const getBookingById = async (
             roomNumber: true,
             type: true,
             capacity: true,
+            hourlyRate: true,
             description: true
           }
         },
@@ -543,6 +624,7 @@ export const getMasterSchedule = async (
             roomNumber: true,
             type: true,
             capacity: true,
+            hourlyRate: true,
             description: true
           }
         },

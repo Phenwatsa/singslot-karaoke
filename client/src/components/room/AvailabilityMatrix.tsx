@@ -157,7 +157,7 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
 
                     {/* 14 Slots */}
                   {room.slots.map((slot) => {
-                    const isClosed = slot.isPast ?? isPastDate;
+                    const isClosed = slot.isWithinCutoff ?? slot.isPast ?? isPastDate;
                     const isOccupied = slot.isOccupied ?? (!slot.isAvailable && !isClosed);
                     const isOpen = !isClosed && !isOccupied;
 
@@ -169,9 +169,11 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             onSelectSlot(room.id, slot.slotIndex);
                           }
                         }}
-                        title={`${room.roomNumber} • Slot ${slot.slotIndex} (${slot.timeRange}): ${
+                        title={`${room.roomNumber} (฿${room.hourlyRate ?? (room.type === 'SMALL' ? 200 : room.type === 'MEDIUM' ? 350 : 500)}/hr) • Slot ${slot.slotIndex} (${slot.timeRange}): ${
                           isClosed
-                            ? 'Closed (Time has elapsed / past)'
+                            ? slot.isPast === false
+                              ? 'Closed (Within 60-min online advance cutoff)'
+                              : 'Closed (Time has elapsed / past)'
                             : isOccupied
                             ? 'Occupied / Booked'
                             : 'Open (Click to book this slot)'

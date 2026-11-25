@@ -1,8 +1,8 @@
 # System-Level Software Design Specification (SDS)
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
-**Document Version:** 1.2.0 (Rigorous Engineering Baseline)  
-**Date:** November 2026  
+**Document Version:** 1.3.0 (Lab 7 Adaptive Maintenance — Sprint 1 Rules & Pricing Revision)  
+**Date:** 25 November 2026  
 
 ---
 
@@ -70,6 +70,7 @@ erDiagram
         string roomNumber UK "e.g., S01, M01, L01"
         string type "SMALL | MEDIUM | LARGE"
         int capacity "4, 8, 12"
+        int hourlyRate "THB/hr: 200, 350, 500"
         string description
         boolean isActive
     }
@@ -81,8 +82,9 @@ erDiagram
         string roomId FK
         string bookingDate "YYYY-MM-DD (Asia/Bangkok)"
         int startSlot "0..13 (0=10:00)"
-        int durationHours "1..5"
+        int durationHours "1..5 (1..3 overlapping Peak 8..11)"
         int partySize
+        int totalPrice "Authoritative hourlyRate * durationHours (THB)"
         string channel "ONLINE | WALK_IN"
         string customerName
         string customerPhone
@@ -155,14 +157,16 @@ model User {
 }
 
 model Room {
-  id          String        @id @default(uuid())
-  roomNumber  String        @unique
-  type        RoomType
-  capacity    Int
-  description String?
-  isActive    Boolean       @default(true)
-  bookings    Booking[]
-  blocks      RoomBlock[]
+  id           String        @id @default(uuid())
+  roomNumber   String        @unique
+  type         RoomType
+  capacity     Int
+  hourlyRate   Int           @default(200) // THB/hour: SMALL=200, MEDIUM=350, LARGE=500 (BR-12)
+  description  String?
+  isActive     Boolean       @default(true)
+  bookings     Booking[]
+  bookingSlots BookingSlot[]
+  blocks       RoomBlock[]
 
   @@map("rooms")
 }
@@ -174,8 +178,9 @@ model Booking {
   roomId        String
   bookingDate   String         // Format: YYYY-MM-DD (Asia/Bangkok)
   startSlot     Int            // 0..13
-  durationHours Int            // 1..5
+  durationHours Int            // 1..5 (1..3 when overlapping Peak slots 8..11 for ONLINE)
   partySize     Int
+  totalPrice    Int            @default(0) // Authoritative server-computed room.hourlyRate * durationHours (BR-12)
   channel       BookingChannel @default(ONLINE)
   customerName  String
   customerPhone String?
@@ -233,17 +238,28 @@ model RoomBlock {
   * ...
   * Slot 13: 23:00–24:00
 * **Data Invariant:** For all `BookingSlot` records, `BookingSlot.roomId` and `BookingSlot.bookingDate` must strictly equal the parent `Booking.roomId` and `Booking.bookingDate`. The application service layer transactionally validates and enforces this invariant upon record creation.
-* **Cross-Table Concurrency Protection Strategy:** While separate composite unique constraints enforce uniqueness within `BookingSlot` (`@@unique([roomId, bookingDate, slotIndex])`) and `RoomBlock` (`@@unique([roomId, blockDate, slotIndex])`) independently, cross-table collisions under PostgreSQL's default `READ COMMITTED` isolation level are eliminated using a pessimistic row-level lock on the parent `Room` record:
+* **Cross-Table & Multi-Room Quota Concurrency Protection Strategy (Rev. Lab 7):** While separate composite unique constraints enforce uniqueness within `BookingSlot` (`@@unique([roomId, bookingDate, slotIndex])`) and `RoomBlock` (`@@unique([roomId, blockDate, slotIndex])`) independently, both cross-table collisions (`BR-02`, `DEF-SS-01`) and cross-room daily customer hour quota races (`BR-11`) under PostgreSQL's default `READ COMMITTED` isolation level are eliminated using deterministic pessimistic row-level locks acquired in a strict global lock order (`users` $\rightarrow$ `rooms`) inside `prisma.$transaction`:
   ```sql
-  SELECT * FROM rooms WHERE id = $targetRoomId FOR UPDATE;
+  -- Step 1 (Online bookings enforcing BR-11): Lock customer row first to serialize cross-room quota checks
+  SELECT "id" FROM "users" WHERE "id" = $targetUserId FOR UPDATE;
+
+  -- Step 2 (All booking & RoomBlock mutations enforcing BR-02 / BR-06): Lock target room row
+  SELECT "id" FROM "rooms" WHERE "id" = $targetRoomId FOR UPDATE;
   ```
-  By executing this pessimistic lock within `prisma.$transaction` at the inception of both booking and block operations, any concurrent operations claiming slots for the same room are serialized at the database level. Conflicting claims are guaranteed to observe the committed state of the competing transaction and fail safely with HTTP 409 `SLOT_CONFLICT`.
-* **Server-Calculated Availability Query:**
+  Locking `users` before `rooms` prevents circular wait deadlocks while guaranteeing that two concurrent online requests by the same customer targeting **different rooms** on the same `bookingDate` serialize their `SUM(durationHours)` check (`<= 6` hours) and cannot bypass `BR-11`. Conflicting slot claims fail safely with HTTP 409 `SLOT_CONFLICT`, and quota violations fail safely with HTTP 409 `DAILY_QUOTA_EXCEEDED`.
+* **Server-Calculated Availability Query (Rev. Lab 7):**
   When `GET /api/availability?date=YYYY-MM-DD` is executed, the server:
-  1. Queries all active rooms from `Room`.
+  1. Queries all active rooms from `Room` (including `hourlyRate`).
   2. Queries all `BookingSlot` records for the date where the parent `Booking.status == 'CONFIRMED'`.
   3. Queries all `RoomBlock` records for the date.
-  4. Maps each room to 14 slots, setting `isAvailable: false` if a matching slot index exists in active `BookingSlot` or `RoomBlock`, otherwise `true`.
+  4. Maps each room to 14 slots, computing:
+     - `isOccupied`: `true` if a matching slot index exists in active `BookingSlot` or `RoomBlock`.
+     - `isPast`: `true` if `currentServerTime >= slotStartTime` in `Asia/Bangkok`.
+     - `isWithinCutoff`: `true` if `currentServerTime > slotStartTime - 60 minutes` in `Asia/Bangkok` (`BR-04`).
+     - `isAvailable`: `!isOccupied && !isWithinCutoff` (authoritative **online customer** bookability).
+     - **Staff Walk-in Semantics (`F-07`):** Because `isAvailable` incorporates the 60-minute online cutoff, future Staff on-premise walk-in availability checks MUST evaluate `!isOccupied && !isPast` rather than relying on `isAvailable`.
+* **Authoritative Pricing & Additive Schema Evolution (`BR-12`):**
+  `Room.hourlyRate` (`@default(200)`) and `Booking.totalPrice` (`@default(0)`) are introduced via an additive, rollback-safe Prisma migration with SQL backfill (`SMALL=200`, `MEDIUM=350`, `LARGE=500`; historical `bookings.totalPrice = bookings.durationHours * rooms.hourlyRate`). Server controllers always compute `totalPrice = room.hourlyRate * durationHours` and ignore any client-provided price field.
 * **Cancellation Lifecycle (Sprint 2):**
   When a booking transitions to `CANCELLED`, its associated `BookingSlot` records are deleted within an atomic transaction. The parent `Booking` status remains `CANCELLED` for auditing, and the physical slots are immediately freed.
 
@@ -288,11 +304,11 @@ All endpoints return consistent JSON error envelopes:
 ```
 
 * **Standard Error Codes:**
-  * `400 Bad Request`: `INVALID_INPUT`, `CANNOT_BOOK_PAST_SLOT`, `EXCEEDS_CAPACITY`, `INVALID_DURATION`
+  * `400 Bad Request`: `INVALID_INPUT`, `CANNOT_BOOK_PAST_SLOT`, `EXCEEDS_CAPACITY`, `INVALID_DURATION`, `PEAK_DURATION_EXCEEDED`
   * `401 Unauthorized`: `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`
   * `403 Forbidden`: `FORBIDDEN`
   * `404 Not Found`: `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`
-  * `409 Conflict`: `SLOT_CONFLICT`, `CONCURRENT_LOCK_FAILED`
+  * `409 Conflict`: `SLOT_CONFLICT`, `DAILY_QUOTA_EXCEEDED`, `CONCURRENT_LOCK_FAILED`
 
 ---
 

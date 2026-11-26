@@ -341,14 +341,17 @@ describe('Feature F-05 & F-06: Customer My Bookings, Detail & Master Schedule Su
       expect(res.body.error.code).toBe('FORBIDDEN');
     });
 
-    it('rejects missing date query parameter with HTTP 400 INVALID_INPUT', async () => {
+    // Revised per Sprint 2 Contract 8 (F-10 / FR-11): omitting query filters defaults to today's date in Asia/Bangkok (200 OK).
+    // Malformed dates remain strictly rejected with HTTP 400 INVALID_INPUT in the tests immediately below.
+    it('defaults to today in Asia/Bangkok when no query filter is provided (Sprint 2 F-10 Contract 8)', async () => {
       const res = await request(app)
         .get('/api/bookings/master')
         .set('Authorization', `Bearer ${staffToken}`);
 
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error.code).toBe('INVALID_INPUT');
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.bookings)).toBe(true);
+      expect(typeof res.body.date).toBe('string');
     });
 
     it('rejects invalid date format with HTTP 400 INVALID_INPUT', async () => {

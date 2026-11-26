@@ -17,6 +17,7 @@ export interface SlotAvailability {
   isWithinCutoff?: boolean;
   isPast?: boolean;
   isOccupied?: boolean;
+  isBlocked?: boolean;
 }
 
 export interface RoomAvailability {

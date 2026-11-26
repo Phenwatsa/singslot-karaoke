@@ -270,6 +270,7 @@ export const App: React.FC = () => {
       {activeNav === 'my-bookings' && (
         <MyBookingsView
           token={token}
+          refreshTrigger={availabilityRefreshTrigger}
           onSelectBooking={(bookingId) => {
             setDetailBookingId(bookingId);
             setIsDetailOpen(true);
@@ -278,16 +279,21 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Staff Master Schedule View (F-06, AC-06) */}
+      {/* Staff Master Schedule View (F-06, F-07, F-09, F-10) */}
       {activeNav === 'staff-schedule' && (
         <StaffMasterScheduleView
           token={token}
+          rooms={rooms}
           selectedDate={selectedDate}
           onDateChange={(newDate) => setSelectedDate(newDate)}
           onSelectBooking={(bookingId) => {
             setDetailBookingId(bookingId);
             setIsDetailOpen(true);
           }}
+          onDataChanged={() => {
+            setAvailabilityRefreshTrigger((prev) => prev + 1);
+          }}
+          externalRefreshTrigger={availabilityRefreshTrigger}
         />
       )}
 
@@ -349,6 +355,7 @@ export const App: React.FC = () => {
               availability={availability}
               isLoading={isLoadingAvailability}
               error={availabilityError}
+              userRole={user?.role || null}
               onSelectSlot={(roomId, slotIndex) => {
                 setBookingRoomId(roomId);
                 setBookingSlot(slotIndex);
@@ -454,6 +461,11 @@ export const App: React.FC = () => {
       onClose={handleCloseDetail}
       bookingId={detailBookingId}
       token={token}
+      rooms={rooms}
+      onBookingChanged={(message) => {
+        setNotice({ type: 'success', message });
+        setAvailabilityRefreshTrigger((prev) => prev + 1);
+      }}
     />
     </>
   );

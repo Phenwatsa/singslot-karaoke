@@ -1,8 +1,27 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ShieldCheck, Clock, Users, User, AlertCircle, RefreshCw, Eye } from 'lucide-react';
+import {
+  ShieldCheck,
+  Clock,
+  Users,
+  User,
+  AlertCircle,
+  RefreshCw,
+  Eye,
+  Search,
+  UserPlus,
+  Wrench,
+  CalendarRange,
+  RotateCcw,
+  Phone,
+  ChevronDown,
+  Calendar
+} from 'lucide-react';
 import { GlassCard } from '../layout/GlassCard';
 import { PageHeader } from '../layout/PageHeader';
 import { DatePicker } from '../common/DatePicker';
+import { StaffWalkInPanel } from './StaffWalkInPanel';
+import { StaffRoomBlockPanel } from './StaffRoomBlockPanel';
+import { Room } from '../../types/room';
 import { getBangkokTodayString } from '../../utils/date';
 
 interface MasterBooking {
@@ -33,9 +52,12 @@ interface MasterBooking {
 
 interface StaffMasterScheduleViewProps {
   token: string | null;
+  rooms?: Room[];
   selectedDate: string;
   onDateChange: (date: string) => void;
   onSelectBooking: (bookingId: string) => void;
+  onDataChanged?: () => void;
+  externalRefreshTrigger?: number;
 }
 
 const ROOM_LIST = [
@@ -58,15 +80,30 @@ const TIER_THEME: Record<string, { label: string; bg: string; text: string; bord
 
 export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = ({
   token,
+  rooms = [],
   selectedDate,
   onDateChange,
-  onSelectBooking
+  onSelectBooking,
+  onDataChanged,
+  externalRefreshTrigger = 0
 }) => {
+  const [staffTab, setStaffTab] = useState<'schedule' | 'walk-in' | 'blocks'>('schedule');
   const [bookings, setBookings] = useState<MasterBooking[]>([]);
+  const [roomBlocks, setRoomBlocks] = useState<
+    Array<{ id: string; roomNumber: string; slotIndex: number; reason?: string | null }>
+  >([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sprint 2 F-10 Multi-Criteria Search & Filter state
+  const [useDateRange, setUseDateRange] = useState<boolean>(false);
+  const [startDateFilter, setStartDateFilter] = useState<string>(selectedDate);
+  const [endDateFilter, setEndDateFilter] = useState<string>(selectedDate);
+  const [phoneFilter, setPhoneFilter] = useState<string>('');
+  const [roomTypeFilter, setRoomTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   // Natural trackpad gesture listener for horizontal table swipe
   useEffect(() => {
@@ -98,7 +135,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
         return;
       }
 
-      if (!selectedDate) {
+      if (!useDateRange && !selectedDate) {
         setError('Please select a valid date.');
         setIsLoading(false);
         return;
@@ -108,7 +145,21 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
       setError(null);
 
       try {
-        const res = await fetch(`/api/bookings/master?date=${selectedDate}`, {
+        const params = new URLSearchParams();
+        if (useDateRange) {
+          if (startDateFilter) params.set('startDate', startDateFilter);
+          if (endDateFilter) params.set('endDate', endDateFilter);
+        }
+        if (phoneFilter.trim()) params.set('phone', phoneFilter.trim());
+        if (roomTypeFilter) params.set('roomType', roomTypeFilter);
+        if (statusFilter) params.set('status', statusFilter);
+
+        const querySuffix = params.toString();
+        const url = useDateRange
+          ? `/api/bookings/master${querySuffix ? `?${querySuffix}` : ''}`
+          : `/api/bookings/master?date=${selectedDate}${querySuffix ? `&${querySuffix}` : ''}`;
+
+        const res = await fetch(url, {
           signal: controller.signal,
           headers: {
             Authorization: `Bearer ${token}`
@@ -122,6 +173,24 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
           } else {
             setError(data.error?.message || 'Failed to fetch master schedule.');
           }
+        }
+
+        // Also fetch active maintenance blocks for single-date schedule matrix visibility (F-09)
+        if (!useDateRange && selectedDate) {
+          const blkRes = await fetch(`/api/room-blocks?date=${selectedDate}`, {
+            signal: controller.signal,
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          if (blkRes.ok) {
+            const blkData = await blkRes.json();
+            if (isCurrent && blkData.success && Array.isArray(blkData.blocks)) {
+              setRoomBlocks(blkData.blocks);
+            }
+          }
+        } else if (isCurrent) {
+          setRoomBlocks([]);
         }
       } catch (err: any) {
         if (err.name === 'AbortError') return;
@@ -141,7 +210,27 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
       isCurrent = false;
       controller.abort();
     };
-  }, [token, selectedDate, refreshTrigger]);
+  }, [
+    token,
+    selectedDate,
+    useDateRange,
+    startDateFilter,
+    endDateFilter,
+    phoneFilter,
+    roomTypeFilter,
+    statusFilter,
+    refreshTrigger,
+    externalRefreshTrigger
+  ]);
+
+  const handleResetFilters = () => {
+    setUseDateRange(false);
+    setStartDateFilter(selectedDate);
+    setEndDateFilter(selectedDate);
+    setPhoneFilter('');
+    setRoomTypeFilter('');
+    setStatusFilter('');
+  };
 
   // Pre-index bookings by room and slotIndex for O(1) matrix lookup
   const occupancyMap = useMemo(() => {
@@ -173,6 +262,15 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
     return map;
   }, [bookings]);
 
+  // Pre-index maintenance blocks by roomNumber and slotIndex for Global Schedule Matrix
+  const blockMap = useMemo(() => {
+    const map = new Map<string, { id: string; roomNumber: string; slotIndex: number; reason?: string | null }>();
+    for (const blk of roomBlocks) {
+      map.set(`${blk.roomNumber}_${blk.slotIndex}`, blk);
+    }
+    return map;
+  }, [roomBlocks]);
+
   // Group bookings by roomNumber for list overview
   const bookingsByRoom = useMemo(() => {
     const map = new Map<string, MasterBooking[]>();
@@ -189,6 +287,31 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
   const totalReservedHours = useMemo(() => {
     return bookings.reduce((sum, b) => sum + b.durationHours, 0);
   }, [bookings]);
+
+  const hasActiveFilter = Boolean(
+    useDateRange || phoneFilter.trim() || roomTypeFilter || statusFilter
+  );
+
+  // When search/filter is active, trim unrelated rooms from matrix and breakdown
+  const visibleRooms = useMemo(() => {
+    if (!hasActiveFilter) {
+      return [...ROOM_LIST];
+    }
+    const matchedRoomNumbers = new Set(bookings.map((b) => b.room.roomNumber));
+    const hasBookingSpecificFilter = Boolean(
+      phoneFilter.trim() || statusFilter || useDateRange
+    );
+
+    return ROOM_LIST.filter((room) => {
+      if (roomTypeFilter && room.type !== roomTypeFilter) {
+        return false;
+      }
+      if (hasBookingSpecificFilter) {
+        return matchedRoomNumbers.has(room.roomNumber);
+      }
+      return true;
+    });
+  }, [hasActiveFilter, bookings, roomTypeFilter, phoneFilter, statusFilter, useDateRange]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -227,41 +350,269 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
         </div>
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <GlassCard className="p-4 bg-gradient-to-tr from-pink-50/60 to-purple-50/60">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Total Bookings</span>
-          <div className="text-xl font-black text-purple-950 mt-1">{bookings.length} reservations</div>
+      {/* Staff Operations Tab Switcher (F-06/F-10 Schedule & Search, F-07 Walk-in, F-09 RoomBlock) */}
+      <div className="inline-flex flex-wrap gap-1 rounded-2xl bg-white/85 p-1 border border-pink-100/90 shadow-xs backdrop-blur-md">
+        <button
+          type="button"
+          onClick={() => setStaffTab('schedule')}
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+            staffTab === 'schedule'
+              ? 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span>Schedule & Search</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setStaffTab('walk-in')}
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+            staffTab === 'walk-in'
+              ? 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+          <span>Walk-in Counter</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setStaffTab('blocks')}
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+            staffTab === 'blocks'
+              ? 'bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 text-purple-950 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Wrench className="h-3.5 w-3.5" />
+          <span>Maintenance Blocks</span>
+        </button>
+      </div>
+
+      {/* F-07 Walk-in Counter Tab */}
+      {staffTab === 'walk-in' && (
+        <StaffWalkInPanel
+          token={token}
+          rooms={rooms}
+          selectedDate={selectedDate}
+          onDateChange={onDateChange}
+          onWalkInCreated={() => {
+            setRefreshTrigger((prev) => prev + 1);
+            onDataChanged?.();
+          }}
+        />
+      )}
+
+      {/* F-09 Room Maintenance Blockout Tab */}
+      {staffTab === 'blocks' && (
+        <StaffRoomBlockPanel
+          token={token}
+          rooms={rooms}
+          selectedDate={selectedDate}
+          onDateChange={onDateChange}
+          onBlocksChanged={() => {
+            setRefreshTrigger((prev) => prev + 1);
+            onDataChanged?.();
+          }}
+        />
+      )}
+
+      {/* F-06 & F-10 Master Schedule & Multi-Criteria Search Tab */}
+      {staffTab === 'schedule' && (
+      <>
+      {/* F-10 Search & Multi-Criteria Filter Bar */}
+      <GlassCard className="p-5 sm:p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-extrabold text-slate-800">
+            <Search className="h-4 w-4 text-purple-600" />
+            <span>Multi-Criteria Booking Search &amp; Filter</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setUseDateRange((prev) => !prev);
+                setStartDateFilter(selectedDate);
+                setEndDateFilter(selectedDate);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold border transition-colors cursor-pointer ${
+                useDateRange
+                  ? 'bg-purple-100 border-purple-300 text-purple-900'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-purple-200'
+              }`}
+            >
+              <CalendarRange className="h-3.5 w-3.5" />
+              <span>{useDateRange ? 'Date Range Active' : 'Switch to Date Range'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          {/* Phone Search */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+              Customer Phone
+            </label>
+            <div className="relative">
+              <Phone className="h-4 w-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <input
+                type="text"
+                placeholder="Search phone..."
+                value={phoneFilter}
+                onChange={(e) => setPhoneFilter(e.target.value)}
+                className="h-11 w-full rounded-xl border border-pink-200/90 bg-white pl-10 pr-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal shadow-2xs focus:border-purple-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Room Tier Filter */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+              Room Tier
+            </label>
+            <div className="relative">
+              <select
+                value={roomTypeFilter}
+                onChange={(e) => setRoomTypeFilter(e.target.value)}
+                className="h-11 w-full appearance-none rounded-xl border border-pink-200/90 bg-white pl-3.5 pr-9 text-sm font-bold text-slate-800 shadow-2xs focus:border-purple-400 focus:outline-none cursor-pointer"
+              >
+                <option value="">All Tiers</option>
+                <option value="SMALL">Small (4 pax)</option>
+                <option value="MEDIUM">Medium (8 pax)</option>
+                <option value="LARGE">Large (12 pax)</option>
+              </select>
+              <ChevronDown className="pointer-events-none h-4 w-4 text-slate-400 absolute right-3 top-3.5" />
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+              Booking Status
+            </label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-11 w-full appearance-none rounded-xl border border-pink-200/90 bg-white pl-3.5 pr-9 text-sm font-bold text-slate-800 shadow-2xs focus:border-purple-400 focus:outline-none cursor-pointer"
+              >
+                <option value="">Default (Confirmed / All Filtered)</option>
+                <option value="CONFIRMED">Confirmed Only</option>
+                <option value="CANCELLED">Cancelled Only</option>
+              </select>
+              <ChevronDown className="pointer-events-none h-4 w-4 text-slate-400 absolute right-3 top-3.5" />
+            </div>
+          </div>
+
+          {/* Date Range Pickers or Active Summary */}
+          {useDateRange ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-pink-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-2xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-pink-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-2xs"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                Active Scope
+              </label>
+              <div className="h-11 flex items-center justify-center rounded-xl bg-purple-50/90 border border-purple-200/80 px-3.5 text-sm font-semibold text-purple-900">
+                <span>
+                  {selectedDate}{' '}
+                  <span className="font-extrabold">
+                    ({bookings.length} {bookings.length === 1 ? 'match' : 'matches'})
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </GlassCard>
+
+      {/* Overview Stat Cards (Distinct Light-Yellow Pastel Contrast) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <GlassCard className="p-4 sm:p-5 bg-amber-50/95 border-amber-200/90 shadow-sm">
+          <span className="text-xs uppercase font-bold tracking-wider text-amber-800/80">
+            Total Bookings
+          </span>
+          <div className="text-xl font-black text-purple-950 mt-1">
+            {bookings.length} {bookings.length === 1 ? 'reservation' : 'reservations'}
+          </div>
         </GlassCard>
 
-        <GlassCard className="p-4 bg-gradient-to-tr from-purple-50/60 to-sky-50/60">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Total Hours Reserved</span>
-          <div className="text-xl font-black text-purple-950 mt-1">{totalReservedHours} hours</div>
+        <GlassCard className="p-4 sm:p-5 bg-amber-50/95 border-amber-200/90 shadow-sm">
+          <span className="text-xs uppercase font-bold tracking-wider text-amber-800/80">
+            Total Hours Reserved
+          </span>
+          <div className="text-xl font-black text-purple-950 mt-1">
+            {totalReservedHours} {totalReservedHours === 1 ? 'hour' : 'hours'}
+          </div>
         </GlassCard>
 
-        <GlassCard className="col-span-2 sm:col-span-1 p-4 bg-gradient-to-tr from-sky-50/60 to-pink-50/60">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Operating Fleet</span>
-          <div className="text-xl font-black text-purple-950 mt-1">9 Suites (10:00–24:00)</div>
+        <GlassCard className="p-4 sm:p-5 bg-amber-50/95 border-amber-200/90 shadow-sm">
+          <span className="text-xs uppercase font-bold tracking-wider text-amber-800/80">
+            {hasActiveFilter ? 'Matching Suites' : 'Operating Fleet'}
+          </span>
+          <div className="text-xl font-black text-purple-950 mt-1">
+            {hasActiveFilter
+              ? `${visibleRooms.length} of 9 Suites`
+              : '9 Suites (10:00–24:00)'}
+          </div>
         </GlassCard>
       </div>
 
-      {/* Global Calendar Grid Matrix (F-06, AC-06, BR-08) */}
+      {/* Global Calendar Grid Matrix (Single-Date mode; filtered to relevant suites when searching) */}
+      {!useDateRange && (
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-black text-slate-900 tracking-tight">Global Schedule Matrix</h3>
+            <h3 className="text-base font-black text-slate-900 tracking-tight">
+              {hasActiveFilter ? 'Filtered Schedule Matrix' : 'Global Schedule Matrix'}
+            </h3>
             <span className="text-xs font-medium text-slate-500">• {selectedDate}</span>
           </div>
 
           {/* Schedule Legend */}
-          <div className="flex items-center gap-3 text-xs bg-white/80 px-3 py-1.5 rounded-xl border border-pink-100 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs bg-white/80 px-3 py-1.5 rounded-xl border border-pink-100 shadow-2xs">
             <span className="flex items-center gap-1.5 font-medium text-slate-500">
               <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 border border-slate-300" />
-              <span>No Confirmed Booking</span>
+              <span>Open</span>
             </span>
-            <span className="flex items-center gap-1.5 font-medium text-purple-900 font-bold">
+            <span className="flex items-center gap-1.5 font-bold text-purple-900">
               <span className="h-2.5 w-2.5 rounded-sm bg-purple-500 border border-purple-600 shadow-xs" />
-              <span>Confirmed Booking (Click to Inspect)</span>
+              <span>Confirmed Booking</span>
+            </span>
+            <span className="flex items-center gap-1.5 font-bold text-amber-800">
+              <span className="h-2.5 w-2.5 rounded-sm bg-amber-200 border border-amber-400 shadow-xs" />
+              <span>Maintenance Block</span>
             </span>
           </div>
         </div>
@@ -287,6 +638,20 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                 Retry
               </button>
             </div>
+          ) : visibleRooms.length === 0 ? (
+            <div className="py-10 text-center space-y-3">
+              <p className="text-sm font-bold text-slate-500">
+                No matching suites or reservations found for the current filters.
+              </p>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-4 py-1.5 text-xs font-bold text-purple-900 hover:bg-purple-200 cursor-pointer"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reset Filters</span>
+              </button>
+            </div>
           ) : (
             <div
               ref={scrollContainerRef}
@@ -303,9 +668,9 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                   ))}
                 </div>
 
-                {/* 9 Room Rows */}
+                {/* Visible Room Rows */}
                 <div className="divide-y divide-pink-50/80 pt-1.5">
-                  {ROOM_LIST.map((room) => {
+                  {visibleRooms.map((room) => {
                     const tier = TIER_THEME[room.type] || TIER_THEME.SMALL;
 
                     return (
@@ -362,6 +727,21 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                             );
                           }
 
+                          const blk = blockMap.get(`${room.roomNumber}_${slotIdx}`);
+                          if (blk) {
+                            return (
+                              <button
+                                key={slotIdx}
+                                type="button"
+                                onClick={() => setStaffTab('blocks')}
+                                title={`${room.roomNumber} • ${10 + slotIdx}:00 – ${11 + slotIdx}:00 • Maintenance Block: ${blk.reason || 'Maintenance block'} (Click to manage)`}
+                                className="flex h-9 items-center justify-center rounded-xl border border-amber-300 bg-amber-100/90 text-amber-800 hover:bg-amber-200/80 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <Wrench className="h-3.5 w-3.5" />
+                              </button>
+                            );
+                          }
+
                           // Empty / No Confirmed Booking Slot
                           return (
                             <div
@@ -382,15 +762,33 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
           )}
         </GlassCard>
       </div>
+      )}
 
-      {/* Suite Detail Summary List (Accuracy Guaranteed: 'No confirmed bookings') */}
+      {/* Suite Detail Summary List (Filtered to matching suites when searching) */}
       <div className="space-y-3 pt-2">
         <h4 className="text-sm font-extrabold text-slate-800 tracking-tight px-1">
-          Confirmed Reservations Breakdown by Suite
+          {hasActiveFilter
+            ? `Matching Reservations (${bookings.length})`
+            : 'Confirmed Reservations Breakdown by Suite'}
         </h4>
 
+        {visibleRooms.length === 0 ? (
+          <GlassCard className="p-8 text-center space-y-2">
+            <p className="text-sm font-bold text-slate-500">
+              No reservations match your active search filters.
+            </p>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-4 py-1.5 text-xs font-bold text-purple-900 hover:bg-purple-200 cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Show All Suites</span>
+            </button>
+          </GlassCard>
+        ) : (
         <div className="space-y-3">
-          {ROOM_LIST.map((room) => {
+          {visibleRooms.map((room) => {
             const roomBookings = bookingsByRoom.get(room.roomNumber) || [];
             const tierConfig = TIER_THEME[room.type] || TIER_THEME.SMALL;
 
@@ -410,7 +808,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                       <span className="text-slate-400 font-medium">No confirmed bookings</span>
                     ) : (
                       <span className="text-purple-700 font-bold">
-                        {roomBookings.length} booking{roomBookings.length > 1 ? 's' : ''} confirmed
+                        {roomBookings.length} booking{roomBookings.length > 1 ? 's' : ''} matched
                       </span>
                     )}
                   </div>
@@ -435,16 +833,40 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                             className="flex flex-col justify-between rounded-2xl border border-purple-100/90 bg-white p-3.5 shadow-xs hover:border-purple-300 transition-all"
                           >
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-1.5">
                                 <span className="font-mono text-xs font-extrabold text-purple-900">
                                   {b.bookingCode}
                                 </span>
-                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 border border-emerald-200">
-                                  {b.status}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
+                                      b.channel === 'WALK_IN'
+                                        ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                                    }`}
+                                  >
+                                    {b.channel}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
+                                      b.status === 'CONFIRMED'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    }`}
+                                  >
+                                    {b.status}
+                                  </span>
+                                </div>
                               </div>
 
                               <div className="space-y-1 text-xs">
+                                {useDateRange && (
+                                  <div className="flex items-center gap-1.5 text-purple-800 font-bold">
+                                    <Calendar className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                                    <span>{b.bookingDate}</span>
+                                  </div>
+                                )}
+
                                 <div className="flex items-center gap-1.5 text-slate-700 font-bold">
                                   <Clock className="h-3.5 w-3.5 text-sky-500 shrink-0" />
                                   <span>{timeDisplay}</span>
@@ -457,6 +879,13 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
                                   <User className="h-3.5 w-3.5 text-purple-500 shrink-0" />
                                   <span className="truncate">{b.customerName}</span>
                                 </div>
+
+                                {b.customerPhone && (
+                                  <div className="flex items-center gap-1.5 text-slate-600">
+                                    <Phone className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                                    <span className="truncate font-mono text-[11px]">{b.customerPhone}</span>
+                                  </div>
+                                )}
 
                                 <div className="flex items-center justify-between text-slate-600">
                                   <div className="flex items-center gap-1.5">
@@ -490,7 +919,10 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
             );
           })}
         </div>
+        )}
       </div>
+      </>
+      )}
     </div>
   );
 };

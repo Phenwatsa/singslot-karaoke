@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.routes';
 import { bookingRouter } from './routes/booking.routes';
 import { roomRouter } from './routes/room.routes';
 import { availabilityRouter } from './routes/availability.routes';
+import { roomBlockRouter } from './routes/roomBlock.routes';
 
 dotenv.config();
 
@@ -89,6 +90,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/rooms', roomRouter);
 app.use('/api/availability', availabilityRouter);
+app.use('/api/room-blocks', roomBlockRouter);
 
 // Unmatched API 404 handler (strictly catches /api and /api/* so they NEVER fall through to HTML)
 app.all(['/api', '/api/*'], (_req: Request, res: Response) => {

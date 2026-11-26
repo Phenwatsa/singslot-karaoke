@@ -10,6 +10,7 @@ interface AvailabilityMatrixProps {
   availability: RoomAvailability[];
   isLoading?: boolean;
   error?: string | null;
+  userRole?: 'CUSTOMER' | 'STAFF' | null;
   onSelectSlot?: (roomId: string, slotIndex: number) => void;
 }
 
@@ -18,8 +19,10 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   availability,
   isLoading = false,
   error = null,
+  userRole = null,
   onSelectSlot
 }) => {
+  const isStaff = userRole === 'STAFF';
   // Check if selected date is in the past using Asia/Bangkok calendar
   const isPastDate = isPastBangkokDate(selectedDate);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -68,6 +71,12 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
               <span className="h-2.5 w-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.7)] border border-rose-200" />
               <span className="text-slate-700 font-semibold">Occupied</span>
             </span>
+            {isStaff && (
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.7)] border border-amber-200" />
+                <span className="text-amber-800 font-semibold">Maintenance</span>
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-slate-300 shadow-[0_0_6px_rgba(148,163,184,0.5)] border border-slate-200" />
               <span className="text-slate-500">Closed (Past)</span>
@@ -159,6 +168,7 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                   {room.slots.map((slot) => {
                     const isClosed = slot.isWithinCutoff ?? slot.isPast ?? isPastDate;
                     const isOccupied = slot.isOccupied ?? (!slot.isAvailable && !isClosed);
+                    const isMaintenanceForStaff = isStaff && Boolean(slot.isBlocked);
                     const isOpen = !isClosed && !isOccupied;
 
                     return (
@@ -174,6 +184,8 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             ? slot.isPast === false
                               ? 'Closed (Within 60-min online advance cutoff)'
                               : 'Closed (Time has elapsed / past)'
+                            : isMaintenanceForStaff
+                            ? 'Maintenance Block (Staff view)'
                             : isOccupied
                             ? 'Occupied / Booked'
                             : 'Open (Click to book this slot)'
@@ -181,6 +193,8 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         className={`group relative flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all ${
                           isClosed
                             ? 'border-slate-200/80 bg-slate-100/70 text-slate-400 cursor-not-allowed'
+                            : isMaintenanceForStaff
+                            ? 'border-amber-300 bg-amber-100/90 text-amber-900 cursor-not-allowed shadow-xs'
                             : isOccupied
                             ? 'border-rose-200 bg-rose-50/90 text-rose-700 cursor-not-allowed shadow-xs'
                             : 'border-emerald-200/90 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100/90 hover:border-emerald-400 shadow-xs cursor-pointer active:scale-95'
@@ -188,6 +202,8 @@ export const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                       >
                         {isClosed ? (
                           <span className="text-[10px] text-slate-400 font-medium">Closed</span>
+                        ) : isMaintenanceForStaff ? (
+                          <span className="text-[11px] font-bold text-amber-900">Maint</span>
                         ) : isOccupied ? (
                           <span className="text-[11px] font-semibold text-rose-700">Busy</span>
                         ) : (

@@ -86,10 +86,10 @@ export const getAvailability = async (
       return;
     }
 
-    // 1. Query all active rooms
+    // 1. Query all active rooms (Small -> Medium -> Large, matching GET /api/rooms & Master Schedule)
     const rooms = await prisma.room.findMany({
       where: { isActive: true },
-      orderBy: { roomNumber: 'asc' },
+      orderBy: [{ capacity: 'asc' }, { roomNumber: 'asc' }],
       select: {
         id: true,
         roomNumber: true,
@@ -125,13 +125,16 @@ export const getAvailability = async (
       }
     });
 
-    // Create lookup sets for fast O(1) occupancy checks: `${roomId}:${slotIndex}`
+    // Create lookup sets for fast O(1) occupancy & maintenance block checks: `${roomId}:${slotIndex}`
     const occupiedSet = new Set<string>();
+    const blockedSet = new Set<string>();
     for (const b of bookedSlots) {
       occupiedSet.add(`${b.roomId}:${b.slotIndex}`);
     }
     for (const blk of blockedSlots) {
-      occupiedSet.add(`${blk.roomId}:${blk.slotIndex}`);
+      const key = `${blk.roomId}:${blk.slotIndex}`;
+      occupiedSet.add(key);
+      blockedSet.add(key);
     }
 
     const now = new Date();
@@ -139,7 +142,9 @@ export const getAvailability = async (
     // 4. Map each room to 14 discrete slots (BR-03, BR-04, BR-12)
     const availabilityByRoom = rooms.map((room) => {
       const slots = OPERATING_SLOTS.map((slot) => {
-        const isOccupied = occupiedSet.has(`${room.id}:${slot.slotIndex}`);
+        const key = `${room.id}:${slot.slotIndex}`;
+        const isOccupied = occupiedSet.has(key);
+        const isBlocked = blockedSet.has(key);
         const isPast = isSlotInPast(date, slot.slotIndex, now);
         const isWithinCutoff = isSlotWithinOnlineCutoff(date, slot.slotIndex, now);
         // Online bookable availability requires unoccupied and >= 60m lead time
@@ -151,7 +156,8 @@ export const getAvailability = async (
           isAvailable,
           isWithinCutoff,
           isPast,
-          isOccupied
+          isOccupied,
+          isBlocked
         };
       });
 

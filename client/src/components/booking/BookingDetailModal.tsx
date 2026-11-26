@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Users, Sparkles, Phone, User, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  X,
+  Calendar,
+  Clock,
+  Users,
+  Sparkles,
+  Phone,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  Ban,
+  CalendarClock
+} from 'lucide-react';
 import { GlassCard } from '../layout/GlassCard';
+import { DatePicker } from '../common/DatePicker';
+import { Room } from '../../types/room';
+import { getBangkokTodayString } from '../../utils/date';
 
 interface BookingSlot {
   id: string;
@@ -38,6 +53,8 @@ interface BookingDetailModalProps {
   token: string | null;
   isOpen: boolean;
   onClose: () => void;
+  rooms?: Room[];
+  onBookingChanged?: (message: string) => void;
 }
 
 const TIER_THEME: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -50,11 +67,30 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   bookingId,
   token,
   isOpen,
-  onClose
+  onClose,
+  rooms = [],
+  onBookingChanged
 }) => {
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sprint 2 F-08 Cancel & Reschedule state
+  const [actionMode, setActionMode] = useState<'none' | 'cancel' | 'reschedule'>('none');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const [reschedRoomId, setReschedRoomId] = useState<string>('');
+  const [reschedDate, setReschedDate] = useState<string>('');
+  const [reschedStartSlot, setReschedStartSlot] = useState<number>(0);
+  const [reschedDuration, setReschedDuration] = useState<number>(1);
+  const [reschedPartySize, setReschedPartySize] = useState<number>(1);
+
+  const selectedReschedRoom = useMemo(
+    () => rooms.find((r) => r.id === reschedRoomId) || booking?.room || null,
+    [rooms, reschedRoomId, booking]
+  );
 
   // Lock body scroll when modal is active
   useEffect(() => {
@@ -73,6 +109,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     if (!isOpen || !bookingId || !token) {
       setBooking(null);
       setError(null);
+      setActionMode('none');
+      setActionError(null);
+      setActionSuccess(null);
       return;
     }
 
@@ -80,6 +119,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     const fetchDetail = async () => {
       setIsLoading(true);
       setError(null);
+      setActionMode('none');
+      setActionError(null);
+      setActionSuccess(null);
 
       try {
         const res = await fetch(`/api/bookings/${bookingId}`, {
@@ -93,6 +135,11 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
         if (res.ok && data.success && data.booking) {
           setBooking(data.booking);
+          setReschedRoomId(data.booking.room.id);
+          setReschedDate(data.booking.bookingDate);
+          setReschedStartSlot(data.booking.startSlot);
+          setReschedDuration(data.booking.durationHours);
+          setReschedPartySize(data.booking.partySize);
         } else {
           setError(data.error?.message || 'Failed to load reservation details.');
         }
@@ -114,10 +161,88 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     };
   }, [isOpen, bookingId, token]);
 
+  const handleConfirmCancel = async () => {
+    if (!token || !booking) return;
+    setIsSubmitting(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.booking) {
+        setBooking({ ...booking, status: 'CANCELLED', slots: [] });
+        setActionMode('none');
+        const msg = `Reservation ${booking.bookingCode} has been cancelled and slots released.`;
+        setActionSuccess(msg);
+        onBookingChanged?.(msg);
+      } else {
+        setActionError(data.error?.message || 'Unable to cancel reservation.');
+      }
+    } catch {
+      setActionError('Network error while cancelling reservation.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !booking) return;
+    setIsSubmitting(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          roomId: reschedRoomId || booking.room.id,
+          bookingDate: reschedDate,
+          startSlot: reschedStartSlot,
+          durationHours: reschedDuration,
+          partySize: reschedPartySize
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.booking) {
+        setBooking(data.booking);
+        setActionMode('none');
+        const msg = `Reservation ${data.booking.bookingCode} rescheduled to Room ${data.booking.roomNumber} (${data.booking.bookingDate}, ${data.booking.timeRange}) — ฿${data.booking.totalPrice?.toLocaleString()}.`;
+        setActionSuccess(msg);
+        onBookingChanged?.(msg);
+      } else {
+        setActionError(data.error?.message || 'Unable to reschedule reservation.');
+      }
+    } catch {
+      setActionError('Network error while rescheduling reservation.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const roomTier = booking?.room?.type || 'SMALL';
   const tierConfig = TIER_THEME[roomTier] || TIER_THEME.SMALL;
+  const isElapsed = booking
+    ? (() => {
+        const endHour = 10 + booking.startSlot + booking.durationHours;
+        const endMs =
+          endHour >= 24
+            ? new Date(`${booking.bookingDate}T00:00:00+07:00`).getTime() + endHour * 60 * 60 * 1000
+            : new Date(`${booking.bookingDate}T${String(endHour).padStart(2, '0')}:00:00+07:00`).getTime();
+        return Date.now() >= endMs;
+      })()
+    : false;
+  const canModify = Boolean(booking && booking.status === 'CONFIRMED' && !isElapsed);
 
   return (
     <div
@@ -138,13 +263,23 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             {booking && (
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border ${
-                  booking.status === 'CONFIRMED'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                  booking.status === 'CANCELLED'
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                    : isElapsed
+                    ? 'bg-slate-200/80 text-slate-600 border-slate-300'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}
               >
-                <CheckCircle2 className={`h-3 w-3 ${booking.status === 'CONFIRMED' ? 'text-emerald-500' : 'text-slate-400'}`} />
-                {booking.status}
+                <CheckCircle2
+                  className={`h-3 w-3 ${
+                    booking.status === 'CANCELLED'
+                      ? 'text-rose-400'
+                      : isElapsed
+                      ? 'text-slate-500'
+                      : 'text-emerald-500'
+                  }`}
+                />
+                {booking.status === 'CANCELLED' ? 'CANCELLED' : isElapsed ? 'PAST' : 'CONFIRMED'}
               </span>
             )}
           </div>
@@ -287,15 +422,194 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Sprint 2 F-08 Action Feedback */}
+              {actionError && (
+                <div className="flex items-start gap-2.5 rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-800">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+                  <span className="font-semibold">{actionError}</span>
+                </div>
+              )}
+
+              {actionSuccess && (
+                <div className="flex items-start gap-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                  <span className="font-semibold">{actionSuccess}</span>
+                </div>
+              )}
+
+              {/* Sprint 2 F-08: Cancel Confirmation Box */}
+              {booking.status === 'CONFIRMED' && actionMode === 'cancel' && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 space-y-3">
+                  <div className="text-xs font-extrabold text-rose-900">
+                    Confirm Reservation Cancellation?
+                  </div>
+                  <p className="text-[11px] text-rose-700 leading-relaxed">
+                    Reserved time slots will be released immediately and your daily online hour quota will be restored. Per policy (BR-09), cancellation requires at least 24 hours advance notice.
+                  </p>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionMode('none');
+                        setActionError(null);
+                      }}
+                      className="rounded-xl bg-white border border-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Keep Booking
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmCancel}
+                      disabled={isSubmitting}
+                      className="rounded-xl bg-rose-600 px-4 py-1.5 text-xs font-extrabold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSubmitting ? 'Cancelling...' : 'Confirm Cancel'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sprint 2 F-08: Reschedule Inline Form */}
+              {booking.status === 'CONFIRMED' && actionMode === 'reschedule' && (
+                <form
+                  onSubmit={handleConfirmReschedule}
+                  className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-purple-950">
+                      Reschedule Reservation (Requires ≥ 24h Notice)
+                    </span>
+                    <span className="text-[11px] font-bold text-purple-700">
+                      New Est: ฿{((selectedReschedRoom?.hourlyRate ?? 0) * reschedDuration).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {rooms.length > 0 && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-slate-500">Room</label>
+                        <select
+                          value={reschedRoomId}
+                          onChange={(e) => setReschedRoomId(e.target.value)}
+                          className="w-full rounded-xl border border-purple-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                        >
+                          {rooms.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.roomNumber} ({r.type} • ฿{r.hourlyRate ?? 0}/hr)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-slate-500">New Date</label>
+                      <DatePicker
+                        value={reschedDate}
+                        onChange={setReschedDate}
+                        minDate={getBangkokTodayString()}
+                        placeholder="Select Date"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-slate-500">Start Slot</label>
+                      <select
+                        value={reschedStartSlot}
+                        onChange={(e) => {
+                          const s = Number(e.target.value);
+                          setReschedStartSlot(s);
+                          const maxD = Math.min(5, 14 - s);
+                          if (reschedDuration > maxD) setReschedDuration(maxD);
+                        }}
+                        className="w-full rounded-xl border border-purple-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                      >
+                        {Array.from({ length: 14 }, (_, idx) => (
+                          <option key={idx} value={idx}>
+                            {String(10 + idx).padStart(2, '0')}:00 – {String(11 + idx).padStart(2, '0')}:00
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-slate-500">Duration (hrs)</label>
+                      <select
+                        value={reschedDuration}
+                        onChange={(e) => setReschedDuration(Number(e.target.value))}
+                        className="w-full rounded-xl border border-purple-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                      >
+                        {Array.from({ length: Math.min(5, 14 - reschedStartSlot) }, (_, i) => i + 1).map((h) => (
+                          <option key={h} value={h}>
+                            {h} {h > 1 ? 'hours' : 'hour'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionMode('none');
+                        setActionError(null);
+                      }}
+                      className="rounded-xl bg-white border border-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-4 py-1.5 text-xs font-black text-purple-950 hover:brightness-105 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isSubmitting ? 'Saving...' : 'Save Reschedule'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </>
           ) : null}
         </div>
 
-        {/* Footer with Close Button */}
-        <div className="px-6 py-4 border-t border-pink-100/70 bg-white/90 text-right">
+        {/* Footer with F-08 Actions & Close Button */}
+        <div className="px-6 py-4 border-t border-pink-100/70 bg-white/90 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {canModify && actionMode === 'none' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionError(null);
+                    setActionSuccess(null);
+                    setActionMode('reschedule');
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3.5 py-2 text-xs font-bold text-purple-800 hover:bg-purple-100 transition-colors cursor-pointer"
+                >
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  <span>Reschedule</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionError(null);
+                    setActionSuccess(null);
+                    setActionMode('cancel');
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  <span>Cancel Booking</span>
+                </button>
+              </>
+            )}
+          </div>
+
           <button
             onClick={onClose}
-            className="w-full sm:w-auto rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors"
+            className="w-full sm:w-auto rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             Close
           </button>

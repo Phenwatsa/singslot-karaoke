@@ -3,6 +3,9 @@ import { Role } from '@prisma/client';
 import { verifyToken, requireRole } from '../middlewares/auth';
 import {
   createOnlineBooking,
+  createWalkInBooking,
+  cancelBooking,
+  rescheduleBooking,
   getMyBookings,
   getBookingById,
   getMasterSchedule
@@ -25,6 +28,17 @@ bookingRouter.post(
 );
 
 /**
+ * POST /api/bookings/walk-in (FR-07, AC-07, BR-08)
+ * Staff walk-in booking counter route. Restricted strictly to STAFF role.
+ */
+bookingRouter.post(
+  '/walk-in',
+  verifyToken,
+  requireRole(Role.STAFF),
+  createWalkInBooking
+);
+
+/**
  * GET /api/bookings/my (FR-05, AC-05)
  * Customer personal booking history route.
  * Returns strictly the reservations belonging to the authenticated user.
@@ -36,8 +50,8 @@ bookingRouter.get(
 );
 
 /**
- * GET /api/bookings/master?date=YYYY-MM-DD (FR-06, AC-06, BR-08)
- * Staff master schedule query route across all 9 rooms for a target calendar date.
+ * GET /api/bookings/master (FR-06, FR-11, AC-06, AC-11, BR-08)
+ * Staff master schedule & multi-criteria search route across all 9 rooms.
  * Restricted strictly to STAFF role.
  */
 bookingRouter.get(
@@ -45,6 +59,26 @@ bookingRouter.get(
   verifyToken,
   requireRole(Role.STAFF),
   getMasterSchedule
+);
+
+/**
+ * PATCH /api/bookings/:id/cancel (FR-09, AC-09, AC-09a, BR-07, BR-09)
+ * Cancels a CONFIRMED booking (Owner or Staff, >= 24 hours prior to start).
+ */
+bookingRouter.patch(
+  '/:id/cancel',
+  verifyToken,
+  cancelBooking
+);
+
+/**
+ * PATCH /api/bookings/:id/reschedule (FR-10, AC-10, BR-07, BR-09, BR-11, BR-12)
+ * Atomically reschedules a CONFIRMED booking (Owner or Staff, >= 24 hours prior to start).
+ */
+bookingRouter.patch(
+  '/:id/reschedule',
+  verifyToken,
+  rescheduleBooking
 );
 
 /**

@@ -1,7 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, Sparkles, ChevronRight, AlertCircle, RefreshCw, PlusCircle, MicVocal } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Calendar,
+  Clock,
+  Users,
+  Sparkles,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+  PlusCircle,
+  MicVocal,
+  History
+} from 'lucide-react';
 import { GlassCard } from '../layout/GlassCard';
 import { PageHeader } from '../layout/PageHeader';
+
+/**
+ * Checks if a reservation's end time has already elapsed in Asia/Bangkok (UTC+7).
+ */
+const isBookingElapsed = (bookingDate: string, startSlot: number, durationHours: number): boolean => {
+  const endHour = 10 + startSlot + durationHours;
+  let endMs: number;
+  if (endHour >= 24) {
+    const startMs = new Date(`${bookingDate}T00:00:00+07:00`).getTime();
+    endMs = startMs + endHour * 60 * 60 * 1000;
+  } else {
+    endMs = new Date(`${bookingDate}T${String(endHour).padStart(2, '0')}:00:00+07:00`).getTime();
+  }
+  return Date.now() >= endMs;
+};
 
 interface BookingSummary {
   id: string;
@@ -28,6 +54,7 @@ interface MyBookingsViewProps {
   token: string | null;
   onSelectBooking: (bookingId: string) => void;
   onBookNewRoom: () => void;
+  refreshTrigger?: number;
 }
 
 const TIER_THEME: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -39,7 +66,8 @@ const TIER_THEME: Record<string, { label: string; bg: string; text: string; bord
 export const MyBookingsView: React.FC<MyBookingsViewProps> = ({
   token,
   onSelectBooking,
-  onBookNewRoom
+  onBookNewRoom,
+  refreshTrigger = 0
 }) => {
   const [bookings, setBookings] = useState<BookingSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -77,7 +105,143 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({
 
   useEffect(() => {
     fetchMyBookings();
-  }, [token]);
+  }, [token, refreshTrigger]);
+
+  const { activeBookings, historyBookings } = useMemo(() => {
+    const active: BookingSummary[] = [];
+    const history: BookingSummary[] = [];
+    for (const b of bookings) {
+      const elapsed = isBookingElapsed(b.bookingDate, b.startSlot, b.durationHours);
+      if (b.status === 'CONFIRMED' && !elapsed) {
+        active.push(b);
+      } else {
+        history.push(b);
+      }
+    }
+    return { activeBookings: active, historyBookings: history };
+  }, [bookings]);
+
+  const renderBookingCard = (booking: BookingSummary, isHistory: boolean) => {
+    const roomTier = booking.room.type || 'SMALL';
+    const tierConfig = TIER_THEME[roomTier] || TIER_THEME.SMALL;
+    const elapsed = isBookingElapsed(booking.bookingDate, booking.startSlot, booking.durationHours);
+    const timeDisplay =
+      booking.timeRange ||
+      `${booking.startSlot + 10}:00 - ${booking.startSlot + booking.durationHours + 10}:00`;
+
+    return (
+      <GlassCard
+        key={booking.id}
+        className={`p-5 flex flex-col justify-between transition-all group ${
+          isHistory
+            ? 'bg-slate-50/85 border-slate-200/90 opacity-85 hover:opacity-100 hover:border-slate-300'
+            : 'hover:border-purple-200 hover:shadow-md'
+        }`}
+      >
+        <div className="space-y-3.5">
+          {/* Top Row: Booking Code & Status */}
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`font-mono text-xs font-black tracking-wider ${
+                isHistory ? 'text-slate-600' : 'text-purple-950'
+              }`}
+            >
+              {booking.bookingCode}
+            </span>
+            <div className="flex items-center gap-1.5">
+              {booking.status === 'CANCELLED' ? (
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200">
+                  CANCELLED
+                </span>
+              ) : elapsed ? (
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-slate-200/80 text-slate-600 border-slate-300">
+                  PAST
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                  CONFIRMED
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Suite Identity Row */}
+          <div
+            className={`flex items-center justify-between pb-2 border-b ${
+              isHistory ? 'border-slate-200/70' : 'border-pink-100/60'
+            }`}
+          >
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400">Karaoke Suite</span>
+              <div className={`text-sm font-black ${isHistory ? 'text-slate-600' : 'text-slate-800'}`}>
+                {booking.room.roomNumber}
+              </div>
+            </div>
+            <span
+              className={`rounded-lg px-2 py-0.5 text-[10px] font-extrabold border ${
+                isHistory
+                  ? 'bg-slate-100 text-slate-500 border-slate-200'
+                  : `${tierConfig.bg} ${tierConfig.text} ${tierConfig.border}`
+              }`}
+            >
+              {tierConfig.label}
+            </span>
+          </div>
+
+          {/* Date & Time Metadata */}
+          <div className="space-y-2 text-xs">
+            <div className={`flex items-center gap-2 ${isHistory ? 'text-slate-500' : 'text-slate-600'}`}>
+              <Calendar className={`h-3.5 w-3.5 shrink-0 ${isHistory ? 'text-slate-400' : 'text-purple-500'}`} />
+              <span className="font-bold">{booking.bookingDate}</span>
+            </div>
+
+            <div className={`flex items-center gap-2 ${isHistory ? 'text-slate-500' : 'text-slate-600'}`}>
+              <Clock className={`h-3.5 w-3.5 shrink-0 ${isHistory ? 'text-slate-400' : 'text-sky-500'}`} />
+              <span className="font-semibold">{timeDisplay}</span>
+              <span className={`text-[10px] font-bold ${isHistory ? 'text-slate-400' : 'text-purple-600'}`}>
+                ({booking.durationHours}h)
+              </span>
+            </div>
+
+            <div className={`flex items-center justify-between ${isHistory ? 'text-slate-500' : 'text-slate-600'}`}>
+              <div className="flex items-center gap-2">
+                <Users className={`h-3.5 w-3.5 shrink-0 ${isHistory ? 'text-slate-400' : 'text-pink-500'}`} />
+                <span className="font-semibold">{booking.partySize} Guests</span>
+              </div>
+              {typeof booking.totalPrice === 'number' && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold border ${
+                    isHistory
+                      ? 'bg-slate-100 text-slate-600 border-slate-200'
+                      : 'bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 text-sky-900 border-cyan-200/80'
+                  }`}
+                >
+                  ฿{booking.totalPrice.toLocaleString()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <button
+          onClick={() => onSelectBooking(booking.id)}
+          className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-bold transition-all focus:outline-none cursor-pointer ${
+            isHistory
+              ? 'border-slate-200 bg-white/80 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+              : 'border-purple-200/80 bg-purple-50/50 text-purple-800 hover:bg-purple-100/70 hover:border-purple-300'
+          }`}
+        >
+          <span>{isHistory ? 'View Details' : 'View / Manage Booking'}</span>
+          <ChevronRight
+            className={`h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform ${
+              isHistory ? 'text-slate-400' : 'text-purple-500'
+            }`}
+          />
+        </button>
+      </GlassCard>
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -150,88 +314,59 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({
           </button>
         </GlassCard>
       ) : (
-        /* Bookings List Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bookings.map((booking) => {
-            const roomTier = booking.room.type || 'SMALL';
-            const tierConfig = TIER_THEME[roomTier] || TIER_THEME.SMALL;
-            const timeDisplay =
-              booking.timeRange ||
-              `${booking.startSlot + 10}:00 - ${booking.startSlot + booking.durationHours + 10}:00`;
+        /* Split Sections: Upcoming/Active vs Past/Cancelled History */
+        <div className="space-y-8">
+          {/* Section 1: Current / Upcoming Reservations */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-purple-600" />
+                <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                  Upcoming &amp; Active Reservations
+                </h3>
+                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-extrabold text-purple-800">
+                  {activeBookings.length}
+                </span>
+              </div>
+            </div>
 
-            return (
-              <GlassCard
-                key={booking.id}
-                className="p-5 flex flex-col justify-between hover:border-purple-200 hover:shadow-md transition-all group"
-              >
-                <div className="space-y-3.5">
-                  {/* Top Row: Booking Code & Status */}
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-black tracking-wider text-purple-950">
-                      {booking.bookingCode}
-                    </span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                        booking.status === 'CONFIRMED'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </div>
-
-                  {/* Suite Identity Row */}
-                  <div className="flex items-center justify-between pb-2 border-b border-pink-100/60">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Karaoke Suite</span>
-                      <div className="text-sm font-black text-slate-800">{booking.room.roomNumber}</div>
-                    </div>
-                    <span
-                      className={`rounded-lg px-2 py-0.5 text-[10px] font-extrabold border ${tierConfig.bg} ${tierConfig.text} ${tierConfig.border}`}
-                    >
-                      {tierConfig.label}
-                    </span>
-                  </div>
-
-                  {/* Date & Time Metadata */}
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Calendar className="h-3.5 w-3.5 text-purple-500 shrink-0" />
-                      <span className="font-bold">{booking.bookingDate}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Clock className="h-3.5 w-3.5 text-sky-500 shrink-0" />
-                      <span className="font-semibold">{timeDisplay}</span>
-                      <span className="text-[10px] text-purple-600 font-bold">({booking.durationHours}h)</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
-                        <span className="font-semibold">{booking.partySize} Guests</span>
-                      </div>
-                      {typeof booking.totalPrice === 'number' && (
-                        <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2 py-0.5 text-[11px] font-extrabold text-sky-900 border border-cyan-200/80">
-                          ฿{booking.totalPrice.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* View Details Action Button */}
+            {activeBookings.length === 0 ? (
+              <GlassCard className="p-6 text-center space-y-2 border-dashed border-pink-200/80 bg-white/75">
+                <p className="text-xs font-bold text-slate-600">
+                  No upcoming active reservations right now.
+                </p>
                 <button
-                  onClick={() => onSelectBooking(booking.id)}
-                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-purple-200/80 bg-purple-50/50 py-2 text-xs font-bold text-purple-800 hover:bg-purple-100/70 hover:border-purple-300 transition-all focus:outline-none"
+                  onClick={onBookNewRoom}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-sky-300 px-4 py-1.5 text-xs font-black text-purple-950 hover:brightness-105 cursor-pointer"
                 >
-                  <span>View Details</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-purple-500 group-hover:translate-x-0.5 transition-transform" />
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span>Book a Suite</span>
                 </button>
               </GlassCard>
-            );
-          })}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeBookings.map((booking) => renderBookingCard(booking, false))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Past & Cancelled History */}
+          {historyBookings.length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-slate-200/70">
+              <div className="flex items-center gap-2 px-1">
+                <History className="h-4 w-4 text-slate-500" />
+                <h3 className="text-sm font-black text-slate-600 tracking-tight">
+                  Past &amp; Cancelled History
+                </h3>
+                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[11px] font-extrabold text-slate-600">
+                  {historyBookings.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {historyBookings.map((booking) => renderBookingCard(booking, true))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

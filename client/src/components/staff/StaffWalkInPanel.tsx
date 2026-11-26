@@ -115,10 +115,6 @@ export const StaffWalkInPanel: React.FC<StaffWalkInPanelProps> = ({
       setError('Guest name is required for walk-in reservations.');
       return;
     }
-    if (!customerPhone.trim()) {
-      setError('Contact phone number is required so staff can reach the guest.');
-      return;
-    }
 
     setIsSubmitting(true);
     setError(null);
@@ -138,7 +134,7 @@ export const StaffWalkInPanel: React.FC<StaffWalkInPanelProps> = ({
           durationHours: effectiveDuration,
           partySize,
           customerName: customerName.trim(),
-          customerPhone: customerPhone.trim()
+          customerPhone: customerPhone.trim() || undefined
         })
       });
 
@@ -366,17 +362,16 @@ export const StaffWalkInPanel: React.FC<StaffWalkInPanelProps> = ({
             />
           </div>
 
-          {/* Contact Phone (Required in Staff UI) */}
+          {/* Contact Phone (Optional per Sprint 2 Contract 5) */}
           <div className="space-y-1.5 md:col-span-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
               <span className="inline-flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-sky-500" />
-                Contact Phone *
+                Contact Phone (Optional)
               </span>
             </label>
             <input
               type="tel"
-              required
               placeholder="e.g. 081-234-5678"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}

@@ -234,7 +234,13 @@ describe('Sprint 2 Operations Increment: F-07 Walk-in, F-08 Cancel/Reschedule, F
   // =========================================================================
   describe('TEST-08 & TEST-08b: Staff Slot Maintenance & Blockout (F-09, AC-08, AC-08b, BR-10)', () => {
     it('TEST-08: STAFF creates, lists, and deletes RoomBlock updating /api/availability; CUSTOMER gets 403', async () => {
-      // CUSTOMER rejected on GET, POST, DELETE
+      // CUSTOMER rejected on GET and POST /api/room-blocks with 403 FORBIDDEN
+      const custGet = await request(app)
+        .get(`/api/room-blocks?date=${DATE_BLOCK}`)
+        .set('Authorization', `Bearer ${customer1Token}`);
+      expect(custGet.status).toBe(403);
+      expect(custGet.body.error.code).toBe('FORBIDDEN');
+
       const custPost = await request(app)
         .post('/api/room-blocks')
         .set('Authorization', `Bearer ${customer1Token}`)
@@ -252,6 +258,13 @@ describe('Sprint 2 Operations Increment: F-07 Walk-in, F-08 Cancel/Reschedule, F
       expect(createRes.body.success).toBe(true);
       expect(createRes.body.blocks).toHaveLength(1);
       const blockId = createRes.body.blocks[0].id;
+
+      // CUSTOMER rejected on DELETE /api/room-blocks/:id with 403 FORBIDDEN (block remains intact)
+      const custDel = await request(app)
+        .delete(`/api/room-blocks/${blockId}`)
+        .set('Authorization', `Bearer ${customer1Token}`);
+      expect(custDel.status).toBe(403);
+      expect(custDel.body.error.code).toBe('FORBIDDEN');
 
       // Duplicate block returns 409 BLOCK_ALREADY_EXISTS
       const dupRes = await request(app)

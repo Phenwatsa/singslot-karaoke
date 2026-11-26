@@ -953,7 +953,8 @@ export const cancelBooking = async (
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${existing.roomId} FOR UPDATE`;
+      // Deterministic lock order: bookings -> rooms FOR UPDATE (serializes concurrent cancel/reschedule on same booking)
+      await tx.$queryRaw`SELECT "id" FROM "bookings" WHERE "id" = ${existing.id} FOR UPDATE`;
 
       const fresh = await tx.booking.findUnique({ where: { id: existing.id } });
       if (!fresh || fresh.status === 'CANCELLED') {
@@ -961,6 +962,17 @@ export const cancelBooking = async (
         err.code = 'TX_ALREADY_CANCELLED';
         throw err;
       }
+
+      // Re-verify BR-09 24-hour advance policy inside the locked transaction against authoritative latest state
+      if (!isWithin24HourAdvanceWindow(fresh.bookingDate, fresh.startSlot)) {
+        const err: any = new Error(
+          'Bookings can only be cancelled at least 24 hours prior to the scheduled start time.'
+        );
+        err.code = 'TX_CANCELLATION_WINDOW_EXPIRED';
+        throw err;
+      }
+
+      await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${fresh.roomId} FOR UPDATE`;
 
       await tx.bookingSlot.deleteMany({
         where: { bookingId: existing.id }
@@ -990,6 +1002,16 @@ export const cancelBooking = async (
         error: {
           code: 'BOOKING_ALREADY_CANCELLED',
           message: 'Booking has already been cancelled.'
+        }
+      });
+      return;
+    }
+    if (error.code === 'TX_CANCELLATION_WINDOW_EXPIRED') {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'CANCELLATION_WINDOW_EXPIRED',
+          message: 'Bookings can only be cancelled at least 24 hours prior to the scheduled start time.'
         }
       });
       return;
@@ -1184,21 +1206,32 @@ export const rescheduleBooking = async (
 
     try {
       const updated = await prisma.$transaction(async (tx) => {
-        // Deterministic lock order: users (if ONLINE) -> rooms sorted by id
+        // Deterministic lock order: users (if ONLINE) -> bookings -> rooms sorted by id
         if (existing.channel === 'ONLINE') {
           await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${existing.userId} FOR UPDATE`;
         }
 
-        const roomIdsToLock = Array.from(new Set([existing.roomId, targetRoom.id])).sort();
-        for (const rId of roomIdsToLock) {
-          await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${rId} FOR UPDATE`;
-        }
+        await tx.$queryRaw`SELECT "id" FROM "bookings" WHERE "id" = ${existing.id} FOR UPDATE`;
 
         const fresh = await tx.booking.findUnique({ where: { id: existing.id } });
         if (!fresh || fresh.status === 'CANCELLED') {
           const err: any = new Error('Cannot reschedule a cancelled booking.');
           err.code = 'TX_ALREADY_CANCELLED';
           throw err;
+        }
+
+        // Re-verify BR-09 24-hour advance policy inside the locked transaction against authoritative latest state
+        if (!isWithin24HourAdvanceWindow(fresh.bookingDate, fresh.startSlot)) {
+          const err: any = new Error(
+            'Bookings can only be rescheduled at least 24 hours prior to the scheduled start time.'
+          );
+          err.code = 'TX_CANCELLATION_WINDOW_EXPIRED';
+          throw err;
+        }
+
+        const roomIdsToLock = Array.from(new Set([fresh.roomId, targetRoom.id])).sort();
+        for (const rId of roomIdsToLock) {
+          await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${rId} FOR UPDATE`;
         }
 
         // BR-11: Check daily 6-hour quota for ONLINE channel, excluding this booking's own prior hours
@@ -1299,6 +1332,16 @@ export const rescheduleBooking = async (
           error: {
             code: 'BOOKING_ALREADY_CANCELLED',
             message: 'Cannot reschedule a cancelled booking.'
+          }
+        });
+        return;
+      }
+      if (txError.code === 'TX_CANCELLATION_WINDOW_EXPIRED') {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'CANCELLATION_WINDOW_EXPIRED',
+            message: 'Bookings can only be rescheduled at least 24 hours prior to the scheduled start time.'
           }
         });
         return;

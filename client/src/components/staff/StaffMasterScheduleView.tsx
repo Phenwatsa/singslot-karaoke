@@ -232,7 +232,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
     setStatusFilter('');
   };
 
-  // Pre-index bookings by room and slotIndex for O(1) matrix lookup
+  // Pre-index bookings by bookingDate + roomNumber + slotIndex for O(1) collision-free matrix lookup
   const occupancyMap = useMemo(() => {
     const map = new Map<
       string,
@@ -251,7 +251,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
       const lastSlot = sortedSlots[sortedSlots.length - 1]?.slotIndex;
 
       sortedSlots.forEach((slot, idx) => {
-        map.set(`${roomNum}_${slot.slotIndex}`, {
+        map.set(`${b.bookingDate}_${roomNum}_${slot.slotIndex}`, {
           booking: b,
           isFirstSlot: slot.slotIndex === firstSlot,
           isLastSlot: slot.slotIndex === lastSlot,
@@ -260,6 +260,18 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
       });
     }
     return map;
+  }, [bookings]);
+
+  // Group multi-date range results by bookingDate (DESC) so different dates never mix together
+  const bookingsByDate = useMemo(() => {
+    const map = new Map<string, MasterBooking[]>();
+    for (const b of bookings) {
+      if (!map.has(b.bookingDate)) {
+        map.set(b.bookingDate, []);
+      }
+      map.get(b.bookingDate)!.push(b);
+    }
+    return Array.from(map.entries()).sort(([d1], [d2]) => d2.localeCompare(d1));
   }, [bookings]);
 
   // Pre-index maintenance blocks by roomNumber and slotIndex for Global Schedule Matrix
@@ -692,7 +704,7 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
 
                         {/* 14 Hourly Slot Cells */}
                         {Array.from({ length: 14 }).map((_, slotIdx) => {
-                          const occ = occupancyMap.get(`${room.roomNumber}_${slotIdx}`);
+                          const occ = occupancyMap.get(`${selectedDate}_${room.roomNumber}_${slotIdx}`);
                           const isOccupied = Boolean(occ);
 
                           if (isOccupied && occ) {
@@ -764,15 +776,128 @@ export const StaffMasterScheduleView: React.FC<StaffMasterScheduleViewProps> = (
       </div>
       )}
 
-      {/* Suite Detail Summary List (Filtered to matching suites when searching) */}
+      {/* Suite Detail Summary List (Grouped by bookingDate in Date Range mode; by Suite in Single-Date mode) */}
       <div className="space-y-3 pt-2">
         <h4 className="text-sm font-extrabold text-slate-800 tracking-tight px-1">
-          {hasActiveFilter
+          {useDateRange
+            ? `Matching Reservations by Date (${bookings.length})`
+            : hasActiveFilter
             ? `Matching Reservations (${bookings.length})`
             : 'Confirmed Reservations Breakdown by Suite'}
         </h4>
 
-        {visibleRooms.length === 0 ? (
+        {useDateRange ? (
+          bookingsByDate.length === 0 ? (
+            <GlassCard className="p-8 text-center space-y-2">
+              <p className="text-sm font-bold text-slate-500">
+                No reservations match your active date range and filters.
+              </p>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-4 py-1.5 text-xs font-bold text-purple-900 hover:bg-purple-200 cursor-pointer"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Show All Suites</span>
+              </button>
+            </GlassCard>
+          ) : (
+            <div className="space-y-4">
+              {bookingsByDate.map(([dateKey, dateBookings]) => (
+                <GlassCard key={dateKey} className="p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-pink-100/70">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                      <span className="text-base font-black text-slate-900">{dateKey}</span>
+                    </div>
+                    <span className="text-xs font-bold text-purple-700">
+                      {dateBookings.length} booking{dateBookings.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {dateBookings.map((b) => {
+                      const timeDisplay =
+                        b.timeRange ||
+                        `${b.startSlot + 10}:00 - ${b.startSlot + b.durationHours + 10}:00`;
+                      return (
+                        <div
+                          key={b.id}
+                          className="flex flex-col justify-between rounded-2xl border border-purple-100/90 bg-white p-3.5 shadow-xs hover:border-purple-300 transition-all"
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className="font-mono text-xs font-extrabold text-purple-900">
+                                {b.bookingCode} • {b.room.roomNumber}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
+                                    b.channel === 'WALK_IN'
+                                      ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                      : 'bg-purple-50 text-purple-700 border-purple-200'
+                                  }`}
+                                >
+                                  {b.channel}
+                                </span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
+                                    b.status === 'CONFIRMED'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  }`}
+                                >
+                                  {b.status}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-1.5 text-slate-700 font-bold">
+                                <Clock className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                                <span>{timeDisplay}</span>
+                                <span className="text-[10px] text-purple-600 font-semibold">
+                                  ({b.durationHours}h)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-slate-600">
+                                <User className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                                <span className="truncate">{b.customerName}</span>
+                              </div>
+                              {b.customerPhone && (
+                                <div className="flex items-center gap-1.5 text-slate-600">
+                                  <Phone className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                                  <span className="truncate font-mono text-[11px]">{b.customerPhone}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between text-slate-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Users className="h-3.5 w-3.5 text-pink-500 shrink-0" />
+                                  <span>{b.partySize} guests</span>
+                                </div>
+                                {typeof b.totalPrice === 'number' && (
+                                  <span className="rounded-full bg-gradient-to-r from-cyan-100/90 via-sky-50 to-yellow-100/90 px-2 py-0.5 text-[10px] font-extrabold text-sky-900 border border-cyan-200/80">
+                                    ฿{b.totalPrice.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onSelectBooking(b.id)}
+                            className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-purple-50 hover:bg-purple-100 py-1.5 text-xs font-bold text-purple-700 transition-colors cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Inspect Booking</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          )
+        ) : visibleRooms.length === 0 ? (
           <GlassCard className="p-8 text-center space-y-2">
             <p className="text-sm font-bold text-slate-500">
               No reservations match your active search filters.

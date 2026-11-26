@@ -1234,6 +1234,23 @@ export const rescheduleBooking = async (
           await tx.$queryRaw`SELECT "id" FROM "rooms" WHERE "id" = ${rId} FOR UPDATE`;
         }
 
+        // Re-verify target slot time inside the locked transaction (Contract 6: prevent lock-wait boundary drift)
+        if (fresh.channel === 'ONLINE') {
+          if (isSlotWithinOnlineCutoff(targetDate, targetStartSlot)) {
+            const err: any = new Error(
+              'Cannot reschedule to a past slot or within the 60-minute advance online cutoff.'
+            );
+            err.code = 'TX_PAST_SLOT_ONLINE';
+            throw err;
+          }
+        } else if (isSlotInPast(targetDate, targetStartSlot)) {
+          const err: any = new Error(
+            'Cannot reschedule to a slot that has already started or elapsed.'
+          );
+          err.code = 'TX_PAST_SLOT_WALKIN';
+          throw err;
+        }
+
         // BR-11: Check daily 6-hour quota for ONLINE channel, excluding this booking's own prior hours
         if (existing.channel === 'ONLINE') {
           const quotaCheck = await checkCustomerDailyQuota(
@@ -1342,6 +1359,16 @@ export const rescheduleBooking = async (
           error: {
             code: 'CANCELLATION_WINDOW_EXPIRED',
             message: 'Bookings can only be rescheduled at least 24 hours prior to the scheduled start time.'
+          }
+        });
+        return;
+      }
+      if (txError.code === 'TX_PAST_SLOT_ONLINE' || txError.code === 'TX_PAST_SLOT_WALKIN') {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'CANNOT_BOOK_PAST_SLOT',
+            message: txError.message
           }
         });
         return;

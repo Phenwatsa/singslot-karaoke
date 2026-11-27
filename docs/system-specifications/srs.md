@@ -2,12 +2,13 @@
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Theme:** Topic 1 — Appointment and Scheduling System  
-**Document Version:** 1.3.0 (Lab 7 Adaptive Maintenance — Sprint 1 Rules & Pricing Revision)  
-**Date:** 25 November 2026  
+**Document Version:** 1.4.0 (Deliverable 2 Staging Candidate — `feat/sprint3-and-d2-release`; target release `v0.3.0-rc1`)  
+**Date:** 27 November 2026  
 
 > **Revision History:**
 > - `1.2.0` (Nov 2026): Rigorous Engineering Baseline (Accepted Sprint 1 tag `v0.1.0-sprint1` / Lab 6 release `f3eb92d4`).
 > - `1.3.0` (25 Nov 2026): Lab 7 Adaptive Maintenance — revised `FR-02`–`FR-06`, `BR-01` (Peak-Hour online duration cap), `BR-04` (60-minute online advance cutoff preserving `isPast` for Walk-in), and added `BR-11` (6-hour daily customer quota) and `BR-12` (flat hourly room pricing & authoritative server-calculated `totalPrice`).
+> - `1.4.0` (27 Nov 2026): Deliverable 2 Staging Candidate (`feat/sprint3-and-d2-release`; target release `v0.3.0-rc1` pending Release PR) — integrated Sprint 2 (`F-07`–`F-10`, `v0.2.0-sprint2`), implemented Sprint 3 `F-11` Customer Self-Registration (`FR-12`), and aligned `NFR-04` (`< 200 ms`).
 
 ---
 
@@ -61,8 +62,8 @@ All operations interact with a persistent PostgreSQL database enforcing strict A
 3. **No Loyalty Points / Promotions:** Points and discounts are excluded.
 4. **No Multi-Branch Architecture:** Single establishment only.
 5. **No SMS / External Push Notifications:** Alerts are confined to the web interface.
-6. **No Self-Registration in Sprint 1:** Seeded accounts are used per Section 5.2; self-registration is allocated to Sprint 3.
-7. **No Room Management CRUD in Sprint 1:** Seeded database fleet is used; dynamic CRUD is allocated to Sprint 3.
+6. **Self-Registration Lifecycle:** Seeded accounts were used in Sprint 1; Customer Self-Registration (`F-11`, `POST /api/auth/register`) is implemented on `feat/sprint3-and-d2-release` (target release `v0.3.0-rc1`).
+7. **No Room Management CRUD in Sprint 1–2:** Seeded database fleet is used; dynamic CRUD (`F-12`) and Reports (`F-13`) are allocated to the final Sprint 3 release (13 Dec 2026).
 
 ---
 
@@ -113,7 +114,7 @@ All operations interact with a persistent PostgreSQL database enforcing strict A
 | **NFR-01** | **Password Security** | All stored passwords must be hashed using `bcrypt` with salt rounds $\ge 10$. Plaintext passwords must never appear in database records, responses, or log files. | Local test suite; database inspection test verifying hash prefix `$2a$` or `$2b$` and salt complexity. | **Sprint 1** |
 | **NFR-02** | **Authorization Enforcement** | Requests with invalid tokens, missing tokens, or unprivileged roles must be rejected with HTTP 401 or HTTP 403 on protected endpoints. | Automated Supertest security suite verifying response status codes and error JSON envelopes. | **Sprint 1** |
 | **NFR-03** | **Transactional Integrity** | Multi-slot bookings must execute inside an ACID database transaction. Injected runtime failures before commit must cause 100% rollback (zero partial `Booking` or `BookingSlot` rows). | Automated fault-injection integration test asserting zero database side-effects after simulated exception. | **Sprint 1** |
-| **NFR-04** | **Availability Query Latency** | `GET /api/availability?date=...` must respond in $\le 200$ ms on a database containing at least 50 pre-existing bookings across the 9 rooms. | Automated Supertest benchmark under local test runner with database fixtures. | **Sprint 2** |
+| **NFR-04** | **Availability Query Latency** | `GET /api/availability?date=...` must respond in $< 200$ ms on a database containing at least 50 pre-existing bookings across the 9 rooms. | Automated Supertest benchmark under local test runner with database fixtures. | **Sprint 2** |
 | **NFR-05** | **Container Readiness & Durability** | Frontend and Backend build cleanly into Docker containers. Database migrations execute automatically, and data persists across container restart cycles. | Automated bash verification script executing container build, run, restart, and data query. | **Sprint 2 / Lab 5** |
 
 ---

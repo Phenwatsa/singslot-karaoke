@@ -167,10 +167,9 @@ All five metrics below are extracted directly from the repository Git history, G
 
 ---
 
-### C.3 Action-Oriented Interpretation *(88 words — strictly $\le 100$ words)*
+### C.3 Action-Oriented Interpretation *(81 words — strictly $\le 100$ words)*
 
-Across 23 completed issues, 27 merged PRs, and 40 recent CI/CD runs (97.5% pass rate; 100% across Lab 7 and Sprint 2), SingSlot maintains 130/130 passing automated tests and 0 open defects. However, one deferred P3 security debt item (`DEF-SS-04 (4B)` permissive CORS) and two devDependency audit advisories remain, alongside open PR #54 (`F-11`).
-**Action Plan:** `@Phenwatsa` will implement an explicit `CORS_ORIGINS` allowlist (`DEF-SS-04 (4B)`) and audit dependencies before the final Sprint 3 release (`v0.3.0-final`, `F-14`), while `@lephirada` reviews Lab 7 Issue #48 and finishes Sprint 3 `F-11`.
+Across 23 completed issues, 27 merged PRs, and 40 recent CI/CD runs (97.5% pass rate; 100% across Lab 7–Sprint 2), SingSlot maintains 130/130 passing automated tests and 0 open defects. The primary remaining engineering risk is permissive wildcard CORS (`TD-01` / `DEF-SS-04 (4B)`), which may expose the API to unintended cross-origin access if additional clients are introduced. **Action Plan:** `@Phenwatsa` will replace wildcard CORS with an environment-driven `CORS_ORIGINS` allowlist, add configuration tests, and verify production behavior before the `v0.3.0-final` release (`F-14`).
 
 ---
 
@@ -195,11 +194,11 @@ Across 23 completed issues, 27 merged PRs, and 40 recent CI/CD runs (97.5% pass 
 
 ### D.2 Technical Debt Register (Tracked Separately from Defects)
 
-| Debt ID | Area | Description | Risk / Runtime Impact | Planned Remediation Owner & Milestone |
-| :---: | :--- | :--- | :--- | :--- |
-| **`TD-01`**<br>*(from `DEF-SS-04 (4B)`)* | Security / Middleware | Permissive wildcard CORS (`app.use(cors())` in `server/src/app.ts`) | **Low in current single-origin Cloud Run deployment** (React SPA served from same Express origin); medium if cross-origin clients are added later. | `@Phenwatsa` — Replace with env-driven `CORS_ORIGINS` allowlist in Sprint 3 (`F-14` / `v0.3.0-final`). |
-| **`TD-02`** | Dev Dependencies | Transitive `npm audit` advisories in dev-only tooling (`deepmerge` via `jest`, `esbuild` via `vite`) | **Zero production runtime impact** (devDependencies are excluded from the multi-stage production container image). | `@Phenwatsa` — Upgrade toolchain lockfile during Sprint 3 hardening (`v0.3.0-final`). |
-| **`TD-03`** | Auth Session Lifecycle | Stateless 8-hour JWT without server-side token revocation blocklist | **Low for demo scope** (short expiry, synthetic accounts); logout clears client storage only. | Deferred post-course / optional Sprint 3 enhancement if time permits. |
+| Debt ID | Area | Priority | Description | Risk / Runtime Impact | Planned Remediation Owner & Milestone |
+| :---: | :--- | :---: | :--- | :--- | :--- |
+| **`TD-01`**<br>*(from `DEF-SS-04 (4B)`)* | Security / Middleware | **P3 (Medium)** | Permissive wildcard CORS (`app.use(cors())` in `server/src/app.ts`) | **Low in current single-origin Cloud Run deployment** (React SPA served from same Express origin); medium if cross-origin clients are added later. | `@Phenwatsa` — Replace with env-driven `CORS_ORIGINS` allowlist in Sprint 3 (`F-14` / `v0.3.0-final`). |
+| **`TD-02`** | Dev Dependencies | **P3 (Low)** | Transitive `npm audit` advisories in dev-only tooling (`deepmerge` via `jest`, `esbuild` via `vite`) | **Zero production runtime impact** (devDependencies are excluded from the multi-stage production container image). | `@Phenwatsa` — Upgrade toolchain lockfile during Sprint 3 hardening (`v0.3.0-final`). |
+| **`TD-03`** | Auth Session Lifecycle | **P4 (Low)** | Stateless 8-hour JWT without server-side token revocation blocklist | **Low for demo scope** (short expiry, synthetic accounts); logout clears client storage only. | Deferred post-course / optional Sprint 3 enhancement if time permits. |
 
 ---
 

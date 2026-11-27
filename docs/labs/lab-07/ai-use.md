@@ -22,3 +22,15 @@
   - Created `docs/labs/lab-07/change-impact.md` containing the approved change request record, exact baselines (`v0.1.0-sprint1` / `cc1c3d82`, Lab 6 `f3eb92d4` / `singslot-00005-26q`, staging `676c7dfa`), compact Impact Traceability Table (with explicit N/A rationales), Preserved Sprint 1 Regression Protection Matrix, and additive SQL migration/backfill plan.
   - Revised and versioned (`1.2.0` $\rightarrow$ `1.3.0`) `docs/system-specifications/srs.md`, `features.md`, `system-sds.md`, `traceability.md`, and `docs/sprints/sprint-1/contracts.md` (including revised Contracts 2–4, Acceptance Criteria `AC-02b`, `AC-03c`, `AC-04g`–`04j`, and Software Test Specification `TEST-02b`, `TEST-03c`, `TEST-04g`–`04j`).
   - Initialized `docs/labs/lab-07/reviewer.md`, `docs/labs/lab-07/ai-use.md`, and `docs/screenshots/lab-07/.gitkeep`, and indexed Lab 7 logs in `docs/ai-use.md`. Zero application or test source files modified.
+
+
+---
+
+### Session Log: 27 November 2026
+
+#### 3. Lab 7 Issue 3 (Issue #48) — Post-Deployment Live Verification, Engineering Metrics & Release Readiness
+- **Prompt Intent:** Execute live post-deployment verification against the active Cloud Run production revision (`singslot-00007-vd5`, `v0.2.0-sprint2` containing all Lab 7 Sprint 1 maintenance rules and preserved Sprint 1 invariants), extract five dated, offline-reconcilable engineering metrics from GitHub/Git/CI records, and author the Part B/C/D Lab 7 submission documentation on branch `docs/lab7-issue-3-metrics-readiness`.
+- **Tools Used:** `run_command` (read-only `git log`, `gh issue list`, `gh pr list`, `gh run list`, public `curl` probes), `write_file`, `edit_file`, Google Cloud Shell verification script (executed manually by developer using GCP Secret Manager without printing credentials).
+- **Outcome:**
+  - Verified all 12 live Cloud Run checks (`EVD-PD-01`–`EVD-PD-12`) against `https://singslot-4o7kwmd5ma-as.a.run.app` (`singslot-00007-vd5`, commit `6d0f23cc`, digest `sha256:d898f7a8...`), confirming `BR-12` pricing (`BK-20261220-HQL6`, `totalPrice=700`, tamper ignored), `BR-01` Peak cap (`400 PEAK_DURATION_EXCEEDED`), `BR-04` 60-min cutoff (`400 CANNOT_BOOK_PAST_SLOT`), `BR-11` 6-hr daily quota (`409 DAILY_QUOTA_EXCEEDED`), preserved `BR-07`/`BR-08` `403` isolation, Staff Master Schedule visibility, and clean synthetic booking cancellation.
+  - Authored `docs/labs/lab-07/post-deploy-checks.md`, `docs/labs/lab-07/metrics-readiness.md` (5 metrics + 88-word `<= 100`-word action plan + Release Readiness Checklist + Technical Debt register + Version Traceability + Retrospective), updated `docs/labs/lab-07/reviewer.md`, and archived sanitized visual evidence in `docs/screenshots/lab-07/` (`deploy-summary-00007-vd5.png`, `live-checks-00007-vd5.png`). Zero application code modified.

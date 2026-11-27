@@ -21,9 +21,9 @@
 
 |    Issue    | Title / Scope                                                                                   | Primary Owner |   Reviewer   | Branch Name                               | PR Target                                                                            |    Status    |            Verdict             |
 | :---------: | :---------------------------------------------------------------------------------------------- | :-----------: | :----------: | :---------------------------------------- | :----------------------------------------------------------------------------------- | :----------: | :----------------------------: |
-| **Issue 1** | `[Lab 7 - Issue 1] Sprint 1 Adaptive Change Request, Impact Analysis & Contract Revision`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-1-contract-impact`       | [PR #49](https://github.com/Phenwatsa/singslot-karaoke/pull/49) (`sprint-1-staging`) |  **Merged**  |    **Approved (`17a5a53`)**    |
-| **Issue 2** | `[Lab 7 - Issue 2] TDD Implementation (RED/GREEN), Regression Verification & Cloud Run Release` | `@lephirada`  | `@Phenwatsa` | `feat/lab7-issue-2-booking-rules-pricing` | `sprint-1-staging` $\rightarrow$ `main`                                              | **Approved** | **Ready to Merge (`a32592c`)** |
-| **Issue 3** | `[Lab 7 - Issue 3] Post-Deployment Verification, Engineering Metrics & Release Readiness`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-3-metrics-readiness`     | `sprint-1-staging`                                                                   |   Planned    |     Pending Issue 2 Deploy     |
+| **Issue 1** (#45) | `[Lab 7 - Issue 1] Sprint 1 Adaptive Change Request, Impact Analysis & Contract Revision`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-1-contract-impact`       | [PR #49](https://github.com/Phenwatsa/singslot-karaoke/pull/49) (`sprint-1-staging`) |  **Merged**  |    **Approved (`17a5a53`)**    |
+| **Issue 2** (#47) | `[Lab 7 - Issue 2] TDD Implementation (RED/GREEN), Regression Verification & Cloud Run Release` | `@lephirada`  | `@Phenwatsa` | `feat/lab7-issue-2-booking-rules-pricing` | [PR #50](https://github.com/Phenwatsa/singslot-karaoke/pull/50) $\rightarrow$ [PR #51](https://github.com/Phenwatsa/singslot-karaoke/pull/51) (`v0.1.2-lab7`) |  **Merged**  | **Approved (`aa8fa59` / `7ddc0a0`)** |
+| **Issue 3** (#48) | `[Lab 7 - Issue 3] Post-Deployment Verification, Engineering Metrics & Release Readiness`       | `@Phenwatsa`  | `@lephirada` | `docs/lab7-issue-3-metrics-readiness`     | `sprint-1-staging` *(PR Pending)*                                                    | **In Review** |   Pending `@lephirada` Review  |
 
 ---
 
@@ -94,4 +94,29 @@
   > - CI checks passed successfully.
   - **Status:** **Approved**
 
-- **Outcome:** Feature PR approved by `@Phenwatsa` on 2026-11-25 and cleared for merge into `sprint-1-staging` (followed by Release PR into `main` for Cloud Run deployment `v0.1.2-lab7`).
+- **Outcome:** Feature PR #50 approved by `@Phenwatsa` on 2026-11-25, merged into `sprint-1-staging` (`aa8fa59`), promoted to `main` via PR #51 (`7ddc0a0`), deployed to Cloud Run revision `singslot-00006-49h` (Run `#45608475633`), and tagged `v0.1.2-lab7`.
+
+---
+
+### 📌 Lab 7 — Issue 3: Post-Deployment Verification, Engineering Metrics & Release Readiness
+
+- **GitHub Issue:** [Issue #48](https://github.com/Phenwatsa/singslot-karaoke/issues/48)
+- **Branch:** `docs/lab7-issue-3-metrics-readiness`
+- **Primary Owner:** `@Phenwatsa`
+- **Reviewer:** `@lephirada`
+- **PR Target:** `sprint-1-staging`
+- **Date Submitted:** `2026-11-27`
+- **Status:** **Ready for Peer Review**
+
+#### 🔍 Review Discussion & Verification Notes
+
+- **Developer (`@Phenwatsa`):**
+
+  > Completed Lab 7 Issue #48 deliverables:
+  > 1. **Post-Deployment Live Checks (`docs/labs/lab-07/post-deploy-checks.md`):** Verified active Cloud Run revision `singslot-00007-vd5` (`6d0f23cc`, `sha256:d898f7a8...`) across all 12 checks (`EVD-PD-01`–`EVD-PD-12`) covering `hourlyRate`, server-authoritative `totalPrice` with tamper rejection (`BK-20261220-HQL6`, `700 THB`), Peak-Hour 3h cap (`400 PEAK_DURATION_EXCEEDED`), 60-minute cutoff (`400 CANNOT_BOOK_PAST_SLOT`), 6-hour daily quota (`409 DAILY_QUOTA_EXCEEDED`), preserved `BR-07`/`BR-08` `403` isolation, Staff Master Schedule visibility, and clean cancellation teardown. Archived sanitized screenshots in `docs/screenshots/lab-07/`.
+  > 2. **Engineering Metrics & Release Readiness (`docs/labs/lab-07/metrics-readiness.md`):** Compiled 5 dated, offline-reconcilable metrics (`23` completed issues, `27` merged PRs, `130/130` passing tests, `0` open defects, `39/40` recent CI/CD runs / `27/27` in Lab 7–Sprint 2 window) with an 88-word (`<= 100`) action plan, honest `READY` Release Readiness Checklist, separate Technical Debt register (`TD-01`–`TD-03`), full Version Traceability Table (`v0.1.0-sprint1` $\rightarrow$ `v0.1.2-lab7` $\rightarrow$ `v0.2.0-sprint2`), concise retrospective, contribution summary, and known limitations.
+  >
+  > Ready for `@lephirada` peer review.
+
+- **Reviewer (`@lephirada`):**
+  - *Pending peer review on GitHub PR.*

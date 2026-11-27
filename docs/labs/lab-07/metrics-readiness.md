@@ -23,30 +23,75 @@ All five metrics below are extracted directly from the repository Git history, G
 | **M2** | **Merged Pull Requests** | Count of Pull Requests with `state == MERGED` into `sprint-1-staging` or `main` (excluding closed unmerged gate-test PR `#26` and open PR `#54`). | `Phenwatsa/singslot-karaoke`<br>`2026-11-05` – `2026-11-27 12:30 ICT` | **`27` merged** *(`20` into `sprint-1-staging`, `7` into `main`)* |
 | **M3** | **Automated Test Results** | Serial test suite execution results on deployed production `main` commit `6d0f23cc` (`v0.2.0-sprint2`), verified in CI Run `#45852161140` & Deploy Run `#45852744756`. | `server/` (`jest --runInBand`) + `client/` (`node --test --test-concurrency=1`)<br>Commit `6d0f23cc` (`2026-11-26`) | **`130` passed, `0` failed, `0` skipped (`100%`)** *(`118` server + `12` client; `0` TS/build errors)* |
 | **M4** | **UAT & Maintenance Defect Status** | Count of open accepted defects (`P0` Critical, `P1` High, `P2` Medium) not yet verified fixed and merged to `main` (excludes `Not-Defect` and deferred `Enhancement`/debt). | Lab 6 UAT + Lab 7 & Sprint 2 PR reviews<br>`2026-11-21` – `2026-11-27 12:30 ICT` | **`0` open defects** *(`3/3` accepted UAT defects closed; `5/5` pre-merge review findings resolved)* |
-| **M5** | **CI/CD Workflow Run Outcomes** | Completion outcomes across `CI & Docker Build` and `Deploy demo` workflows for the most recent 40 completed runs (Lab 6 Fix through Lab 7 / Sprint 2 Release). | `Phenwatsa/singslot-karaoke` Actions<br>`2026-11-21` – `2026-11-27 12:30 ICT` | **`39 / 40` passed (`97.5%`)** *(`27 / 27` = `100%` during Lab 7 & Sprint 2 window `2026-11-25`–`27`)* |
+| **M5** | **CI/CD Workflow Run Outcomes** | Completion outcomes (`success`, `failure`, `cancelled`) across `CI & Docker Build` and `Deploy demo` workflows for the most recent 40 completed runs (Lab 6 Fix through Lab 7 / Sprint 2 Release). | `Phenwatsa/singslot-karaoke` Actions<br>`2026-11-21` – `2026-11-27 12:30 ICT` | **`39` success, `1` failure, `0` cancelled (`97.5%`)** *(`27/27` = `100%` during Lab 7 & Sprint 2 window `2026-11-25`–`27`)* |
 
 ---
 
 ### C.2 Embedded Source Tables (Offline Reconciliation)
 
-#### Source Table M1 — Completed Issues (`23` Closed, `2` Open)
+#### Source Table M1 — Completed Issues (`23` Closed, `2` Open, `0` Cancelled/Duplicate)
 
-| Milestone | Closed Issue IDs | Completion Dates (UTC) | Closed Count | Open Issues |
-| :--- | :--- | :--- | :---: | :--- |
-| **Sprint 1** | `#2`, `#3`, `#4`, `#5`, `#6`, `#7` | `2026-11-05` – `2026-11-07` | `6` | None |
-| **Lab 5 (CI/CD & Cloud)** | `#14`, `#15`, `#16`, `#17`, `#18`, `#19`, `#20`, `#21`, `#29` | `2026-11-12` – `2026-11-15` | `9` | None |
-| **Lab 6 (Partner UAT)** | `#32`, `#33`, `#34`, `#35` | `2026-11-20` – `2026-11-22` | `4` | None |
-| **Lab 7 (Maintenance)** | `#45` (Issue 1), `#47` (Issue 2) | `2026-11-25` | `2` | `#48` (Issue 3 — this PR) |
-| **Deliverable 2 (Sprint 2–3)** | `#42` (D2-1), `#43` (D2-2) | `2026-11-25` – `2026-11-26` | `2` | `#44` (D2-3 — Sprint 3 `F-11`) |
-| **Total** | **23 unique closed issues (`0` duplicates/cancelled)** | **`2026-11-05` – `2026-11-26`** | **`23`** | **`2` open (`#44`, `#48`)** |
+| Issue ID | Milestone | Completion Date (UTC) | Status |
+| :---: | :--- | :---: | :---: |
+| `#2` | Sprint 1 — Issue #1 Baseline Setup & Schema | `2026-11-05` | Closed |
+| `#3` | Sprint 1 — Issue #2 Seeded Auth & RBAC | `2026-11-05` | Closed |
+| `#4` | Sprint 1 — Issue #3 Room Catalog & Availability Grid | `2026-11-06` | Closed |
+| `#5` | Sprint 1 — Issue #4 Online Booking Engine | `2026-11-06` | Closed |
+| `#6` | Sprint 1 — Issue #5 Conflict Prevention & Concurrency | `2026-11-07` | Closed |
+| `#7` | Sprint 1 — Issue #6 Customer Views & Staff Master Schedule | `2026-11-07` | Closed |
+| `#14` | Lab 5 — Task 1 GCP Account & Cost Control | `2026-11-12` | Closed |
+| `#15` | Lab 5 — Task 2 Cloud-Ready Architecture | `2026-11-12` | Closed |
+| `#16` | Lab 5 — Task 3 Docker Containerization | `2026-11-13` | Closed |
+| `#17` | Lab 5 — Task 4 CI Quality Gate | `2026-11-13` | Closed |
+| `#18` | Lab 5 — Task 5 First GCP Deployment | `2026-11-13` | Closed |
+| `#19` | Lab 5 — Task 6 WIF Setup & Branch Protection | `2026-11-14` | Closed |
+| `#20` | Lab 5 — Task 7 Automatic Deployment Pipeline | `2026-11-14` | Closed |
+| `#29` | Lab 5 — Task 7b Repeatable Release Proof | `2026-11-14` | Closed |
+| `#21` | Lab 5 — Task 8 Persistence & Rollback Verification | `2026-11-15` | Closed |
+| `#32` | Lab 6 — Issue 1 UAT Plan & Handoff Package | `2026-11-20` | Closed |
+| `#33` | Lab 6 — Issue 2 Partner UAT Execution | `2026-11-21` | Closed |
+| `#34` | Lab 6 — Issue 3 Defect Resolution via TDD | `2026-11-21` | Closed |
+| `#35` | Lab 6 — Issue 4 Triage, Retest & UAT Sign-off | `2026-11-22` | Closed |
+| `#42` | Deliverable 2 — Issue 1 Sprint 2–3 Contracts | `2026-11-25` | Closed |
+| `#45` | Lab 7 — Issue 1 Change Impact & Contract Revision | `2026-11-25` | Closed |
+| `#47` | Lab 7 — Issue 2 TDD Implementation & Cloud Run Release | `2026-11-25` | Closed |
+| `#43` | Deliverable 2 — Issue 2 Sprint 2 Operations Increment | `2026-11-26` | Closed |
+| `#44` | Deliverable 2 — Issue 3 Sprint 3 `F-11` *(excluded from M1)* | — | Open |
+| `#48` | Lab 7 — Issue 3 Metrics & Release Readiness *(this PR, excluded from M1)* | — | Open |
 
 #### Source Table M2 — Merged Pull Requests (`27` Merged: `20` Staging + `7` Main)
 
-| Target Branch | Merged PR IDs (Chronological) | Merge Date Window (UTC) | Count | Excluded Non-Merged PRs |
-| :--- | :--- | :--- | :---: | :--- |
-| **`sprint-1-staging`** | `#1`, `#8`, `#9`, `#10`, `#11`, `#12`, `#22`, `#23`, `#24`, `#27`, `#30`, `#36`, `#37`, `#38`, `#39`, `#41`, `#46`, `#49`, `#50`, `#52` | `2026-11-05` – `2026-11-26` | `20` | `#54` (`OPEN`, Sprint 3 `F-11`) |
-| **`main` (Releases)** | `#13` (`cc1c3d82`), `#25` (`e598e212`), `#28` (`4cd0f90d`), `#31` (`aa5f109b`), `#40` (`f3eb92d4`), `#51` (`7ddc0a0b`), `#53` (`6d0f23cc`) | `2026-11-07` – `2026-11-26` | `7` | `#26` (`CLOSED`, intentional branch-gate test) |
-| **Total** | **27 merged PRs** | **`2026-11-05` – `2026-11-26`** | **`27`** | **`1` closed unmerged, `1` open** |
+| PR ID | Merge Date (UTC) | Target Branch | Source Branch | Status |
+| :---: | :---: | :--- | :--- | :---: |
+| `#1` | `2026-11-05` | `sprint-1-staging` | `setup/issue-1-baseline-schema` | Merged |
+| `#8` | `2026-11-05` | `sprint-1-staging` | `feat/issue-2-auth-jwt-roles` | Merged |
+| `#9` | `2026-11-06` | `sprint-1-staging` | `feat/issue-3-room-availability-grid` | Merged |
+| `#10` | `2026-11-06` | `sprint-1-staging` | `feat/issue-4-booking-engine` | Merged |
+| `#11` | `2026-11-07` | `sprint-1-staging` | `feat/issue-5-conflict-prevention` | Merged |
+| `#12` | `2026-11-07` | `sprint-1-staging` | `feat/issue-6-booking-views` | Merged |
+| `#13` | `2026-11-07` | `main` | `sprint-1-staging` (`cc1c3d82`) | Merged |
+| `#22` | `2026-11-12` | `sprint-1-staging` | `feat/lab5-cloud-ready` | Merged |
+| `#23` | `2026-11-13` | `sprint-1-staging` | `feat/lab5-docker` | Merged |
+| `#24` | `2026-11-13` | `sprint-1-staging` | `feat/lab5-ci` | Merged |
+| `#25` | `2026-11-13` | `main` | `sprint-1-staging` (`e598e212`) | Merged |
+| `#27` | `2026-11-14` | `sprint-1-staging` | `feat/lab5-auto-deploy` | Merged |
+| `#28` | `2026-11-14` | `main` | `sprint-1-staging` (`4cd0f90d`) | Merged |
+| `#30` | `2026-11-14` | `sprint-1-staging` | `feat/lab5-deploy-proof` | Merged |
+| `#31` | `2026-11-14` | `main` | `sprint-1-staging` (`aa5f109b`) | Merged |
+| `#36` | `2026-11-19` | `sprint-1-staging` | `docs/lab6-issue-1-uat-plan-prep` | Merged |
+| `#37` | `2026-11-21` | `sprint-1-staging` | `docs/lab6-issue-2-partner-uat-execution` | Merged |
+| `#38` | `2026-11-21` | `sprint-1-staging` | `fix/lab6-issue-3-defect-resolution` | Merged |
+| `#39` | `2026-11-21` | `sprint-1-staging` | `fix/lab6-issue-3-defect-resolution` | Merged |
+| `#40` | `2026-11-21` | `main` | `sprint-1-staging` (`f3eb92d4`) | Merged |
+| `#41` | `2026-11-22` | `sprint-1-staging` | `docs/lab6-issue-4-triage-retest-signoff` | Merged |
+| `#46` | `2026-11-25` | `sprint-1-staging` | `docs/sprint2-3-contracts` | Merged |
+| `#49` | `2026-11-25` | `sprint-1-staging` | `docs/lab7-issue-1-contract-impact` | Merged |
+| `#50` | `2026-11-25` | `sprint-1-staging` | `feat/lab7-issue-2-booking-rules-pricing` | Merged |
+| `#51` | `2026-11-25` | `main` | `sprint-1-staging` (`7ddc0a0b`) | Merged |
+| `#52` | `2026-11-26` | `sprint-1-staging` | `feat/sprint2-complete` | Merged |
+| `#53` | `2026-11-26` | `main` | `sprint-1-staging` (`6d0f23cc`) | Merged |
+| `#26` | — | `main` | `test/prove-gate` *(excluded: intentional branch-gate test)* | Closed (Unmerged) |
+| `#54` | — | `sprint-1-staging` | `feat/sprint3-and-d2-release` *(excluded: open at snapshot)* | Open |
 
 #### Source Table M3 — Automated Test Results (`6d0f23cc` / `v0.2.0-sprint2`)
 
@@ -69,13 +114,56 @@ All five metrics below are extracted directly from the repository Git history, G
 | **PR #50 Review (1)** | Lab 7 Issue 2 Peer Review | Medium (P2) | Pre-Merge Review Finding | **Resolved Pre-Merge** | `a32592c` (`BookingModal` 60m cutoff UI guard) |
 | **PR #52 Review (4)** | Sprint 2 Peer Review | Medium (P2) | Pre-Merge Review Findings | **Resolved Pre-Merge** | `f169c26`, `b83bd99`, `de9b8fa`, `c0a6c49` |
 
-#### Source Table M5 — CI/CD Workflow Run Summary (`2026-11-21` – `2026-11-27 12:30 ICT`, 40 Runs)
+#### Source Table M5 — CI/CD Workflow Run Summary & Full 40-Run Register (`2026-11-21` – `2026-11-27 12:30 ICT`)
 
-| Workflow | Total Runs | Succeeded | Failed | Pass Rate | Key Release / Failure Run IDs |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **`CI & Docker Build`** | `37` | `36` | `1` | `97.3%` | Sole failure: `#44928976326` (`2026-11-21`, intentional TDD RED commit `a810b980`). Lab 7 & Sprint 2 window (`2026-11-25`–`27`): `25/25` (`100%`). |
-| **`Deploy demo`** | `3` | `3` | `0` | `100.0%` | `#44941547401` (`f3eb92d4`, `singslot-00005-26q`), `#45608475633` (`7ddc0a0b`, `singslot-00006-49h`), `#45852744756` (`6d0f23cc`, `singslot-00007-vd5`). |
-| **Combined (40 Runs)** | **`40`** | **`39`** | **`1`** | **`97.5%`** | **Zero production deployment failures; 100% green across Lab 7 & Sprint 2 (`27/27`).** |
+| Workflow | Total Runs | Succeeded | Failed | Cancelled | Pass Rate | Notes |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`CI & Docker Build`** | `37` | `36` | `1` | `0` | `97.3%` | Sole failure: `#44928976326` (`2026-11-21`, intentional TDD RED commit `a810b980`). Lab 7 & Sprint 2 window (`2026-11-25`–`27`): `25/25` (`100%`). |
+| **`Deploy demo`** | `3` | `3` | `0` | `0` | `100.0%` | `#44941547401` (`f3eb92d4`), `#45608475633` (`7ddc0a0b`), `#45852744756` (`6d0f23cc`). |
+| **Combined (40 Runs)** | **`40`** | **`39`** | **`1`** | **`0`** | **`97.5%`** | **Zero cancelled runs; zero production deploy failures; `27/27` (`100%`) in Lab 7–Sprint 2.** |
+
+| Run ID | Date (UTC) | Workflow | Branch | Conclusion |
+| :---: | :---: | :--- | :--- | :---: |
+| `45944889211` | `2026-11-27` | CI & Docker Build | `feat/sprint3-and-d2-release` | success |
+| `45942802721` | `2026-11-27` | CI & Docker Build | `feat/sprint3-and-d2-release` | success |
+| `45941679260` | `2026-11-27` | CI & Docker Build | `feat/sprint3-and-d2-release` | success |
+| `45940718414` | `2026-11-27` | CI & Docker Build | `feat/sprint3-and-d2-release` | success |
+| `45852744756` | `2026-11-26` | Deploy demo | `main` | success |
+| `45852161140` | `2026-11-26` | CI & Docker Build | `sprint-1-staging` | success |
+| `45813338489` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45804424971` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45802640203` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45801780649` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45800888146` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45799422528` | `2026-11-26` | CI & Docker Build | `feat/sprint2-complete` | success |
+| `45608475633` | `2026-11-25` | Deploy demo | `main` | success |
+| `45593502671` | `2026-11-25` | CI & Docker Build | `sprint-1-staging` | success |
+| `45586948419` | `2026-11-25` | CI & Docker Build | `feat/lab7-issue-2-booking-rules-pricing` | success |
+| `45584950720` | `2026-11-25` | CI & Docker Build | `feat/lab7-issue-2-booking-rules-pricing` | success |
+| `45580049602` | `2026-11-25` | CI & Docker Build | `feat/lab7-issue-2-booking-rules-pricing` | success |
+| `45576688160` | `2026-11-25` | CI & Docker Build | `feat/lab7-issue-2-booking-rules-pricing` | success |
+| `45551842762` | `2026-11-25` | CI & Docker Build | `docs/lab7-issue-1-contract-impact` | success |
+| `45551255265` | `2026-11-25` | CI & Docker Build | `docs/lab7-issue-1-contract-impact` | success |
+| `45549512281` | `2026-11-25` | CI & Docker Build | `docs/lab7-issue-1-contract-impact` | success |
+| `45549360872` | `2026-11-25` | CI & Docker Build | `docs/sprint2-3-contracts` | success |
+| `45547972622` | `2026-11-25` | CI & Docker Build | `docs/sprint2-3-contracts` | success |
+| `45547480854` | `2026-11-25` | CI & Docker Build | `docs/lab7-issue-1-contract-impact` | success |
+| `45546557968` | `2026-11-25` | CI & Docker Build | `docs/sprint2-3-contracts` | success |
+| `45546512114` | `2026-11-25` | CI & Docker Build | `docs/lab7-issue-1-contract-impact` | success |
+| `45544361347` | `2026-11-25` | CI & Docker Build | `docs/sprint2-3-contracts` | success |
+| `45001484462` | `2026-11-22` | CI & Docker Build | `docs/lab6-issue-4-triage-retest-signoff` | success |
+| `44995021790` | `2026-11-22` | CI & Docker Build | `docs/lab6-issue-4-triage-retest-signoff` | success |
+| `44993128713` | `2026-11-22` | CI & Docker Build | `docs/lab6-issue-4-triage-retest-signoff` | success |
+| `44941547401` | `2026-11-21` | Deploy demo | `main` | success |
+| `44940994029` | `2026-11-21` | CI & Docker Build | `sprint-1-staging` | success |
+| `44940702491` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44939259228` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44938396760` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44936249549` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44935361893` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44933824864` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44930162938` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | success |
+| `44928976326` | `2026-11-21` | CI & Docker Build | `fix/lab6-issue-3-defect-resolution` | failure |
 
 ---
 

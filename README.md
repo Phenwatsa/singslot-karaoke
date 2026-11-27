@@ -3,7 +3,7 @@
 > **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 > **Topic 1:** Appointment and Scheduling System  
 > **Team:** 2 Students (@Phenwatsa & @lephirada)  
-> **Status:** Deliverable 2 Integrated Release Candidate (`v0.3.0-rc1` — Sprint 1 + Lab 5–7 + Sprint 2 + Sprint 3 `F-11`)  
+> **Status:** Deliverable 2 Staging Candidate (`feat/sprint3-and-d2-release` — Sprint 1 + Lab 5–7 + Sprint 2 + Sprint 3 `F-11`; target release tag: `v0.3.0-rc1` pending Release PR)  
 
 ---
 
@@ -67,10 +67,15 @@ createdb singslot_dev
 
 ### 4. Configure Environment Variables
 ```bash
+# For local Node.js development (server/)
 cp server/.env.example server/.env
 # 1. Verify DATABASE_URL in server/.env matches your PostgreSQL username and password
 # 2. Configure JWT_SECRET in server/.env with a unique random secret (e.g., generate via `openssl rand -base64 32`).
 #    Note: The server enforces fail-fast validation and will abort startup if JWT_SECRET is missing or blank.
+
+# For Docker Compose (repository root)
+cp .env.example .env
+# Populate POSTGRES_USER, POSTGRES_PASSWORD, JWT_SECRET, STAFF_PASSWORD, and CUSTOMER_PASSWORD in root .env before running `docker compose up`.
 ```
 
 ### 5. Run Database Migrations & Idempotent Seed

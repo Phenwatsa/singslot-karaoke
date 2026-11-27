@@ -2,13 +2,13 @@
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 **Theme:** Topic 1 — Appointment and Scheduling System  
-**Document Version:** 1.4.0 (Deliverable 2 Integrated Release Candidate — Sprint 1 + Lab 7 + Sprint 2 + F-11)  
+**Document Version:** 1.4.0 (Deliverable 2 Staging Candidate — `feat/sprint3-and-d2-release`; target release `v0.3.0-rc1`)  
 **Date:** 27 November 2026  
 
 > **Revision History:**
 > - `1.2.0` (Nov 2026): Rigorous Engineering Baseline (Accepted Sprint 1 tag `v0.1.0-sprint1` / Lab 6 release `f3eb92d4`).
 > - `1.3.0` (25 Nov 2026): Lab 7 Adaptive Maintenance — revised `FR-02`–`FR-06`, `BR-01` (Peak-Hour online duration cap), `BR-04` (60-minute online advance cutoff preserving `isPast` for Walk-in), and added `BR-11` (6-hour daily customer quota) and `BR-12` (flat hourly room pricing & authoritative server-calculated `totalPrice`).
-> - `1.4.0` (27 Nov 2026): Deliverable 2 Integrated Release Candidate (`v0.3.0-rc1`) — integrated Sprint 2 (`F-07`–`F-10`, `v0.2.0-sprint2`), implemented Sprint 3 `F-11` Customer Self-Registration (`FR-12`), and aligned `NFR-04` (`< 200 ms`).
+> - `1.4.0` (27 Nov 2026): Deliverable 2 Staging Candidate (`feat/sprint3-and-d2-release`; target release `v0.3.0-rc1` pending Release PR) — integrated Sprint 2 (`F-07`–`F-10`, `v0.2.0-sprint2`), implemented Sprint 3 `F-11` Customer Self-Registration (`FR-12`), and aligned `NFR-04` (`< 200 ms`).
 
 ---
 
@@ -62,7 +62,7 @@ All operations interact with a persistent PostgreSQL database enforcing strict A
 3. **No Loyalty Points / Promotions:** Points and discounts are excluded.
 4. **No Multi-Branch Architecture:** Single establishment only.
 5. **No SMS / External Push Notifications:** Alerts are confined to the web interface.
-6. **Self-Registration Lifecycle:** Seeded accounts were used in Sprint 1; Customer Self-Registration (`F-11`, `POST /api/auth/register`) is implemented in Deliverable 2 (`v0.3.0-rc1`).
+6. **Self-Registration Lifecycle:** Seeded accounts were used in Sprint 1; Customer Self-Registration (`F-11`, `POST /api/auth/register`) is implemented on `feat/sprint3-and-d2-release` (target release `v0.3.0-rc1`).
 7. **No Room Management CRUD in Sprint 1–2:** Seeded database fleet is used; dynamic CRUD (`F-12`) and Reports (`F-13`) are allocated to the final Sprint 3 release (13 Dec 2026).
 
 ---

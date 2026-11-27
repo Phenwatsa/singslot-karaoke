@@ -1,7 +1,7 @@
 # Feature Inventory
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
-**Document Version:** 1.4.0 (Deliverable 2 Integrated Release Candidate — Sprint 1 + Lab 7 + Sprint 2 + F-11)  
+**Document Version:** 1.4.0 (Deliverable 2 Staging Candidate — `feat/sprint3-and-d2-release`; target release `v0.3.0-rc1`)  
 **Date:** 27 November 2026  
 
 ---
@@ -22,7 +22,7 @@ The SingSlot feature inventory across all three sprints is detailed below:
 | **F-08** | **Booking Cancellation & Rescheduling** | Cancellation (`status = CANCELLED`, slot release restoring `BR-11` quota) and rescheduling enforcing the 24-hour advance policy (`BR-09`), `totalPrice` recalculation, and `excludeBookingId` quota exclusion. | FR-09, FR-10, BR-09, BR-11, BR-12 | F-04, F-05 | **Sprint 2 (Implemented `v0.2.0-sprint2`)** |
 | **F-09** | **Staff Slot Maintenance & Blockout** | Interface for staff to temporarily block specific room slots (`RoomBlock`), preventing blocks on confirmed slots (`409 BLOCK_CONFLICT`). | FR-08, BR-08, BR-10 | F-03, F-06 | **Sprint 2 (Implemented `v0.2.0-sprint2`)** |
 | **F-10** | **Booking Search & Multi-criteria Filtering** | Query utilities for staff to search bookings by customer phone, date/range, room tier, or status. | FR-11, BR-08 | F-06 | **Sprint 2 (Implemented `v0.2.0-sprint2`)** |
-| **F-11** | **Customer Self-Registration** | Public registration portal (`POST /api/auth/register`) enabling new customers to register accounts with `bcrypt` hashing (`>= 10` rounds) and enforced `CUSTOMER` role. | FR-12, NFR-01, NFR-02 | F-01 | **Sprint 3 (Implemented `v0.3.0-rc1`)** |
+| **F-11** | **Customer Self-Registration** | Public registration portal (`POST /api/auth/register`) enabling new customers to register accounts with `bcrypt` hashing (`>= 10` rounds) and enforced `CUSTOMER` role. | FR-12, NFR-01, NFR-02 | F-01 | **Sprint 3 (Implemented on Staging; Target `v0.3.0-rc1`)** |
 | **F-12** | **Room Management CRUD** | Staff administrative interface to add, modify, or soft-deactivate rooms and configure pricing. | FR-13, BR-08, BR-12 | F-02, F-06 | **Sprint 3 (Planned 13 Dec)** |
 | **F-13** | **Appointment Summary & Occupancy Reports** | Management analytics visualizing per-room and aggregate occupancy rates, revenue metrics, and peak hours. | FR-14, BR-08, BR-12 | F-06, F-10 | **Sprint 3 (Planned 13 Dec)** |
 | **F-14** | **UAT Defect Fixes, Polish & Final Video** | Origin-restricted CORS (`DEF-SS-04 (4B)`), UI polish, full regression, and final demonstration video. | All FRs | All | **Sprint 3 (Planned 13 Dec)** |

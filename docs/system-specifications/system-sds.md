@@ -1,7 +1,7 @@
 # System-Level Software Design Specification (SDS)
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
-**Document Version:** 1.4.0 (Deliverable 2 Integrated Release Candidate — Sprint 1 + Lab 7 + Sprint 2 + F-11)  
+**Document Version:** 1.4.0 (Deliverable 2 Staging Candidate — `feat/sprint3-and-d2-release`; target release `v0.3.0-rc1`)  
 **Date:** 27 November 2026  
 
 ---

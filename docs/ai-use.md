@@ -14,4 +14,4 @@ AI usage logs and prompt declarations are versioned by sprint according to cours
 - [**Lab 7 Change Impact Analysis & Updated Contract**](./labs/lab-07/change-impact.md) *(Antigravity AI)*
 - *Sprint 2 AI Usage Log & Reflection (Upcoming)*
 - [**Sprint 2 AI Usage Log & Reflection**](./sprints/sprint-2/ai-use.md) *(Antigravity AI / Gemini 4 Hydrogen)*
-- *Sprint 3 AI Usage Log & Reflection (Upcoming)*
+- [**Sprint 3 AI Usage Log & Reflection**](./sprints/sprint-3/ai-use.md) *(Antigravity AI / Gemini 4 Hydrogen)*

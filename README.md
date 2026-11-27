@@ -3,7 +3,7 @@
 > **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
 > **Topic 1:** Appointment and Scheduling System  
 > **Team:** 2 Students (@Phenwatsa & @lephirada)  
-> **Status:** Sprint 1 — The Golden Booking Slice (Deliverable 1)  
+> **Status:** Deliverable 2 Staging Candidate (`feat/sprint3-and-d2-release` — Sprint 1 + Lab 5–7 + Sprint 2 + Sprint 3 `F-11`; target release tag: `v0.3.0-rc1` pending Release PR)  
 
 ---
 
@@ -15,16 +15,16 @@ SingSlot is a full-stack web reservation platform tailored for a single-venue pr
 
 ## 📚 Project Documentation
 
-All formal software engineering specifications required for CPE 334 Deliverable 1 are maintained under the [`docs/`](./docs/) directory:
+All formal software engineering specifications and sprint artifacts are maintained under the [`docs/`](./docs/) directory (`v1.4.0`):
 
-- [**Software Requirements Specification (SRS)**](./docs/system-specifications/srs.md): Product scope, actors, FR-01–FR-14, BR-01–BR-10, and NFR-01–NFR-05.
-- [**Feature Catalog**](./docs/system-specifications/features.md): Baseline features F-01 through F-14 mapped across 3 sprints.
-- [**Requirements Traceability Matrix**](./docs/system-specifications/traceability.md): 100% bidirectional traceability mapping requirements to 17 automated test IDs.
-- [**System-Level Design Specification (SDS)**](./docs/system-specifications/system-sds.md): Decoupled architecture, ERD, database constraints, pessimistic room-locking concurrency strategy, and API conventions.
-- [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap, video milestones, and Sprint 1 feasibility justification.
-- [**Sprint 1 Engineering Contracts**](./docs/sprints/sprint-1/contracts.md): API specifications, Acceptance Criteria (`AC-01`–`AC-06`), and Software Test Specifications (`TEST-01`–`TEST-06`).
+- [**Software Requirements Specification (SRS)**](./docs/system-specifications/srs.md): Product scope, actors, `FR-01`–`FR-14`, `BR-01`–`BR-12` (including Lab 7 rules), and `NFR-01`–`NFR-05`.
+- [**Feature Catalog**](./docs/system-specifications/features.md): Baseline features `F-01` through `F-14` mapped across Sprint 1–3 (`F-01`–`F-11` implemented; `F-12`–`F-14` planned for 13 Dec).
+- [**Requirements Traceability Matrix**](./docs/system-specifications/traceability.md): End-to-end traceability (`v1.4.0`) mapping requirements to actual test files and results across 13 server test suites (`122` tests) and 12 client smoke tests, with explicit planned gaps.
+- [**System-Level Design Specification (SDS)**](./docs/system-specifications/system-sds.md): Decoupled architecture, ERD, database constraints, `users` → `rooms` pessimistic locking strategy, and API/RBAC conventions (`v1.4.0`).
+- [**Three-Sprint Development Plan**](./docs/sprints/plan.md): 3-sprint roadmap and milestone plan.
+- [**Sprint Engineering Contracts**](./docs/sprints/sprint-1/contracts.md): [Sprint 1](./docs/sprints/sprint-1/contracts.md), [Sprint 2](./docs/sprints/sprint-2/contracts.md), [Sprint 3](./docs/sprints/sprint-3/contracts.md), and [Sprint 3 Remaining Work](./docs/sprints/sprint-3/remaining-work.md).
 - [**Team & Agent Working Rules**](./AGENTS.md): Hardware memory guards (M1 8GB RAM), Git protocols, TDD rules, and UI layout conventions.
-- [**Sprint 1 AI Usage Log & Reflection**](./docs/sprints/sprint-1/ai-use.md): Representative prompt disclosure (Gemini 3.8 Flash) and engineering reflection.
+- [**AI Usage & Governance Logs**](./docs/ai-use.md): Representative prompt disclosures across Sprints 1–3 and Labs 5–7.
 
 ---
 
@@ -67,10 +67,15 @@ createdb singslot_dev
 
 ### 4. Configure Environment Variables
 ```bash
+# For local Node.js development (server/)
 cp server/.env.example server/.env
 # 1. Verify DATABASE_URL in server/.env matches your PostgreSQL username and password
 # 2. Configure JWT_SECRET in server/.env with a unique random secret (e.g., generate via `openssl rand -base64 32`).
 #    Note: The server enforces fail-fast validation and will abort startup if JWT_SECRET is missing or blank.
+
+# For Docker Compose (repository root)
+cp .env.example .env
+# Populate POSTGRES_USER, POSTGRES_PASSWORD, JWT_SECRET, STAFF_PASSWORD, and CUSTOMER_PASSWORD in root .env before running `docker compose up`.
 ```
 
 ### 5. Run Database Migrations & Idempotent Seed

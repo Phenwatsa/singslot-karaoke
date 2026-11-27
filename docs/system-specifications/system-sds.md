@@ -1,8 +1,8 @@
 # System-Level Software Design Specification (SDS)
 ## Project: SingSlot — Karaoke Room Reservation & Management System
 **Course:** CPE 334 Introduction to Software Engineering in the Age of AI Agents  
-**Document Version:** 1.3.0 (Lab 7 Adaptive Maintenance — Sprint 1 Rules & Pricing Revision)  
-**Date:** 25 November 2026  
+**Document Version:** 1.4.0 (Deliverable 2 Integrated Release Candidate — Sprint 1 + Lab 7 + Sprint 2 + F-11)  
+**Date:** 27 November 2026  
 
 ---
 
@@ -275,15 +275,21 @@ model RoomBlock {
 
 | Endpoint | Method | Anonymous | Customer | Staff | Ownership / Access Guard Rule |
 |---|:---:|:---:|:---:|:---:|---|
+| `/api/auth/register` | POST | Allowed | Allowed | Allowed | Public customer self-registration (`F-11`); forces `role = CUSTOMER` and hashes password with `bcrypt` (`>= 10` rounds) |
 | `/api/auth/login` | POST | Allowed | Allowed | Allowed | Public authentication endpoint |
 | `/api/auth/logout` | POST | Blocked | Allowed | Allowed | Discards token on client; server returns 200 |
 | `/api/auth/me` | GET | Blocked | Allowed | Allowed | Returns authenticated caller's identity |
-| `/api/rooms` | GET | Allowed | Allowed | Allowed | Public room fleet query |
-| `/api/availability` | GET | Allowed | Allowed | Allowed | Public server-calculated availability |
-| `/api/bookings/online` | POST | Blocked | Allowed | Blocked | Customer submits online reservation (`userId == req.user.id`) |
+| `/api/rooms` | GET | Allowed | Allowed | Allowed | Public room fleet query (with `hourlyRate`) |
+| `/api/availability` | GET | Allowed | Allowed | Allowed | Public server-calculated availability (`isWithinCutoff`, `isPast`, `hourlyRate`) |
+| `/api/bookings/online` | POST | Blocked | Allowed | Blocked | Customer submits online reservation (`userId == req.user.id`, Lab 7 rules & `BR-12` `totalPrice`) |
+| `/api/bookings/walk-in` | POST | Blocked | Blocked | Allowed | Staff walk-in counter (`F-07`, `!isPast` only, exempt from online-only Lab 7 rules) |
 | `/api/bookings/my` | GET | Blocked | Allowed | Blocked | Returns strictly reservations where `userId == req.user.id` |
 | `/api/bookings/:id` | GET | Blocked | Allowed | Allowed | **Ownership Check:** Returns 200 if `booking.userId == req.user.id` OR `req.user.role == 'STAFF'`; otherwise returns HTTP 403 Forbidden |
-| `/api/bookings/master` | GET | Blocked | Blocked | Allowed | Staff inspects all bookings across all rooms |
+| `/api/bookings/:id/cancel` | PATCH | Blocked | Allowed | Allowed | **Ownership & `BR-09`:** Owner or `STAFF` only (`>= 24h` prior); sets `CANCELLED` & releases `BookingSlot` rows |
+| `/api/bookings/:id/reschedule` | PATCH | Blocked | Allowed | Allowed | **Ownership & `BR-09`:** Owner or `STAFF` only (`>= 24h` prior); recalculates `totalPrice`, excludes `targetBookingId` from `BR-11` |
+| `/api/bookings/master` | GET | Blocked | Blocked | Allowed | Staff inspects/filters all bookings across all rooms (`F-06`, `F-10`) |
+| `/api/room-blocks` | GET / POST | Blocked | Blocked | Allowed | Staff lists or creates maintenance blocks (`F-09`, `BR-10`: `409 BLOCK_CONFLICT`) |
+| `/api/room-blocks/:id` | DELETE | Blocked | Blocked | Allowed | Staff removes maintenance block (`F-09`) |
 
 ### 3.2 Authentication & Session Lifecycle
 1. **Password Verification:** Passwords are verified against `passwordHash` using `bcrypt.compare`.
@@ -304,11 +310,11 @@ All endpoints return consistent JSON error envelopes:
 ```
 
 * **Standard Error Codes:**
-  * `400 Bad Request`: `INVALID_INPUT`, `CANNOT_BOOK_PAST_SLOT`, `EXCEEDS_CAPACITY`, `INVALID_DURATION`, `PEAK_DURATION_EXCEEDED`
+  * `400 Bad Request`: `INVALID_INPUT`, `CANNOT_BOOK_PAST_SLOT`, `EXCEEDS_CAPACITY`, `INVALID_DURATION`, `PEAK_DURATION_EXCEEDED`, `CANCELLATION_WINDOW_EXPIRED`
   * `401 Unauthorized`: `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`
   * `403 Forbidden`: `FORBIDDEN`
-  * `404 Not Found`: `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`
-  * `409 Conflict`: `SLOT_CONFLICT`, `DAILY_QUOTA_EXCEEDED`, `CONCURRENT_LOCK_FAILED`
+  * `404 Not Found`: `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`, `NOT_FOUND`
+  * `409 Conflict`: `SLOT_CONFLICT`, `DAILY_QUOTA_EXCEEDED`, `CONCURRENT_LOCK_FAILED`, `BLOCK_CONFLICT`, `BLOCK_ALREADY_EXISTS`, `BOOKING_ALREADY_CANCELLED`, `EMAIL_ALREADY_EXISTS`
 
 ---
 
